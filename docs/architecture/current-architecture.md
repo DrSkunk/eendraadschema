@@ -1,6 +1,6 @@
 # Current architecture and incremental React migration inventory
 
-Status: Living inventory through Phase 4, based on `main` at `a14513e` (6 August 2026).
+Status: Living inventory through Phase 5, based on `main` at `a14513e` (6 August 2026).
 
 This note records the current boundaries before React or a new command layer is introduced. It is intentionally descriptive: no implementation behavior is changed in Phase 0.
 
@@ -203,6 +203,23 @@ React is now mounted incrementally without replacing the legacy application:
 Phase 4 deliberately exposes no React electrical commands yet. Adding hierarchy actions before React owns hierarchy rendering would create two interactive mutation paths and confusing undo ownership.
 
 The next coherent phase is Phase 5: mount a React hierarchy beside the legacy renderer behind a separate feature flag, migrate selection/expansion into editor-only state, and route every action in that tree through `SchemaCommands`. The existing `toHTML()` hierarchy remains the fallback until command, keyboard and SVG-regression tests pass.
+
+### Phase 5 implementation status
+
+The first React hierarchy is available as an opt-in migration path:
+
+- `LocalEditorStore` owns selection and expanded IDs separately from EDS document data and reconciles state after deletion or document replacement;
+- `?reactHierarchy=on` mounts the React hierarchy into `#react-hierarchy-root` and hides the legacy hierarchy renderer; without the flag, legacy rendering remains unchanged;
+- semantic `nav`, `header`, `ol`, `li`, `button`, `label` and `select` elements replace table layout and inline handlers in the new path;
+- hierarchy rows support selection, expand/collapse, adding children, duplication, confirmed subtree deletion and sibling movement;
+- arrow keys plus Home and End navigate visible items, with visible focus and selected states;
+- every mutation and React undo/redo action dispatches `SchemaCommands`; React never edits legacy arrays or properties directly;
+- a store subscription refreshes the unchanged SVG preview after React commands;
+- the hierarchy builds a parent/children index once per schema snapshot instead of repeatedly scanning the full legacy list;
+- generated attribute nodes and the internal situation-plan container remain in the read model but are hidden from editing, matching legacy hierarchy behavior;
+- fixture tests render every editable node in the representative legacy documents, while structural SVG tests remain unchanged.
+
+The opt-in React hierarchy does not yet expose item property forms. This is intentional: Phase 6 will add the first registered React property editor before the React hierarchy can become the default. Until then, the default legacy path remains the fully functional editor and `?reactHierarchy=on` is an architectural preview for hierarchy interactions.
 
 ## First change batch
 

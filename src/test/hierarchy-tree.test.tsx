@@ -10,6 +10,7 @@ import { LocalEditorStore } from "../application/EditorStore";
 import { LegacySchemaStore } from "../application/LegacySchemaStore";
 import { Hierarchical_List } from "../Hierarchical_List";
 import { HierarchyTree } from "../ui/hierarchy/HierarchyTree";
+import { loadFixture } from "./helpers";
 
 afterEach(cleanup);
 
@@ -29,6 +30,27 @@ function createHierarchy() {
 }
 
 describe("HierarchyTree", () => {
+  it.each(["example_default.eds", "example000.eds", "example001.eds"])(
+    "renders every editable hierarchy node from %s",
+    (fixture) => {
+      const structure = loadFixture(fixture);
+      const schemaStore = new LegacySchemaStore(structure);
+      const editorStore = new LocalEditorStore();
+      const editableItems = schemaStore.getSnapshot().document
+        .getAllItems()
+        .filter((item) => item.role === "item");
+      for (const item of editableItems) editorStore.commands.expandItem(item.id);
+
+      const view = render(
+        <HierarchyTree schemaStore={schemaStore} editorStore={editorStore} />,
+      );
+
+      expect(view.container.querySelectorAll("[data-hierarchy-item-id]")).toHaveLength(
+        editableItems.length,
+      );
+    },
+  );
+
   it("renders the electrical hierarchy and keeps generated attributes hidden", () => {
     const { structure, schemaStore, editorStore, board, circuit } = createHierarchy();
     const controller = structure.createItem("Domotica gestuurde verbruiker");
