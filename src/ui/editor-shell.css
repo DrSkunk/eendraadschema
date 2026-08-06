@@ -1,0 +1,37 @@
+.react-editor-shell {
+  align-items: center;
+  background: #ffffff;
+  border-bottom: 1px solid #d8dee4;
+  color: #20252b;
+  display: flex;
+  justify-content: space-between;
+  min-height: 3rem;
+  padding: 0.5rem 1rem;
+}
+
+.react-editor-shell__title {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.react-editor-shell__eyebrow {
+  color: #64707d;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.react-editor-shell__status {
+  color: #64707d;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+@media (max-width: 36rem) {
+  .react-editor-shell {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+}

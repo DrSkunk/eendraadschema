@@ -1,5 +1,6 @@
 import { inflateSync } from "node:zlib";
 import { vi } from "vitest";
+import "@testing-library/jest-dom/vitest";
 
 Object.assign(globalThis, {
   pako: {

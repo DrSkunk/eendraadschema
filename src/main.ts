@@ -22,6 +22,9 @@ import { MultiLevelStorage } from "./storage/MultiLevelStorage";
 import { undoRedo } from "./undoRedo";
 import { importExportUsingFileAPI } from "./importExport/importExport";
 import { changelog } from "./changelog";
+import { LegacySchemaStore } from "./application/LegacySchemaStore";
+import { reactEditorShellEnabled } from "./ui/featureFlags";
+import { mountEditorApp } from "./ui/mountEditorApp";
 
 import "../css/all.css";
 
@@ -34,6 +37,12 @@ globalThis.session = new Session();
 globalThis.appDocStorage = new MultiLevelStorage<any>('appDocStorage', {});
 globalThis.undostruct = new undoRedo(100);
 globalThis.fileAPIobj = new importExportUsingFileAPI();
+
+let schemaStore: LegacySchemaStore | null = null;
+
+function synchronizeSchemaStoreWithLegacyDocument(): void {
+    schemaStore?.synchronizeLegacyDocument(globalThis.structure);
+}
 
 // Global constants
 
@@ -386,6 +395,7 @@ globalThis.HLRedrawTreeSVG = () => {
 
     const right_col_inner = document.getElementById("right_col_inner");
     if (right_col_inner != null) right_col_inner.innerHTML = str;
+    synchronizeSchemaStoreWithLegacyDocument();
 }
 
 globalThis.HLRedrawTree = () => {
@@ -640,6 +650,7 @@ const container = document.getElementById('container');
 if (container == null) throw new Error("HTML element container is null");
 
 container.innerHTML = `
+<div id="react-editor-root"></div>
 <div id="topmenu"><ul id="minitabs"></ul></div>
 <div id="app">
 <svg id="svgdefs"></svg> <!-- Bevat SVG patronen die app-wide gebruikt worden -->
@@ -789,6 +800,12 @@ left_col_inner.addEventListener('change', function(event) {
 });
 
 EDStoStructure(globalThis.EXAMPLE_DEFAULT,false); //Just in case the user doesn't select a scheme and goes to drawing immediately, there should be something there
+
+schemaStore = new LegacySchemaStore(globalThis.structure);
+const reactEditorRoot = document.getElementById("react-editor-root");
+if (reactEditorRoot !== null && reactEditorShellEnabled(window.location.search)) {
+    mountEditorApp(reactEditorRoot, schemaStore);
+}
 
 // Create the autoSaver
 // - the constructor takes a function that points it to the latest globalThis.structure whenever it asks for it
