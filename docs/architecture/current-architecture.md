@@ -1,6 +1,6 @@
 # Current architecture and incremental React migration inventory
 
-Status: Phase 0 inventory, based on `master` at `a14513e` (6 August 2026).
+Status: Living inventory through Phase 4, based on `main` at `a14513e` (6 August 2026).
 
 This note records the current boundaries before React or a new command layer is introduced. It is intentionally descriptive: no implementation behavior is changed in Phase 0.
 
@@ -187,6 +187,22 @@ The post-Phase-3 review resulted in a small consolidation pass rather than immed
 - test sources have their own complete TypeScript check, and dependency audit findings were resolved with compatible lockfile updates.
 
 This leaves a clearer Phase 4 seam: React can subscribe to `SchemaStore`, render `SchemaDocumentReader`, and call `SchemaCommands` without importing the browser persistence module or the legacy undo implementation.
+
+### Phase 4 implementation status
+
+React is now mounted incrementally without replacing the legacy application:
+
+- `react` and `react-dom` are configured with the automatic TypeScript JSX runtime;
+- `EditorApp` mounts into the dedicated `#react-editor-root` while the existing top menu, hierarchy, SVG preview, print view and situation plan keep their existing DOM roots;
+- `useSchemaSnapshot()` consumes the framework-independent store with `useSyncExternalStore`; the domain document is not copied into React state;
+- the first shell surface is a compact, semantic Dutch header with a live count of editable electrical items;
+- legacy mutations synchronize the store's read snapshot through an explicit transition seam, while legacy history remains authoritative for legacy actions;
+- `?reactShell=off` disables the React mount and provides an immediate fallback to the unchanged legacy application;
+- React Testing Library covers semantic rendering, store-driven updates and the fallback flag.
+
+Phase 4 deliberately exposes no React electrical commands yet. Adding hierarchy actions before React owns hierarchy rendering would create two interactive mutation paths and confusing undo ownership.
+
+The next coherent phase is Phase 5: mount a React hierarchy beside the legacy renderer behind a separate feature flag, migrate selection/expansion into editor-only state, and route every action in that tree through `SchemaCommands`. The existing `toHTML()` hierarchy remains the fallback until command, keyboard and SVG-regression tests pass.
 
 ## First change batch
 
