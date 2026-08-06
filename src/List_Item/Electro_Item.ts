@@ -206,7 +206,7 @@ export class Electro_Item extends List_Item {
     let parent:Electro_Item = this.getParent();
     let consumerArray: Array<string>;
     
-    if (parent == null) consumerArray = ["", "Aansluiting", "Zekering/differentieel", "Kring"];
+    if (parent == null) consumerArray = this.sourcelist.allowedRootChilds();
     else consumerArray = this.getParent().allowedChilds()
 
     //output += '<div class="type-orange">';

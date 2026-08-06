@@ -330,6 +330,10 @@ export class Hierarchical_List {
         return(returnval);
     }
 
+    allowedRootChilds(): Array<string> {
+        return ["", "Aansluiting", "Zekering/differentieel", "Kring"];
+    }
+
     createContainerIfNotExists(): Electro_Item {
         // loop over all childs of the root element (parent = 0) and check if any has type "Container"
         // if not, create a new Container with parent the root node and return it
@@ -982,9 +986,10 @@ export class Hierarchical_List {
      * De namen worden gegenereerd in de volgorde van het alfabet, beginnend met "A", "B", ..., "Z", "AA", "AB", ..., "ZZ", "AAA", "AAB", ..., enzovoort.
      */
 
-    updateKringNamen() {
+    updateKringNamen(updateDom: boolean = true) {
 
         function changeInLeftColIfOpen(id: number, newname: string) {
+            if (!updateDom) return;
             let div: HTMLInputElement = (document.getElementById(`HL_edit_${id}_naam`) as HTMLInputElement);
             if (div) {
                 if (div.value != newname) div.value = newname;
@@ -1094,9 +1099,10 @@ export class Hierarchical_List {
      * 
      * @returns true indien er wijzigingen zijn gemaakt, anders false
      */
-    reNumber() {
+    reNumber(updateDom: boolean = true) {
 
         function changeInLeftColIfOpen(id: number, newnr: string) {
+            if (!updateDom) return;
             let div: HTMLInputElement = (document.getElementById(`HL_edit_${id}_nr`) as HTMLInputElement);
             if (div) {
                 if (div.value != newnr) div.value = newnr;
@@ -1105,7 +1111,7 @@ export class Hierarchical_List {
 
         // Eerst sorteren we de lijst opnieuw en zorgen we ervoor dat alle kringen een naam hebben
         this.reSort();
-        this.updateKringNamen(); // Zorg ervoor dat de kringen namen hebben
+        this.updateKringNamen(updateDom); // Zorg ervoor dat de kringen namen hebben
 
         // Nu gaan we doorheen alle items en passen we de nummers aan indien nodig
         let lastNumbers: { [kring: string]: number } = {}; // Object to keep track of last numbers for each type
