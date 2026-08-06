@@ -22,8 +22,9 @@ import { MultiLevelStorage } from "./storage/MultiLevelStorage";
 import { undoRedo } from "./undoRedo";
 import { importExportUsingFileAPI } from "./importExport/importExport";
 import { changelog } from "./changelog";
+import { LocalEditorStore } from "./application/EditorStore";
 import { LegacySchemaStore } from "./application/LegacySchemaStore";
-import { reactEditorShellEnabled } from "./ui/featureFlags";
+import { reactEditorHierarchyEnabled, reactEditorShellEnabled } from "./ui/featureFlags";
 import { mountEditorApp } from "./ui/mountEditorApp";
 
 import "../css/all.css";
@@ -39,9 +40,15 @@ globalThis.undostruct = new undoRedo(100);
 globalThis.fileAPIobj = new importExportUsingFileAPI();
 
 let schemaStore: LegacySchemaStore | null = null;
+let editorStore: LocalEditorStore | null = null;
 
 function synchronizeSchemaStoreWithLegacyDocument(): void {
     schemaStore?.synchronizeLegacyDocument(globalThis.structure);
+    if (schemaStore !== null && editorStore !== null) {
+        editorStore.commands.reconcileItemIds(new Set(
+            schemaStore.getSnapshot().document.getAllItems().map((item) => item.id),
+        ));
+    }
 }
 
 // Global constants
@@ -665,6 +672,7 @@ container.innerHTML = `
 </div> <!-- Ribbon -->
 <div id="canvas_2col" style="display:none;"> <!-- Eendraadschema-->
     <div id="left_col">
+    <div id="react-hierarchy-root"></div>
     <div id="left_col_inner"></div>
     </div>
     <div id="right_col">
@@ -802,9 +810,27 @@ left_col_inner.addEventListener('change', function(event) {
 EDStoStructure(globalThis.EXAMPLE_DEFAULT,false); //Just in case the user doesn't select a scheme and goes to drawing immediately, there should be something there
 
 schemaStore = new LegacySchemaStore(globalThis.structure);
+editorStore = new LocalEditorStore();
 const reactEditorRoot = document.getElementById("react-editor-root");
-if (reactEditorRoot !== null && reactEditorShellEnabled(window.location.search)) {
-    mountEditorApp(reactEditorRoot, schemaStore);
+const reactHierarchyRoot = document.getElementById("react-hierarchy-root");
+const legacyHierarchyRoot = document.getElementById("left_col_inner");
+const reactShellIsEnabled = reactEditorShellEnabled(window.location.search);
+const reactHierarchyIsEnabled = reactShellIsEnabled
+    && reactEditorHierarchyEnabled(window.location.search)
+    && reactHierarchyRoot !== null;
+
+if (legacyHierarchyRoot !== null) legacyHierarchyRoot.hidden = reactHierarchyIsEnabled;
+if (reactHierarchyRoot !== null) reactHierarchyRoot.hidden = !reactHierarchyIsEnabled;
+if (reactEditorRoot !== null && reactShellIsEnabled) {
+    mountEditorApp(
+        reactEditorRoot,
+        schemaStore,
+        editorStore,
+        reactHierarchyIsEnabled ? reactHierarchyRoot : null,
+    );
+}
+if (reactHierarchyIsEnabled) {
+    schemaStore.subscribe(() => globalThis.HLRedrawTreeSVG());
 }
 
 // Create the autoSaver

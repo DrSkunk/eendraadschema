@@ -66,6 +66,17 @@ function allowedChildTypes(item: Electro_Item): readonly string[] {
 export class LegacySchemaDocumentReader implements SchemaDocumentReader {
   constructor(private readonly structure: Hierarchical_List) {}
 
+  getRootCapabilities() {
+    return Object.freeze({
+      canAddChild: true,
+      canDelete: false,
+      canDuplicate: false,
+      allowedChildTypes: Object.freeze(
+        this.structure.allowedRootChilds().filter((type) => type !== ""),
+      ),
+    });
+  }
+
   getItem(id: number): HierarchyViewNode | undefined {
     const ordinal = this.structure.getOrdinalById(id);
     if (ordinal === null || !this.structure.active[ordinal]) return undefined;
@@ -102,6 +113,8 @@ export class LegacySchemaDocumentReader implements SchemaDocumentReader {
   private toViewNode(ordinal: number): HierarchyViewNode {
     const item = this.structure.data[ordinal] as Electro_Item;
     const summary = getSummary(item);
+    const role = getRole(item);
+    const isEditableItem = role === "item";
     const childIds = this.activeOrdinals()
       .filter((childOrdinal) => this.structure.data[childOrdinal].parent === item.id)
       .map((childOrdinal) => this.structure.id[childOrdinal]);
@@ -114,12 +127,12 @@ export class LegacySchemaDocumentReader implements SchemaDocumentReader {
       description: getDescription(summary),
       childIds: Object.freeze(childIds),
       summary,
-      role: getRole(item),
+      role,
       capabilities: Object.freeze({
-        canAddChild: item.checkInsertChild(),
-        canDelete: true,
-        canDuplicate: item.checkInsertSibling(),
-        allowedChildTypes: allowedChildTypes(item),
+        canAddChild: isEditableItem && item.checkInsertChild(),
+        canDelete: isEditableItem,
+        canDuplicate: isEditableItem && item.checkInsertSibling(),
+        allowedChildTypes: isEditableItem ? allowedChildTypes(item) : Object.freeze([]),
       }),
     });
   }

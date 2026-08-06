@@ -1,0 +1,155 @@
+.react-hierarchy {
+  color: #20252b;
+  min-width: 20rem;
+  padding: 1rem;
+}
+
+.react-hierarchy__header {
+  align-items: flex-end;
+  border-bottom: 1px solid #d8dee4;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.react-hierarchy__header h2 {
+  font-size: 1.125rem;
+  margin: 0;
+}
+
+.react-hierarchy__eyebrow {
+  color: #64707d;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.react-hierarchy__tree,
+.react-hierarchy__children {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.react-hierarchy__node {
+  margin: 0.25rem 0;
+}
+
+.react-hierarchy__row {
+  align-items: stretch;
+  border: 1px solid #d8dee4;
+  border-radius: 6px;
+  display: grid;
+  gap: 0.25rem;
+  grid-template-columns: 2rem minmax(8rem, 1fr) auto;
+  margin-left: calc(var(--hierarchy-depth, 0) * 1.25rem);
+  padding: 0.25rem;
+}
+
+.react-hierarchy__row--selected {
+  border-color: #175cd3;
+  box-shadow: 0 0 0 2px rgb(23 92 211 / 18%);
+}
+
+.react-hierarchy button,
+.react-hierarchy select {
+  font: inherit;
+  min-height: 2rem;
+}
+
+.react-hierarchy button:focus-visible,
+.react-hierarchy select:focus-visible {
+  outline: 3px solid rgb(23 92 211 / 35%);
+  outline-offset: 2px;
+}
+
+.react-hierarchy__expand,
+.react-hierarchy__expand-placeholder {
+  align-self: center;
+  display: inline-grid;
+  min-width: 2rem;
+  place-items: center;
+}
+
+.react-hierarchy__summary {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0.25rem 0.5rem;
+  text-align: left;
+}
+
+.react-hierarchy__summary small {
+  color: #64707d;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.react-hierarchy__actions,
+.react-hierarchy__add-control,
+.react-hierarchy__history {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.react-hierarchy__history {
+  margin-left: auto;
+}
+
+.react-hierarchy__actions button {
+  padding: 0.25rem 0.5rem;
+}
+
+.react-hierarchy__delete {
+  color: #b42318;
+}
+
+.react-hierarchy__add-control {
+  margin: 0.25rem 0 0.5rem;
+  margin-left: calc((var(--hierarchy-depth, 0) + 1) * 1.25rem);
+}
+
+.react-hierarchy__error {
+  background: #fef3f2;
+  border: 1px solid #fecdca;
+  color: #b42318;
+  padding: 0.75rem;
+}
+
+.react-hierarchy__empty {
+  color: #64707d;
+  padding: 1rem 0;
+}
+
+.react-hierarchy__visually-hidden {
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: 1px;
+  clip: rect(0 0 0 0);
+}
+
+@media (max-width: 52rem) {
+  .react-hierarchy {
+    min-width: 0;
+  }
+
+  .react-hierarchy__row {
+    grid-template-columns: 2rem minmax(8rem, 1fr);
+  }
+
+  .react-hierarchy__actions {
+    grid-column: 2;
+  }
+}

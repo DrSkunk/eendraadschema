@@ -27,6 +27,7 @@ export interface HierarchyViewNode {
 }
 
 export interface SchemaDocumentReader {
+  getRootCapabilities(): HierarchyNodeCapabilities;
   getItem(id: number): HierarchyViewNode | undefined;
   getChildren(parentId: number | null): HierarchyViewNode[];
   getRootItems(): HierarchyViewNode[];

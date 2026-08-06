@@ -82,6 +82,13 @@ describe("LegacySchemaDocumentReader", () => {
     expect(reader.getItem(consumer.id)?.capabilities.allowedChildTypes).toContain("Contactdoos");
     expect(reader.getItem(consumer.id)?.capabilities.allowedChildTypes).not.toContain("---");
     expect(typeof reader.getItem(consumer.id)?.capabilities.canAddChild).toBe("boolean");
+    expect(reader.getItem(attribute.id)?.capabilities.canDelete).toBe(false);
+    expect(reader.getItem(container.id)?.capabilities.canAddChild).toBe(false);
+    expect(reader.getRootCapabilities().allowedChildTypes).toEqual([
+      "Aansluiting",
+      "Zekering/differentieel",
+      "Kring",
+    ]);
   });
 
   it("reflects later document mutations while keeping prior snapshots stable", () => {

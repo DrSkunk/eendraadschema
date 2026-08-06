@@ -1,0 +1,163 @@
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { LocalEditorStore } from "../application/EditorStore";
+import { LegacySchemaStore } from "../application/LegacySchemaStore";
+import { Hierarchical_List } from "../Hierarchical_List";
+import { HierarchyTree } from "../ui/hierarchy/HierarchyTree";
+
+afterEach(cleanup);
+
+function createHierarchy() {
+  const structure = new Hierarchical_List();
+  const board = structure.addItem("Bord");
+  board.props.naam = "Hoofdbord";
+  const circuit = structure.createItem("Kring");
+  circuit.props.naam = "G";
+  structure.insertChildAfterId(circuit, board.id);
+  const socket = structure.createItem("Contactdoos");
+  socket.props.nr = "1";
+  structure.insertChildAfterId(socket, circuit.id);
+  const editorStore = new LocalEditorStore();
+  const schemaStore = new LegacySchemaStore(structure);
+  return { structure, schemaStore, editorStore, board, circuit, socket };
+}
+
+describe("HierarchyTree", () => {
+  it("renders the electrical hierarchy and keeps generated attributes hidden", () => {
+    const { structure, schemaStore, editorStore, board, circuit } = createHierarchy();
+    const controller = structure.createItem("Domotica gestuurde verbruiker");
+    structure.insertChildAfterId(controller, circuit.id);
+    const attribute = structure.createItem("Drukknop");
+    attribute.props.isAttribuut = true;
+    structure.insertChildAfterId(attribute, controller.id);
+    schemaStore.synchronizeLegacyDocument(structure);
+    editorStore.commands.expandItem(board.id);
+    editorStore.commands.expandItem(circuit.id);
+    editorStore.commands.expandItem(controller.id);
+
+    render(<HierarchyTree schemaStore={schemaStore} editorStore={editorStore} />);
+
+    expect(screen.getByRole("navigation", { name: "Elektrische hiërarchie" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Hoofdbord" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Kring G" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Contactdoos 1" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Drukknop" })).not.toBeInTheDocument();
+  });
+
+  it("supports selection, expansion, and arrow-key navigation", () => {
+    const { schemaStore, editorStore, board, circuit } = createHierarchy();
+    editorStore.commands.expandItem(board.id);
+    render(<HierarchyTree schemaStore={schemaStore} editorStore={editorStore} />);
+
+    const boardButton = screen.getByRole("button", { name: "Hoofdbord" });
+    const circuitButton = screen.getByRole("button", { name: "Kring G" });
+    fireEvent.click(circuitButton);
+    expect(editorStore.getSnapshot().selectedItemId).toBe(circuit.id);
+    expect(circuitButton).toHaveAttribute("aria-current", "true");
+
+    boardButton.focus();
+    fireEvent.keyDown(boardButton, { key: "ArrowDown" });
+    expect(circuitButton).toHaveFocus();
+    expect(editorStore.getSnapshot().selectedItemId).toBe(circuit.id);
+
+    fireEvent.click(screen.getByRole("button", { name: "Uitklappen: Kring G" }));
+    expect(screen.getByRole("button", { name: "Contactdoos 1" })).toBeVisible();
+  });
+
+  it("adds and duplicates items exclusively through schema commands", () => {
+    const { schemaStore, editorStore, board, circuit } = createHierarchy();
+    editorStore.commands.expandItem(board.id);
+    editorStore.commands.expandItem(circuit.id);
+    render(<HierarchyTree schemaStore={schemaStore} editorStore={editorStore} />);
+
+    const addSelect = screen.getByLabelText("Onderdeel toevoegen onder Kring G");
+    fireEvent.change(addSelect, { target: { value: "Lichtpunt" } });
+    fireEvent.click(within(addSelect.closest("div")!).getByRole("button", { name: "Toevoegen" }));
+
+    const light = schemaStore.getSnapshot().document
+      .getChildren(circuit.id)
+      .find((item) => item.type === "Lichtpunt");
+    expect(light).toBeDefined();
+    expect(editorStore.getSnapshot().selectedItemId).toBe(light?.id);
+
+    fireEvent.click(screen.getByRole("button", { name: /Contactdoos \d+ dupliceren/ }));
+    expect(schemaStore.getSnapshot().document.getChildren(circuit.id)
+      .filter((item) => item.type === "Contactdoos")).toHaveLength(2);
+  });
+
+  it("requires confirmation before deleting a subtree", () => {
+    const { schemaStore, editorStore, board, circuit, socket } = createHierarchy();
+    editorStore.commands.expandItem(board.id);
+    editorStore.commands.expandItem(circuit.id);
+    editorStore.commands.selectItem(socket.id);
+    const confirmDelete = vi.fn(() => false);
+    const view = render(
+      <HierarchyTree
+        schemaStore={schemaStore}
+        editorStore={editorStore}
+        confirmDelete={confirmDelete}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Contactdoos 1 verwijderen" }));
+    expect(schemaStore.getSnapshot().document.getItem(socket.id)).toBeDefined();
+
+    view.rerender(
+      <HierarchyTree
+        schemaStore={schemaStore}
+        editorStore={editorStore}
+        confirmDelete={() => true}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Contactdoos 1 verwijderen" }));
+
+    expect(schemaStore.getSnapshot().document.getItem(socket.id)).toBeUndefined();
+    expect(editorStore.getSnapshot().selectedItemId).toBeNull();
+  });
+
+  it("moves siblings and exposes command-layer undo and redo", () => {
+    const { schemaStore, editorStore, board, circuit, socket } = createHierarchy();
+    const lightId = schemaStore.commands.addItem(circuit.id, "Lichtpunt");
+    editorStore.commands.expandItem(board.id);
+    editorStore.commands.expandItem(circuit.id);
+    render(<HierarchyTree schemaStore={schemaStore} editorStore={editorStore} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Contactdoos \d+ omhoog verplaatsen/ }));
+    expect(schemaStore.getSnapshot().document.getItem(circuit.id)?.childIds).toEqual([
+      socket.id,
+      lightId,
+    ]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Ongedaan maken" }));
+    expect(schemaStore.getSnapshot().document.getItem(circuit.id)?.childIds).toEqual([
+      lightId,
+      socket.id,
+    ]);
+    expect(screen.getByRole("button", { name: "Opnieuw" })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Opnieuw" }));
+    expect(schemaStore.getSnapshot().document.getItem(circuit.id)?.childIds).toEqual([
+      socket.id,
+      lightId,
+    ]);
+  });
+
+  it("shows an actionable empty state", () => {
+    const schemaStore = new LegacySchemaStore(new Hierarchical_List());
+    const editorStore = new LocalEditorStore();
+    render(<HierarchyTree schemaStore={schemaStore} editorStore={editorStore} />);
+
+    expect(screen.getByText(/nog geen elektrische onderdelen/i)).toBeVisible();
+    const rootSelect = screen.getByLabelText("Onderdeel op hoofdniveau toevoegen");
+    fireEvent.click(within(rootSelect.closest("div")!).getByRole("button", { name: "Toevoegen" }));
+
+    expect(schemaStore.getSnapshot().document.getRootItems()).toHaveLength(1);
+    expect(schemaStore.getSnapshot().document.getRootItems()[0].type).toBe("Aansluiting");
+  });
+});
