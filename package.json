@@ -7,15 +7,18 @@
     "dev": "vite",
     "clean": "rimraf dist",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "typecheck:test": "tsc -p tsconfig.test.json"
   },
   "devDependencies": {
+    "@types/node": "^24.2.0",
+    "jsdom": "^30.0.1",
+    "rimraf": "^6.0.1",
     "typescript": "~5.8.3",
     "vite": "^6.3.5",
-    "vite-plugin-singlefile": "^2.2.0"
-  },
-  "dependencies": {
-    "rimraf": "^6.0.1",
-    "save-dev": "^0.0.1-security"
+    "vite-plugin-singlefile": "^2.2.0",
+    "vitest": "^4.1.10"
   }
 }

@@ -1,6 +1,7 @@
-import { Hierarchical_List } from "../Hierarchical_List";
-import { SituationPlan } from "../sitplan/SituationPlan";
-import { Electro_Item } from "../List_Item/Electro_Item";
+import {
+    decodeEds,
+    structureFromJson,
+} from "../legacy/persistence/EdsCodec";
 
 declare var pako: any;
 
@@ -158,76 +159,6 @@ globalThis.importToAppendClicked = async () => {
 }
 
 
-/* FUNCTION upgrade_version
-
-   Takes a structure, usually imported from json into javascript object, and performs a version upgrade if needed.
-   as mystructure is passed by reference, all upgrades are done in-line.
-
-*/
-
-function upgrade_version(mystructure, version) {
-
-    // At a certain moment (2023-01-11 to 2023-01-13) there was a bug in the systen so that files where accidentally outputed with props, without keys, but with version 1.
-    // We correct for this below. If there are props and not keys but it still reads version 1, it should be interpreted as version 3.
-
-    if ((version == 1) && (mystructure.length > 0) && (typeof(mystructure.data[0].keys) == 'undefined') && (typeof(mystructure.data[0].props) != 'undefined') ) {
-        version = 3
-    }
-
-    /* Indien versie 1 moeten we vrije tekst elementen die niet leeg zijn 30 pixels breder maken.
-    * Merk ook op dat versie 1 nog een key based systeem had met keys[0][2] het type
-    * en keys[16][2] die aangeeft of vrije tekst al dan niet een kader bevat (verbruiker) of niet (zonder kader)
-    */
-    if (version < 2) {
-        for (let i = 0; i < mystructure.length; i++) {
-            // Breedte van Vrije tekst velden zonder kader met 30 verhogen sinds 16/12/2023
-            if ( (mystructure.data[i].keys[0][2] === "Vrije tekst") && (mystructure.data[i].keys[16][2] != "verbruiker") ) {
-                if (Number(mystructure.data[i].keys[22][2])>0) mystructure.data[i].keys[22][2] = String(Number(mystructure.data[i].keys[22][2]) + 30);
-                    else mystructure.data[i].keys[18][2] = "automatisch";
-                if (mystructure.data[i].keys[16][2] != "zonder kader") mystructure.data[i].keys[16][2] = "verbruiker";
-            }
-    } 
-    }   
-
-    // In versie 2 heetten Contactdozen altijd nog Stopcontacten
-
-    if (version < 3) {
-        for (let i = 0; i < mystructure.length; i++) {
-            if (mystructure.data[i].keys[0][2] === "Stopcontact") mystructure.data[i].keys[0][2] = "Contactdoos";
-            if (mystructure.data[i].keys[0][2] === "Leeg") mystructure.data[i].keys[0][2] = "Aansluitpunt";
-        }
-    }
-
-    // In versie 3 heetten Contactdozen ook soms nog Stopcontacten, maar niet altijd
-    if (version == 3) {
-        for (let i = 0; i < mystructure.length; i++) {
-            if (mystructure.data[i].props.type === "Stopcontact") mystructure.data[i].props.type = "Contactdoos";
-        }
-    }
-
-    //Vanaf versie 4 staan niet automatisch meer haakjes <> rond de benaming van borden. Indien kleiner dan versie 4 moeten we deze toevoegen
-    if (version < 4) {
-        if (version < 3) {
-            for (let i = 0; i < mystructure.length; i++) {
-                if ( (mystructure.data[i].keys[0][2] === "Bord") && (mystructure.data[i].keys[10][2] !== "") ) mystructure.data[i].keys[10][2] = '<' + mystructure.data[i].keys[10][2] + '>';
-            }
-        } else {
-            for (let i = 0; i < mystructure.length; i++) {
-                if ( (mystructure.data[i].props.type === "Bord") && (mystructure.data[i].props.naam !== "") ) mystructure.data[i].props.naam = '<' + mystructure.data[i].props.naam + '>';
-            }
-        }    
-    }
-
-    //Algemene upgrade voor versies 3 tot en met 4
-
-    if ( (version >= 3) && (version <= 4) ) {
-        for (let i = 0; i < mystructure.length; i++) {
-            if (mystructure.data[i].props.type === "Leeg") mystructure.data[i].props.type = "Aansluitpunt";
-        }
-    }
-
-}
-
 /**
  * Exporteert de huidige structuur naar een bestand in het EDS-formaat.
  * @param {boolean} saveAs - Indien true, wordt de gebruiker gevraagd waar het bestand moet worden opgeslagen; anders wordt het bestand opgeslagen onder de bekende bestandsnaam.
@@ -289,141 +220,11 @@ globalThis.exportjson = (saveAs: boolean = true) => { // Indien de boolean false
     globalThis.propUpload(text);
 }
 
-/* FUNCTION json_to_structure
-
-   Takes a string in pure json and puts the content in a hierarchical list that is returned.
-   The function can take an old structure that is to be cleaned as input (optional)
-    
-   Will perform a version upgrade in case the json is from an earlier version of the eendraadschema tool but this version upgrade will not be performed
-   if version is set to 0.  If version is not set to 0 it should be set to the verson of the json.
-    
-*/
-
-function json_to_structure(text: string, oldstruct: Hierarchical_List = null, version = 0): Hierarchical_List {
-
-    // If a structure exists, clear it
-    if (oldstruct != null) oldstruct.dispose(); // Clear the structure
-
-    /* Read all data from disk in a javascript structure mystructure.
-        * Afterwards we will gradually copy elements from this one into the official outstruct
-        */
-    let mystructure = JSON.parse(text);
-
-    // upgrade if needed
-    if (version != 0) upgrade_version(mystructure, version);
-
-    /* We starten met het kopieren van data naar de eigenlijke outstruct.
-    * Ook hier houden we er rekening mee dat in oude saves mogelijk niet alle info voorhanden was */
-
-    let outstruct = new Hierarchical_List();
-
-    // Kopieren van hoofd-eigenschappen
-
-    if (typeof mystructure.properties != 'undefined') {
-        if (typeof mystructure.properties.filename != "undefined") outstruct.properties.filename = mystructure.properties.filename;
-        if (typeof mystructure.properties.owner != "undefined") outstruct.properties.owner = mystructure.properties.owner;
-        if (typeof mystructure.properties.control != "undefined") outstruct.properties.control = mystructure.properties.control;
-        if (typeof mystructure.properties.installer != "undefined") outstruct.properties.installer = mystructure.properties.installer;
-        if (typeof mystructure.properties.info != "undefined") outstruct.properties.info = mystructure.properties.info;
-        if (typeof mystructure.properties.info != "undefined") outstruct.properties.dpi = mystructure.properties.dpi;
-        if (typeof mystructure.properties.currentView != "undefined") outstruct.properties.currentView = mystructure.properties.currentView;
-        if (typeof mystructure.properties.disableEDSCompression != "undefined") outstruct.properties.disableEDSCompression = mystructure.properties.disableEDSCompression;        
-        if (typeof mystructure.properties.legacySchakelaars != "undefined") 
-            outstruct.properties.legacySchakelaars = mystructure.properties.legacySchakelaars;
-        else
-            outstruct.properties.legacySchakelaars = null;
-    }    
-
-    // Kopieren van de paginatie voor printen
-
-    if (typeof mystructure.print_table != "undefined") {
-        outstruct.print_table.setHeight(mystructure.print_table.height);
-        outstruct.print_table.setMaxWidth(mystructure.print_table.maxwidth);
-        outstruct.print_table.setPaperSize(mystructure.print_table.papersize);
-        outstruct.print_table.setModeVertical(mystructure.print_table.modevertical);
-        outstruct.print_table.setstarty(mystructure.print_table.starty);
-        outstruct.print_table.setstopy(mystructure.print_table.stopy);
-        if (typeof mystructure.print_table.enableAutopage != "undefined") {
-            outstruct.print_table.enableAutopage = mystructure.print_table.enableAutopage;
-        } else {
-            outstruct.print_table.enableAutopage = false;
-        }
-
-        for (let i=0; i<mystructure.print_table.pages.length; i++) {
-            if (i != 0) outstruct.print_table.addPage();
-            outstruct.print_table.pages[i].height = mystructure.print_table.pages[i].height;
-            outstruct.print_table.pages[i].start = mystructure.print_table.pages[i].start;
-            outstruct.print_table.pages[i].stop = mystructure.print_table.pages[i].stop;
-            if (mystructure.print_table.pages[i].info != null) {
-                outstruct.print_table.pages[i].info = mystructure.print_table.pages[i].info;
-            }
-        }
-    }
-
-    // Kopieren van de situatieplannen
-
-    if (typeof mystructure.sitplanjson != "undefined") {
-        outstruct.sitplan = new SituationPlan();
-        outstruct.sitplan.fromJsonObject(mystructure.sitplanjson);
-    }
-
-    /* Kopieren van de eigenschappen van elk element.
-     * Keys voor versies 1 en 2 en props voor versie 3
-     */
-
-    for (let i = 0; i < mystructure.length; i++) {
-        if ( (version != 0) && (version < 3) ) {
-            outstruct.addItem(mystructure.data[i].keys[0][2]);
-            (outstruct.data[i] as Electro_Item).convertLegacyKeys(mystructure.data[i].keys);
-
-            // In deze oude  versie bestonden autonummering nog niet dus we zetten deze af
-            outstruct.data[i].props.autoKringNaam = "manueel";
-            outstruct.data[i].props.autonr = "manueel";
-
-        } else {
-            outstruct.addItem(mystructure.data[i].props.type);
-            (Object as any).assign(outstruct.data[i].props,mystructure.data[i].props);
-
-            // Veel files uit versie 4 hadden nog geen autonummering (ingevoerd halfweg versie 4)
-            // Indien we dit vastsellen zetten we de autonummering op "manueel"
-
-            if ( (mystructure.data[i].props.type === "Kring") &&
-                 (!mystructure.data[i].props.autoKringNaam) )
-                        outstruct.data[i].props.autoKringNaam = "manueel"; 
-
-            if ( (mystructure.data[i].props.nr !== undefined) && 
-                 (mystructure.data[i].props.nr !== null) && 
-                 (!mystructure.data[i].props.autonr) ) 
-                        outstruct.data[i].props.autonr = "manueel";
-
-            // Vanaf versie 4 werd het batterijsymbool vervangen maar voor oudere files houden we ook de blokbatterij aan
-            if ( (mystructure.data[i].props.type === "Batterij") &&
-                 (mystructure.data[i].props.symbool == null) ) {
-                outstruct.data[i].props.symbool = "blokbatterij";
-            }
-
-        }
-
-        outstruct.data[i].parent = mystructure.data[i].parent;
-        outstruct.active[i] = mystructure.active[i];
-        outstruct.id[i] = mystructure.id[i];
-        outstruct.data[i].id = mystructure.data[i].id;
-        outstruct.data[i].indent = mystructure.data[i].indent;
-        outstruct.data[i].collapsed = mystructure.data[i].collapsed;
-    }
-
-    // As we re-read the structure and it might be shorter then it once was (due to deletions) but we might still have the old high ID's, always take over the curid from the file
-    outstruct.curid = mystructure.curid;
-
-    // Sort the entire new structure
-    outstruct.voegAttributenToeAlsNodigEnReSort();
-
-    // Return the result
-    return outstruct;
-}
+/** @deprecated Import from legacy/persistence/EdsCodec in UI-independent code. */
+export const json_to_structure = structureFromJson;
 
 export function loadFromText(text: string, version: number, redraw = true) {
-    globalThis.structure = json_to_structure(text, globalThis.structure, version);
+    globalThis.structure = structureFromJson(text, globalThis.structure, version);
     if (redraw == true) globalThis.topMenu.selectMenuItemByName('Eéndraadschema'); // Ga naar het bewerken scherm, dat zal automatisch voor hertekenen zorgen.
 }
 
@@ -435,67 +236,8 @@ export function loadFromText(text: string, version: number, redraw = true) {
  * @param {string} mystring - De string die uit een bestand of een json string is geladen.
  * @returns {Object} - Een object met twee attributen: text en version. Text is de json string en version is de versie van de string.
  */
-function EDStoJson(mystring: string) {
-
-    let text:string = "";
-    let version: number;
-
-    /* If first 3 bytes read "EDS", it is an entropy coded file
-        * The first 3 bytes are EDS, the next 3 bytes indicate the version
-        * The next 4 bytes are decimal zeroes "0000"
-        * thereafter is a base64 encoded data-structure 
-        * 
-        * If the first 3 bytes read "TXT", it is not entropy coded, nor base64
-        * The next 7 bytes are the same as above.
-        * 
-        * If there is no identifier, it is treated as a version 1 TXT
-        * */
-        
-    if ( (mystring.charCodeAt(0)==69) && (mystring.charCodeAt(1)==68) && (mystring.charCodeAt(2)==83) ) { //recognize as EDS
-
-        /* Determine versioning
-        * < 16/12/2023: Version 1, original key based implementation
-        *   16/12/2023: Version 2, Introductie van automatische breedte voor bepaalde SVG-tekst
-        *                          Vrije tekst van Version 1 moet 30 pixels groter gemaakt worden om nog mooi in het schema te passen
-        *   XX/01/2024: Version 3, Overgang van key based implementation naar props based implementation
-        *                          functies convertLegacyKeys ingevoerd om oude files nog te lezen.
-        */
-
-        version = Number(mystring.substring(3,6));
-        if (isNaN(version)) version = 1; // Hele oude files bevatten geen versie, ze proberen ze te lezen als versie 1
-
-        mystring = atob(mystring.substring(10,mystring.length))
-        var buffer:Uint8Array = new Uint8Array(mystring.length);
-        for (let i = 0; i < mystring.length; i++) {
-            buffer[i-0] = mystring.charCodeAt(i);
-        }
-
-        try { //See if the text decoder works, if not, we will do it manually (slower)
-            let decoder = new TextDecoder("utf-8");
-            text = decoder.decode(pako.inflate(buffer));
-        } catch (error) { //Continue without the text decoder (old browsers)
-            var inflated:Uint8Array = pako.inflate(buffer);
-            text = "";
-            for (let i=0; i<inflated.length; i++) {
-                text += String.fromCharCode(inflated[i])
-            }
-        }
-    } else if ( (mystring.charCodeAt(0)==84) && (mystring.charCodeAt(1)==88) && (mystring.charCodeAt(2)==84) ) { //recognize as TXT
-
-        version = Number(mystring.substring(3,6));
-        if (isNaN(version)) version = 3;
-
-        text = mystring.substring(10,mystring.length)
-
-    } else { // Very old file without header
-
-        text = mystring;
-        version = 1;
-    }
-
-    //Return an object with the text and the version
-    return {text:text, version:version};
-}
+/** @deprecated Import from legacy/persistence/EdsCodec in UI-independent code. */
+export const EDStoJson = decodeEds;
 
 /* FUNCTION EDStoStructure
    
@@ -509,7 +251,7 @@ export function EDStoStructure(mystring: string, redraw = true, askUserToSave = 
 
     if (globalThis.autoSaver) globalThis.autoSaver.reset();
 
-    let JSONdata = EDStoJson(mystring);
+    let JSONdata = decodeEds(mystring);
     
     // Dump the json in into the structure and redraw if needed
     loadFromText(JSONdata.text, JSONdata.version, redraw);
@@ -541,8 +283,8 @@ export function EDStoStructure(mystring: string, redraw = true, askUserToSave = 
 }
 
 function importToAppend(mystring: string, redraw = true) {
-    let JSONdata = EDStoJson(mystring);
-    let structureToAppend = json_to_structure(JSONdata.text, null, JSONdata.version);
+    let JSONdata = decodeEds(mystring);
+    let structureToAppend = structureFromJson(JSONdata.text, null, JSONdata.version);
 
     //get the Maximal ID in array structure.id and call it maxID
     let maxID = 0;
