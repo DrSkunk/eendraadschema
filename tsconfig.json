@@ -10,6 +10,7 @@
   "include": [
     "src/global.d.ts",
     "src/main.ts",
+    "src/application/**/*.ts"
   ],
   "exclude": [
     "node_modules",
