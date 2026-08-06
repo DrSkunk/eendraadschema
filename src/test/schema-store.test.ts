@@ -191,4 +191,34 @@ describe("LegacySchemaStore", () => {
     expect(store.getSnapshot().canUndo).toBe(false);
     expect(store.getSnapshot().canRedo).toBe(false);
   });
+
+  it("refreshes subscribers after a legacy mutation without claiming its undo history", () => {
+    const { store, boardId } = createStore();
+    const listener = vi.fn();
+    store.subscribe(listener);
+
+    const legacyCircuit = store.getLegacyDocument().createItem("Kring");
+    store.getLegacyDocument().insertChildAfterId(legacyCircuit, boardId);
+    store.synchronizeLegacyDocument(store.getLegacyDocument());
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(store.getSnapshot().document.getItem(legacyCircuit.id)?.parentId).toBe(boardId);
+    expect(store.getSnapshot().canUndo).toBe(false);
+
+    store.synchronizeLegacyDocument(store.getLegacyDocument());
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it("adopts a document replaced by legacy import code", () => {
+    const { store } = createStore();
+    const imported = new Hierarchical_List();
+    const importedBoard = imported.addItem("Bord");
+    importedBoard.props.naam = "Werkplaats";
+
+    store.synchronizeLegacyDocument(imported);
+
+    expect(store.getLegacyDocument()).toBe(imported);
+    expect(store.getSnapshot().document.getItem(importedBoard.id)?.summary.name).toBe("Werkplaats");
+    expect(store.getSnapshot().canUndo).toBe(false);
+  });
 });

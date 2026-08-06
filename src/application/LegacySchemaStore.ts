@@ -17,6 +17,7 @@ export class LegacySchemaStore implements SchemaStore {
   private structure: Hierarchical_List;
   private readonly listeners = new Set<() => void>();
   private readonly history: DocumentSnapshotHistory;
+  private serializedSnapshot: string;
   private revision = 0;
   private snapshot: SchemaSnapshot;
 
@@ -24,7 +25,8 @@ export class LegacySchemaStore implements SchemaStore {
 
   constructor(structure: Hierarchical_List, maxHistorySteps: number = 100) {
     this.structure = structure;
-    this.history = new DocumentSnapshotHistory(this.serialize(), maxHistorySteps);
+    this.serializedSnapshot = this.serialize();
+    this.history = new DocumentSnapshotHistory(this.serializedSnapshot, maxHistorySteps);
     this.snapshot = this.createSnapshot();
     this.commands = Object.freeze({
       addItem: this.addItem.bind(this),
@@ -50,6 +52,22 @@ export class LegacySchemaStore implements SchemaStore {
   /** Legacy integration seam for SVG, persistence, and print adapters. */
   getLegacyDocument(): Hierarchical_List {
     return this.structure;
+  }
+
+  /**
+   * Transitional seam for legacy handlers that still mutate or replace the
+   * authoritative document outside SchemaCommands. It refreshes subscribers
+   * but deliberately starts a fresh command history: the store must never
+   * claim it can undo a mutation that belongs to the legacy undo controller.
+   */
+  synchronizeLegacyDocument(structure: Hierarchical_List): void {
+    const serialized = structure.toJsonObject(false);
+    if (structure === this.structure && serialized === this.serializedSnapshot) return;
+
+    this.structure = structure;
+    this.serializedSnapshot = serialized;
+    this.history.reset(serialized);
+    this.publish();
   }
 
   private addItem(parentId: number | null, type: string): number {
@@ -154,7 +172,8 @@ export class LegacySchemaStore implements SchemaStore {
     const replacement = structureFromJson(serializedDocument, null, version);
     this.structure.dispose();
     this.structure = replacement;
-    this.history.reset(this.serialize());
+    this.serializedSnapshot = this.serialize();
+    this.history.reset(this.serializedSnapshot);
     this.publish();
   }
 
@@ -252,11 +271,13 @@ export class LegacySchemaStore implements SchemaStore {
       const result = mutation();
       this.structure.voegAttributenToeAlsNodigEnReSort();
       this.structure.reNumber(false);
-      this.history.record(this.serialize());
+      this.serializedSnapshot = this.serialize();
+      this.history.record(this.serializedSnapshot);
       this.publish();
       return result;
     } catch (error) {
       this.structure = structureFromJson(before, this.structure, 0);
+      this.serializedSnapshot = before;
       // A failed command must not advance the public revision, but future
       // reads must point at the restored document rather than the mutated one.
       this.snapshot = this.createSnapshot();
@@ -266,6 +287,7 @@ export class LegacySchemaStore implements SchemaStore {
 
   private restore(serialized: string): void {
     this.structure = structureFromJson(serialized, this.structure, 0);
+    this.serializedSnapshot = serialized;
     this.publish();
   }
 
