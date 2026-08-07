@@ -9,6 +9,7 @@ export function mountEditorApp(
   schemaStore: SchemaStore,
   editorStore: EditorStore,
   hierarchyMountElement: HTMLElement | null,
+  propertiesMountElement: HTMLElement | null = null,
 ): Root {
   const root = createRoot(element);
   root.render(
@@ -17,6 +18,7 @@ export function mountEditorApp(
         schemaStore={schemaStore}
         editorStore={editorStore}
         hierarchyMountElement={hierarchyMountElement}
+        propertiesMountElement={propertiesMountElement}
       />
     </StrictMode>,
   );

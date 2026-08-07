@@ -673,6 +673,7 @@ container.innerHTML = `
 <div id="canvas_2col" style="display:none;"> <!-- Eendraadschema-->
     <div id="left_col">
     <div id="react-hierarchy-root"></div>
+    <div id="react-properties-root"></div>
     <div id="left_col_inner"></div>
     </div>
     <div id="right_col">
@@ -813,6 +814,7 @@ schemaStore = new LegacySchemaStore(globalThis.structure);
 editorStore = new LocalEditorStore();
 const reactEditorRoot = document.getElementById("react-editor-root");
 const reactHierarchyRoot = document.getElementById("react-hierarchy-root");
+const reactPropertiesRoot = document.getElementById("react-properties-root");
 const legacyHierarchyRoot = document.getElementById("left_col_inner");
 const reactShellIsEnabled = reactEditorShellEnabled(window.location.search);
 const reactHierarchyIsEnabled = reactShellIsEnabled
@@ -821,12 +823,14 @@ const reactHierarchyIsEnabled = reactShellIsEnabled
 
 if (legacyHierarchyRoot !== null) legacyHierarchyRoot.hidden = reactHierarchyIsEnabled;
 if (reactHierarchyRoot !== null) reactHierarchyRoot.hidden = !reactHierarchyIsEnabled;
+if (reactPropertiesRoot !== null) reactPropertiesRoot.hidden = !reactHierarchyIsEnabled;
 if (reactEditorRoot !== null && reactShellIsEnabled) {
     mountEditorApp(
         reactEditorRoot,
         schemaStore,
         editorStore,
         reactHierarchyIsEnabled ? reactHierarchyRoot : null,
+        reactHierarchyIsEnabled ? reactPropertiesRoot : null,
     );
 }
 if (reactHierarchyIsEnabled) {
