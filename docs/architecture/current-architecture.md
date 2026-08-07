@@ -1,6 +1,21 @@
 # Current architecture and incremental React migration inventory
 
-Status: Living inventory through the completed React hierarchy and property-editor migration (7 August 2026).
+Status: Living inventory through the React editor, distribution-board and legacy hierarchy-renderer migration (7 August 2026).
+
+## Current migration state
+
+The original Phase 0 inventory below is retained as historical context. The active architecture now has these boundaries:
+
+- React is the only interactive one-line editor renderer; the hierarchy fallback flags and legacy change listener have been removed.
+- `SchemaStore` owns undoable document commands and subscriptions. React does not mutate `Hierarchical_List.data` or legacy property bags.
+- `SchemaDocumentReader` and `SchemaPropertyReader` expose immutable hierarchy, board, document-detail and type-specific property projections.
+- every public electrical item type has a React property editor; concrete electrical classes no longer contain `toHTML()` methods or HTML form helpers.
+- EDS005 persists stable first-class distribution boards. EDS001–EDS004 documents migrate to one default `Hoofdbord` while keeping their item IDs and legacy properties.
+- secondary boards are real `Bord` nodes connected beneath a feeder `Kring`; commands reject missing, duplicate and cyclic feeder relationships and integrate with undo/redo.
+- the React board navigator supports board selection, feeder/cable editing, document details and structural validation in Belgian Dutch.
+- the existing SVG/print engine remains authoritative. Board name, location and feeder metadata are added at the existing `Bord` SVG adapter without rewriting electrical symbols or pagination.
+
+Remaining legacy UI is deliberately outside the migrated one-line editor: file/configuration pages, print controls and the interactive situation-plan view still use imperative DOM rendering. Persistence codecs, SVG generation, PDF export and situation-plan behavior remain compatibility code rather than React concerns.
 
 This note records the current boundaries before React or a new command layer is introduced. It is intentionally descriptive: no implementation behavior is changed in Phase 0.
 
@@ -249,7 +264,7 @@ Phase 6 property migration is now complete for every public electrical item type
 - parameterized compatibility tests compare complete serialized EDS data and exact SVG output with the legacy mutation path for every schema-driven type;
 - type changes and expansion of composite switch/light-circuit items have dedicated commands and React controls.
 
-The React hierarchy is now the default one-line editor. `?reactHierarchy=off` keeps the legacy hierarchy available as a rollback path while the default rollout is validated in real browsers. The old `toHTML()` methods and hierarchy `innerHTML` path therefore remain compatibility-only code for now; removing them is a separate cleanup step and must not touch SVG, print, persistence or situation-plan rendering.
+The React hierarchy became the default one-line editor during rollout. After hierarchy, property, command and SVG regression coverage passed, the rollback flag, hierarchy `innerHTML` path, global hierarchy handlers and item `toHTML()` methods were removed. SVG, print, persistence and situation-plan rendering remain intact.
 
 ## First change batch
 
