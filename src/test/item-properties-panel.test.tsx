@@ -13,7 +13,7 @@ function createSelectedCircuit() {
   const board = structure.addItem("Bord");
   const circuit = structure.createItem("Kring");
   structure.insertChildAfterId(circuit, board.id);
-  const legacyItem = structure.createItem("Zekering/differentieel");
+  const legacyItem = structure.createItem("Container");
   structure.insertChildAfterId(legacyItem, circuit.id);
   const schemaStore = new LegacySchemaStore(structure);
   const editorStore = new LocalEditorStore();

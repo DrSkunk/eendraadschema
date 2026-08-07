@@ -17,6 +17,7 @@ export interface ConfiguredItemProperties {
   readonly canEditNumber: boolean;
   readonly parentType: string | null;
   readonly childCount: number;
+  readonly canStartNewPage: boolean;
   readonly values: Readonly<Record<string, ConfiguredPropertyValue>>;
 }
 
@@ -60,6 +61,23 @@ function schema(
  * application names; legacy property names remain an adapter detail.
  */
 export const CONFIGURED_ITEM_PROPERTY_SCHEMAS: Readonly<Record<string, ConfiguredItemPropertySchema>> = Object.freeze({
+  Aansluiting: numbered({
+    name: { legacyKey: "naam", kind: "text", defaultValue: "" },
+    protection: { legacyKey: "bescherming", kind: "select", options: ["automatisch", "differentieel", "differentieelautomaat", "smelt", "geen", "---", "contact", "zekeringscheider", "schemer"], defaultValue: "differentieel" },
+    poleCount: { legacyKey: "aantal_polen", kind: "select", options: ["2", "3", "4", "-", "1", ""], defaultValue: "2" },
+    amperage: { legacyKey: "amperage", kind: "text", defaultValue: "40" },
+    differentialCurrent: { legacyKey: "differentieel_delta_amperage", kind: "text", defaultValue: "300" },
+    differentialType: { legacyKey: "type_differentieel", kind: "select", options: ["", "A", "B"], defaultValue: "" },
+    breakerCurve: { legacyKey: "curve_automaat", kind: "select", options: ["", "B", "C", "D", "U"], defaultValue: "" },
+    shortCircuitRating: { legacyKey: "kortsluitvermogen", kind: "text", defaultValue: "" },
+    selectiveDifferential: { legacyKey: "differentieel_is_selectief", kind: "boolean", defaultValue: false },
+    phase: { legacyKey: "fase", kind: "select", options: ["", "L1", "L2", "L3"], defaultValue: "" },
+    normallyClosed: { legacyKey: "normaalGesloten", kind: "boolean", defaultValue: false },
+    cableAfterMeter: { legacyKey: "type_kabel_na_teller", kind: "text", defaultValue: "2x16" },
+    cableBeforeMeter: { legacyKey: "type_kabel_voor_teller", kind: "text", defaultValue: "" },
+    residential: { legacyKey: "huishoudelijk", kind: "boolean", defaultValue: true },
+    startsNewPage: { legacyKey: "newPage", kind: "boolean", defaultValue: false },
+  }),
   Batterij: numbered({
     symbol: { legacyKey: "symbool", kind: "select", options: ["standaard", "blokbatterij"], defaultValue: "standaard" },
   }),
@@ -103,6 +121,17 @@ export const CONFIGURED_ITEM_PROPERTY_SCHEMAS: Readonly<Record<string, Configure
     cableLocation: { legacyKey: "kabel_locatie", kind: "select", options: cableLocations, defaultValue: "N/A" },
     inConduit: { legacyKey: "kabel_is_in_buis", kind: "boolean", defaultValue: false },
   }),
+  Lichtcircuit: numbered({
+    switchType: { legacyKey: "type_schakelaar", kind: "select", options: ["enkelpolig", "dubbelpolig", "driepolig", "dubbelaansteking", "wissel_enkel", "wissel_dubbel", "kruis_enkel", "---", "contact", "dimschakelaar", "dimschakelaar wissel", "bewegingsschakelaar", "schemerschakelaar", "teleruptor", "relais", "dimmer", "tijdschakelaar", "minuterie", "thermostaat", "rolluikschakelaar"], defaultValue: "enkelpolig" },
+    splashProof: { legacyKey: "is_halfwaterdicht", kind: "boolean", defaultValue: false },
+    indicatorLight: { legacyKey: "heeft_verklikkerlampje", kind: "boolean", defaultValue: false },
+    signalLight: { legacyKey: "heeft_signalisatielampje", kind: "boolean", defaultValue: false },
+    pullSwitch: { legacyKey: "is_trekschakelaar", kind: "boolean", defaultValue: false },
+    switchCount: { legacyKey: "aantal_schakelaars", kind: "select", options: ["0", ...counts20], defaultValue: "1" },
+    normallyClosed: { legacyKey: "normaalGesloten", kind: "boolean", defaultValue: false },
+    control: { legacyKey: "sturing", kind: "select", options: ["", "spoel"], defaultValue: "" },
+    lightCount: { legacyKey: "aantal_lichtpunten", kind: "select", options: ["0", ...counts10], defaultValue: "1" },
+  }),
   Media: numbered({
     symbol: { legacyKey: "symbool", kind: "select", options: ["", "luidspreker", "intercom"], defaultValue: "" },
     count: { legacyKey: "aantal", kind: "select", options: counts20, defaultValue: "1" },
@@ -111,6 +140,16 @@ export const CONFIGURED_ITEM_PROPERTY_SCHEMAS: Readonly<Record<string, Configure
     inCircuit: { legacyKey: "inkring", kind: "boolean", defaultValue: false },
     micro: { legacyKey: "micro", kind: "boolean", defaultValue: false },
     text: { legacyKey: "tekst", kind: "text", defaultValue: "" },
+  }),
+  Schakelaars: numbered({
+    switchType: { legacyKey: "type_schakelaar", kind: "select", options: ["enkelpolig", "dubbelpolig", "driepolig", "dubbelaansteking", "wissel_enkel", "wissel_dubbel", "kruis_enkel", "---", "contact", "dimschakelaar", "dimschakelaar wissel", "bewegingsschakelaar", "schemerschakelaar", "teleruptor", "relais", "dimmer", "tijdschakelaar", "minuterie", "thermostaat", "rolluikschakelaar", "magneetcontact"], defaultValue: "enkelpolig" },
+    splashProof: { legacyKey: "is_halfwaterdicht", kind: "boolean", defaultValue: false },
+    indicatorLight: { legacyKey: "heeft_verklikkerlampje", kind: "boolean", defaultValue: false },
+    signalLight: { legacyKey: "heeft_signalisatielampje", kind: "boolean", defaultValue: false },
+    pullSwitch: { legacyKey: "is_trekschakelaar", kind: "boolean", defaultValue: false },
+    switchCount: { legacyKey: "aantal_schakelaars", kind: "select", options: counts20, defaultValue: "1" },
+    normallyClosed: { legacyKey: "normaalGesloten", kind: "boolean", defaultValue: false },
+    control: { legacyKey: "sturing", kind: "select", options: ["", "spoel"], defaultValue: "" },
   }),
   Transformator: numbered({
     voltage: { legacyKey: "voltage", kind: "text", defaultValue: "230V/24V" },
@@ -154,6 +193,19 @@ export const CONFIGURED_ITEM_PROPERTY_SCHEMAS: Readonly<Record<string, Configure
   }),
   "Zeldzame symbolen": numbered({
     symbol: { legacyKey: "symbool", kind: "select", options: ["", "aarding", "deurslot"], defaultValue: "" },
+  }),
+  "Zekering/differentieel": numberedWithoutAddress({
+    protection: { legacyKey: "bescherming", kind: "select", options: ["automatisch", "differentieel", "differentieelautomaat", "smelt"], defaultValue: "automatisch" },
+    poleCount: { legacyKey: "aantal_polen", kind: "select", options: ["2", "3", "4", "-", "1"], defaultValue: "2" },
+    amperage: { legacyKey: "amperage", kind: "text", defaultValue: "20" },
+    differentialCurrent: { legacyKey: "differentieel_delta_amperage", kind: "text", defaultValue: "300" },
+    differentialType: { legacyKey: "type_differentieel", kind: "select", options: ["", "A", "B"], defaultValue: "" },
+    breakerCurve: { legacyKey: "curve_automaat", kind: "select", options: ["", "B", "C", "D", "U"], defaultValue: "" },
+    shortCircuitRating: { legacyKey: "kortsluitvermogen", kind: "text", defaultValue: "" },
+    selectiveDifferential: { legacyKey: "differentieel_is_selectief", kind: "boolean", defaultValue: false },
+    phase: { legacyKey: "fase", kind: "select", options: ["", "L1", "L2", "L3"], defaultValue: "" },
+    residential: { legacyKey: "huishoudelijk", kind: "boolean", defaultValue: true },
+    startsNewPage: { legacyKey: "newPage", kind: "boolean", defaultValue: false },
   }),
   Zonnepaneel: numbered({
     count: { legacyKey: "aantal", kind: "select", options: counts40, defaultValue: "1" },

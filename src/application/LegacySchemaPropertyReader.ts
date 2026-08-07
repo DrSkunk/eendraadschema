@@ -125,6 +125,7 @@ export class LegacySchemaPropertyReader implements SchemaPropertyReader {
           canEditNumber: parent !== null && ["Kring", "Domotica module (verticaal)"].includes(parent.getType()),
           parentType: parent?.getType() ?? null,
           childCount: item.getNumChilds(),
+          canStartNewPage: item.parent === 0 && item.id !== firstRootChildId,
           values: Object.freeze(values),
         }));
       }

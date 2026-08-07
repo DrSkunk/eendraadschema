@@ -45,7 +45,8 @@ function ConfiguredField({
     return <CheckboxField label={field.label} checked={value === true} onChange={(checked) => update(field.key, checked)} />;
   }
   if (definition.kind === "select") {
-    const options: ReadonlyArray<PropertyOption<string>> = (definition.options ?? []).map(
+    const allowedOptions = field.options?.(properties, definition.options ?? []) ?? definition.options ?? [];
+    const options: ReadonlyArray<PropertyOption<string>> = allowedOptions.map(
       (option) => [option, optionLabel(option)],
     );
     return <SelectField label={field.label} value={String(value)} options={options} onChange={(selected) => update(field.key, selected)} />;
