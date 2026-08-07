@@ -111,8 +111,47 @@ export interface SocketPropertyChanges {
   readonly address?: string;
 }
 
+export const BASIC_CONSUMER_TYPES = [
+  "Aansluitpunt",
+  "Aardingsonderbreker",
+  "Aftakdoos",
+  "Bel",
+  "Diepvriezer",
+  "Droogkast",
+  "Elektriciteitsmeter",
+  "Elektrische oven",
+  "EV lader",
+  "Koelkast",
+  "Kookfornuis",
+  "Meerdere verbruikers",
+  "Microgolfoven",
+  "Motor",
+  "Overspanningsbeveiliging",
+  "Stoomoven",
+  "Vaatwasmachine",
+  "Wasmachine",
+] as const;
+
+export type BasicConsumerType = typeof BASIC_CONSUMER_TYPES[number];
+
+export interface BasicConsumerProperties {
+  readonly itemId: number;
+  readonly type: BasicConsumerType;
+  readonly numberMode: string;
+  readonly number: string;
+  readonly canEditNumber: boolean;
+  readonly address: string;
+}
+
+export interface BasicConsumerPropertyChanges {
+  readonly numberMode?: SocketNumberMode;
+  readonly number?: string;
+  readonly address?: string;
+}
+
 /** Read-only, UI-independent projection for gradually migrated property editors. */
 export interface SchemaPropertyReader {
   getCircuit(itemId: number): CircuitProperties | undefined;
   getSocket(itemId: number): SocketProperties | undefined;
+  getBasicConsumer(itemId: number): BasicConsumerProperties | undefined;
 }

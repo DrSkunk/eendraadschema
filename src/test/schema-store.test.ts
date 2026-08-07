@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { LegacySchemaStore } from "../application/LegacySchemaStore";
 import type {
   CircuitPropertyChanges,
+  BasicConsumerPropertyChanges,
   SocketPropertyChanges,
 } from "../application/SchemaPropertyReader";
 import { SchemaCommandError } from "../application/SchemaStore";
@@ -259,6 +260,43 @@ describe("LegacySchemaStore", () => {
     expect(listener).not.toHaveBeenCalled();
     expect(store.getSnapshot()).toBe(before);
     expectCommandError(() => store.commands.updateSocket(circuitId, { grounded: false }), "INVALID_CHANGE");
+  });
+
+  it("maps and validates the shared numbered-consumer contract", () => {
+    const { store, boardId } = createStore();
+    const circuitId = store.commands.addItem(boardId, "Kring");
+    const consumerId = store.commands.addItem(circuitId, "Wasmachine");
+    const before = store.getSnapshot();
+
+    store.commands.updateBasicConsumer(consumerId, {
+      numberMode: "manueel",
+      number: "W1",
+      address: "Wasplaats",
+    });
+
+    expect(store.getSnapshot().properties.getBasicConsumer(consumerId)).toMatchObject({
+      type: "Wasmachine",
+      numberMode: "manueel",
+      number: "W1",
+      address: "Wasplaats",
+    });
+    expect(before.properties.getBasicConsumer(consumerId)?.address).toBe("");
+    expect(store.getLegacyDocument().getElectroItemById(consumerId)?.props).toMatchObject({
+      autonr: "manueel",
+      nr: "W1",
+      adres: "Wasplaats",
+    });
+    expectCommandError(
+      () => store.commands.updateBasicConsumer(
+        consumerId,
+        { unknown: true } as unknown as BasicConsumerPropertyChanges,
+      ),
+      "INVALID_CHANGE",
+    );
+    expectCommandError(
+      () => store.commands.updateBasicConsumer(circuitId, { address: "Niet geldig" }),
+      "INVALID_CHANGE",
+    );
   });
 
   it("deletes a subtree and restores it through undo and redo", () => {

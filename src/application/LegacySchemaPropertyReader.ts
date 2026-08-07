@@ -1,9 +1,13 @@
 import type { Hierarchical_List } from "../Hierarchical_List";
+import { BASIC_CONSUMER_TYPES } from "./SchemaPropertyReader";
 import type {
   CircuitProperties,
+  BasicConsumerProperties,
   SchemaPropertyReader,
   SocketProperties,
 } from "./SchemaPropertyReader";
+
+const basicConsumerTypes: ReadonlySet<string> = new Set(BASIC_CONSUMER_TYPES);
 
 function text(value: unknown): string {
   return value === null || value === undefined ? "" : String(value);
@@ -12,11 +16,13 @@ function text(value: unknown): string {
 export class LegacySchemaPropertyReader implements SchemaPropertyReader {
   private readonly circuits: ReadonlyMap<number, CircuitProperties>;
   private readonly sockets: ReadonlyMap<number, SocketProperties>;
+  private readonly basicConsumers: ReadonlyMap<number, BasicConsumerProperties>;
 
   constructor(structure: Hierarchical_List) {
     const firstRootChildId = structure.getFirstChildId(0);
     const circuits = new Map<number, CircuitProperties>();
     const sockets = new Map<number, SocketProperties>();
+    const basicConsumers = new Map<number, BasicConsumerProperties>();
     for (let ordinal = 0; ordinal < structure.length; ordinal += 1) {
       if (!structure.active[ordinal]) continue;
       const item = structure.getElectroItemById(structure.id[ordinal]);
@@ -65,9 +71,21 @@ export class LegacySchemaPropertyReader implements SchemaPropertyReader {
           address: text(item.props.adres),
         }));
       }
+      if (basicConsumerTypes.has(item.getType())) {
+        const parent = item.getParent();
+        basicConsumers.set(item.id, Object.freeze({
+          itemId: item.id,
+          type: item.getType() as BasicConsumerProperties["type"],
+          numberMode: text(item.props.autonr || "manueel"),
+          number: text(item.props.nr),
+          canEditNumber: parent !== null && ["Kring", "Domotica module (verticaal)"].includes(parent.getType()),
+          address: text(item.props.adres),
+        }));
+      }
     }
     this.circuits = circuits;
     this.sockets = sockets;
+    this.basicConsumers = basicConsumers;
   }
 
   getCircuit(itemId: number): CircuitProperties | undefined {
@@ -76,5 +94,9 @@ export class LegacySchemaPropertyReader implements SchemaPropertyReader {
 
   getSocket(itemId: number): SocketProperties | undefined {
     return this.sockets.get(itemId);
+  }
+
+  getBasicConsumer(itemId: number): BasicConsumerProperties | undefined {
+    return this.basicConsumers.get(itemId);
   }
 }

@@ -4,9 +4,17 @@ import { structureFromJson } from "../legacy/persistence/EdsCodec";
 import { DocumentSnapshotHistory } from "./DocumentSnapshotHistory";
 import { validateAndMapCircuitChanges } from "./CircuitPropertyValidation";
 import { validateAndMapSocketChanges } from "./SocketPropertyValidation";
+import {
+  basicConsumerTypes,
+  validateAndMapBasicConsumerChanges,
+} from "./BasicConsumerPropertyValidation";
 import { LegacySchemaDocumentReader } from "./LegacySchemaDocumentReader";
 import { LegacySchemaPropertyReader } from "./LegacySchemaPropertyReader";
-import type { CircuitPropertyChanges, SocketPropertyChanges } from "./SchemaPropertyReader";
+import type {
+  BasicConsumerPropertyChanges,
+  CircuitPropertyChanges,
+  SocketPropertyChanges,
+} from "./SchemaPropertyReader";
 import {
   SchemaCommandError,
   type MoveItemOptions,
@@ -39,6 +47,7 @@ export class LegacySchemaStore implements SchemaStore {
       updateItem: this.updateItem.bind(this),
       updateCircuit: this.updateCircuit.bind(this),
       updateSocket: this.updateSocket.bind(this),
+      updateBasicConsumer: this.updateBasicConsumer.bind(this),
       duplicateItem: this.duplicateItem.bind(this),
       replaceDocument: this.replaceDocument.bind(this),
       undo: this.undo.bind(this),
@@ -176,6 +185,19 @@ export class LegacySchemaStore implements SchemaStore {
     }
 
     const legacyChanges = validateAndMapSocketChanges(changes);
+    if (Object.keys(legacyChanges).length === 0) return;
+    this.updateItem(itemId, legacyChanges);
+  }
+
+  private updateBasicConsumer(
+    itemId: number,
+    changes: Readonly<BasicConsumerPropertyChanges>,
+  ): void {
+    const item = this.requireItem(itemId);
+    if (!basicConsumerTypes.has(item.getType())) {
+      throw new SchemaCommandError("INVALID_CHANGE", `Item ${itemId} gebruikt geen basiseigenschappen.`);
+    }
+    const legacyChanges = validateAndMapBasicConsumerChanges(changes);
     if (Object.keys(legacyChanges).length === 0) return;
     this.updateItem(itemId, legacyChanges);
   }

@@ -1,6 +1,10 @@
 import type { SchemaDocumentReader } from "./SchemaDocumentReader";
 import type { SchemaPropertyReader } from "./SchemaPropertyReader";
-import type { CircuitPropertyChanges, SocketPropertyChanges } from "./SchemaPropertyReader";
+import type {
+  BasicConsumerPropertyChanges,
+  CircuitPropertyChanges,
+  SocketPropertyChanges,
+} from "./SchemaPropertyReader";
 
 export interface SchemaSnapshot {
   readonly revision: number;
@@ -22,6 +26,7 @@ export interface SchemaCommands {
   updateItem(itemId: number, changes: Readonly<Record<string, unknown>>): void;
   updateCircuit(itemId: number, changes: Readonly<CircuitPropertyChanges>): void;
   updateSocket(itemId: number, changes: Readonly<SocketPropertyChanges>): void;
+  updateBasicConsumer(itemId: number, changes: Readonly<BasicConsumerPropertyChanges>): void;
   duplicateItem(itemId: number): number;
   replaceDocument(serializedDocument: string, version?: number): void;
   undo(): void;
