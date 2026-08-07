@@ -3,5 +3,5 @@ export function reactEditorShellEnabled(search: string): boolean {
 }
 
 export function reactEditorHierarchyEnabled(search: string): boolean {
-  return new URLSearchParams(search).get("reactHierarchy") === "on";
+  return new URLSearchParams(search).get("reactHierarchy") !== "off";
 }

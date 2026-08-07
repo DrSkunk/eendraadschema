@@ -1,6 +1,6 @@
 # Current architecture and incremental React migration inventory
 
-Status: Living inventory through Phase 5, based on `main` at `a14513e` (6 August 2026).
+Status: Living inventory through the completed React hierarchy and property-editor migration (7 August 2026).
 
 This note records the current boundaries before React or a new command layer is introduced. It is intentionally descriptive: no implementation behavior is changed in Phase 0.
 
@@ -238,7 +238,18 @@ The first item property editor is available on the opt-in React path:
 
 The properties panel is mounted in a dedicated right sidebar when `?reactHierarchy=on`; the unchanged SVG remains in the center workspace and the hierarchy remains on the left. Narrow viewports keep all three surfaces reachable with horizontal scrolling. The default legacy path remains fully functional. Unregistered item types clearly indicate that their properties are still managed by the existing editor rather than attempting a partial form.
 
-Remaining Phase 6 dependencies are deliberate: concrete item classes other than `Kring` and `Contactdoos` still render their property forms through `toHTML()`, the default hierarchy still uses delegated DOM mutation, and the React opt-in cannot yet edit those types. A real-browser keyboard and responsive-layout pass remains a release criterion before enabling the flag by default; manual validation has confirmed the three-pane layout, circuit editing, validation, live SVG updates and unified undo/redo. The next property-editor slice should migrate another common leaf type, preferably `Lichtpunt`, through the same typed reader, command and registry seams.
+Phase 6 property migration is now complete for every public electrical item type:
+
+- `Kring`, `Contactdoos` and `Lichtpunt` retain dedicated typed projections and editors;
+- common consumers share a typed number/address contract;
+- the remaining field-driven classes use an explicit per-type application schema that allowlists semantic field names, legacy EDS keys, value kinds and select options;
+- React never receives or mutates a legacy `props` object, and all edits pass through validated `SchemaCommands` with shared undo/redo;
+- conditional legacy fields (protection, switch attributes, cable placement, text sizing and similar dependencies) are represented in the React editor configuration;
+- a registry-coverage test requires an editor for all 48 public item types; only the internal `Container` node is deliberately excluded;
+- parameterized compatibility tests compare complete serialized EDS data and exact SVG output with the legacy mutation path for every schema-driven type;
+- type changes and expansion of composite switch/light-circuit items have dedicated commands and React controls.
+
+The React hierarchy is now the default one-line editor. `?reactHierarchy=off` keeps the legacy hierarchy available as a rollback path while the default rollout is validated in real browsers. The old `toHTML()` methods and hierarchy `innerHTML` path therefore remain compatibility-only code for now; removing them is a separate cleanup step and must not touch SVG, print, persistence or situation-plan rendering.
 
 ## First change batch
 

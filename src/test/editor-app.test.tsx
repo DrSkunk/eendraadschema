@@ -52,7 +52,8 @@ describe("EditorApp", () => {
   it("allows the React shell to be disabled for legacy fallback", () => {
     expect(reactEditorShellEnabled("")).toBe(true);
     expect(reactEditorShellEnabled("?reactShell=off")).toBe(false);
-    expect(reactEditorHierarchyEnabled("")).toBe(false);
+    expect(reactEditorHierarchyEnabled("")).toBe(true);
     expect(reactEditorHierarchyEnabled("?reactHierarchy=on")).toBe(true);
+    expect(reactEditorHierarchyEnabled("?reactHierarchy=off")).toBe(false);
   });
 });
