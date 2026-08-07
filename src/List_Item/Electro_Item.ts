@@ -32,8 +32,12 @@ export class Electro_Item extends List_Item {
   resetProps() { super.resetProps(); } // overriden in each derived class
 
   // Legacy subclasses use this hook to enforce their property invariants.
-  // The command layer invokes it after a property update, before publishing.
   overrideKeys(): void {}
+
+  /** Application-facing compatibility seam for existing subclass invariants. */
+  normalizeProperties(): void {
+    this.overrideKeys();
+  }
 
   // -- Zoek vader van het Electro_Item --
   

@@ -24,9 +24,52 @@ export interface CircuitProperties {
   readonly canStartNewPage: boolean;
 }
 
-export type CircuitPropertyChanges = Partial<Omit<CircuitProperties,
-  "itemId" | "canStartNewPage"
->>;
+export const CIRCUIT_NAME_MODES = ["auto", "manueel"] as const;
+export const CIRCUIT_PROTECTIONS = [
+  "automatisch", "differentieel", "differentieelautomaat", "smelt", "geen",
+  "contact", "zekeringscheider", "relais", "schemer", "overspanningsbeveiliging",
+] as const;
+export const CIRCUIT_POLE_COUNTS = ["", "1", "2", "3", "4", "-"] as const;
+export const CIRCUIT_DIFFERENTIAL_TYPES = ["", "A", "B"] as const;
+export const CIRCUIT_BREAKER_CURVES = ["", "B", "C", "D", "U"] as const;
+export const CIRCUIT_PHASES = ["", "L1", "L2", "L3"] as const;
+export const CIRCUIT_CONTROLS = ["", "spoel"] as const;
+export const CIRCUIT_CABLE_LOCATIONS = [
+  "N/A", "Ondergronds", "Luchtleiding", "In wand", "Op wand",
+] as const;
+
+export type CircuitNameMode = typeof CIRCUIT_NAME_MODES[number];
+export type CircuitProtection = typeof CIRCUIT_PROTECTIONS[number];
+export type CircuitPoleCount = typeof CIRCUIT_POLE_COUNTS[number];
+export type CircuitDifferentialType = typeof CIRCUIT_DIFFERENTIAL_TYPES[number];
+export type CircuitBreakerCurve = typeof CIRCUIT_BREAKER_CURVES[number];
+export type CircuitPhase = typeof CIRCUIT_PHASES[number];
+export type CircuitControl = typeof CIRCUIT_CONTROLS[number];
+export type CircuitCableLocation = typeof CIRCUIT_CABLE_LOCATIONS[number];
+
+export interface CircuitPropertyChanges {
+  readonly nameMode?: CircuitNameMode;
+  readonly name?: string;
+  readonly protection?: CircuitProtection;
+  readonly poleCount?: CircuitPoleCount;
+  readonly amperage?: string;
+  readonly differentialCurrent?: string;
+  readonly differentialType?: CircuitDifferentialType;
+  readonly breakerCurve?: CircuitBreakerCurve;
+  readonly shortCircuitRating?: string;
+  readonly selectiveDifferential?: boolean;
+  readonly phase?: CircuitPhase;
+  readonly normallyClosed?: boolean;
+  readonly control?: CircuitControl;
+  readonly hasCable?: boolean;
+  readonly cableType?: string;
+  readonly cableLocation?: CircuitCableLocation;
+  readonly cableInConduit?: boolean;
+  readonly residential?: boolean;
+  readonly address?: string;
+  readonly text?: string;
+  readonly startsNewPage?: boolean;
+}
 
 /** Read-only, UI-independent projection for gradually migrated property editors. */
 export interface SchemaPropertyReader {

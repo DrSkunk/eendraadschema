@@ -69,7 +69,7 @@ describe("React circuit property compatibility", () => {
 
     const legacyCircuit = legacyDocument.getElectroItemById(initial.circuitId)!;
     Object.assign(legacyCircuit.props, legacyChanges);
-    legacyCircuit.overrideKeys();
+    legacyCircuit.normalizeProperties();
     legacyDocument.voegAttributenToeAlsNodigEnReSort();
     legacyDocument.reNumber(false);
 

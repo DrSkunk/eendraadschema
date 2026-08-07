@@ -2,6 +2,7 @@
 
 import { describe, expect, it, vi } from "vitest";
 import { LegacySchemaStore } from "../application/LegacySchemaStore";
+import type { CircuitPropertyChanges } from "../application/SchemaPropertyReader";
 import { SchemaCommandError } from "../application/SchemaStore";
 import { Hierarchical_List } from "../Hierarchical_List";
 
@@ -145,6 +146,31 @@ describe("LegacySchemaStore", () => {
       type_kabel: "XVB Cca 3G2,5",
     });
     expectCommandError(() => store.commands.updateCircuit(boardId, { name: "Geen kring" }), "INVALID_CHANGE");
+  });
+
+  it("rejects unknown and invalid circuit changes before mutating history", () => {
+    const { store, boardId } = createStore();
+    const circuitId = store.commands.addItem(boardId, "Kring");
+    const before = store.getSnapshot();
+    const listener = vi.fn();
+    store.subscribe(listener);
+    const invalidChanges: unknown[] = [
+      { protection: "onbekend" },
+      { amperage: "min twintig" },
+      { hasCable: "ja" },
+      { unknownRuntimeKey: true },
+    ];
+
+    for (const changes of invalidChanges) {
+      expectCommandError(
+        () => store.commands.updateCircuit(circuitId, changes as CircuitPropertyChanges),
+        "INVALID_CHANGE",
+      );
+    }
+
+    expect(listener).not.toHaveBeenCalled();
+    expect(store.getSnapshot()).toBe(before);
+    expect(store.getSnapshot().properties.getCircuit(circuitId)?.amperage).toBe("20");
   });
 
   it("deletes a subtree and restores it through undo and redo", () => {

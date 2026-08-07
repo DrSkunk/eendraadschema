@@ -2,6 +2,7 @@ import { Hierarchical_List } from "../Hierarchical_List";
 import { Electro_Item } from "../List_Item/Electro_Item";
 import { structureFromJson } from "../legacy/persistence/EdsCodec";
 import { DocumentSnapshotHistory } from "./DocumentSnapshotHistory";
+import { validateAndMapCircuitChanges } from "./CircuitPropertyValidation";
 import { LegacySchemaDocumentReader } from "./LegacySchemaDocumentReader";
 import { LegacySchemaPropertyReader } from "./LegacySchemaPropertyReader";
 import type { CircuitPropertyChanges } from "./SchemaPropertyReader";
@@ -151,7 +152,7 @@ export class LegacySchemaStore implements SchemaStore {
       for (const [key, value] of Object.entries(changes)) {
         if (key !== "type") item.props[key] = value;
       }
-      item.overrideKeys();
+      item.normalizeProperties();
     });
   }
 
@@ -161,34 +162,8 @@ export class LegacySchemaStore implements SchemaStore {
       throw new SchemaCommandError("INVALID_CHANGE", `Item ${itemId} is geen kring.`);
     }
 
-    const legacyKeys: Readonly<Record<keyof CircuitPropertyChanges, string>> = {
-      nameMode: "autoKringNaam",
-      name: "naam",
-      protection: "bescherming",
-      poleCount: "aantal_polen",
-      amperage: "amperage",
-      differentialCurrent: "differentieel_delta_amperage",
-      differentialType: "type_differentieel",
-      breakerCurve: "curve_automaat",
-      shortCircuitRating: "kortsluitvermogen",
-      selectiveDifferential: "differentieel_is_selectief",
-      phase: "fase",
-      normallyClosed: "normaalGesloten",
-      control: "sturing",
-      hasCable: "kabel_is_aanwezig",
-      cableType: "type_kabel",
-      cableLocation: "kabel_locatie",
-      cableInConduit: "kabel_is_in_buis",
-      residential: "huishoudelijk",
-      address: "adres",
-      text: "tekst",
-      startsNewPage: "newPage",
-    };
-    const legacyChanges: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(changes)) {
-      const legacyKey = legacyKeys[key as keyof CircuitPropertyChanges];
-      if (legacyKey !== undefined) legacyChanges[legacyKey] = value;
-    }
+    const legacyChanges = validateAndMapCircuitChanges(changes);
+    if (Object.keys(legacyChanges).length === 0) return;
     this.updateItem(itemId, legacyChanges);
   }
 
