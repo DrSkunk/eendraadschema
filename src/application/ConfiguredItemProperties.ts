@@ -43,6 +43,12 @@ function numbered(
   return Object.freeze({ fields: Object.freeze({ ...numberFields, ...fields, ...addressField }) });
 }
 
+function numberedWithoutAddress(
+  fields: Readonly<Record<string, ConfiguredPropertyDefinition>>,
+): ConfiguredItemPropertySchema {
+  return Object.freeze({ fields: Object.freeze({ ...numberFields, ...fields }) });
+}
+
 function schema(
   fields: Readonly<Record<string, ConfiguredPropertyDefinition>>,
 ): ConfiguredItemPropertySchema {
@@ -67,6 +73,31 @@ export const CONFIGURED_ITEM_PROPERTY_SCHEMAS: Readonly<Record<string, Configure
   Domotica: numbered({
     text: { legacyKey: "tekst", kind: "text", defaultValue: "Domotica" },
   }),
+  "Domotica module (verticaal)": numberedWithoutAddress({
+    text: { legacyKey: "tekst", kind: "text", defaultValue: "Domotica" },
+  }),
+  "Domotica gestuurde verbruiker": numbered({
+    wireless: { legacyKey: "is_draadloos", kind: "boolean", defaultValue: true },
+    localButton: { legacyKey: "heeft_lokale_drukknop", kind: "boolean", defaultValue: true },
+    programmed: { legacyKey: "is_geprogrammeerd", kind: "boolean", defaultValue: true },
+    detection: { legacyKey: "heeft_detectie", kind: "boolean", defaultValue: false },
+    externalControl: { legacyKey: "heeft_externe_sturing", kind: "boolean", defaultValue: false },
+    externalControlType: { legacyKey: "type_externe_sturing", kind: "select", options: ["drukknop", "schakelaar"], defaultValue: "drukknop" },
+  }),
+  Drukknop: numbered({
+    buttonType: { legacyKey: "type_knop", kind: "select", options: ["standaard", "dimmer", "rolluik"], defaultValue: "standaard" },
+    indicatorLight: { legacyKey: "heeft_verklikkerlampje", kind: "boolean", defaultValue: false },
+    splashProof: { legacyKey: "is_halfwaterdicht", kind: "boolean", defaultValue: false },
+    shielded: { legacyKey: "is_afgeschermd", kind: "boolean", defaultValue: false },
+    fixtureCount: { legacyKey: "aantal", kind: "select", options: counts20, defaultValue: "1" },
+    buttonsPerFixture: { legacyKey: "aantal_knoppen_per_armatuur", kind: "select", options: counts10.slice(0, 8), defaultValue: "1" },
+  }),
+  Ketel: numbered({
+    boilerType: { legacyKey: "keteltype", kind: "select", options: ["", "Met boiler", "Met tapspiraal", "Warmtekrachtkoppeling", "Warmtewisselaar"], defaultValue: "" },
+    energySource: { legacyKey: "energiebron", kind: "select", options: ["", "Elektriciteit", "Gas (atmosferisch)", "Gas (ventilator)", "Vaste brandstof", "Vloeibare brandstof"], defaultValue: "" },
+    heatFunction: { legacyKey: "warmtefunctie", kind: "select", options: ["", "Koelend", "Verwarmend", "Verwarmend en koelend"], defaultValue: "" },
+    count: { legacyKey: "aantal", kind: "select", options: counts20, defaultValue: "1" },
+  }),
   Leiding: numbered({
     cableType: { legacyKey: "type_kabel", kind: "text", defaultValue: "XVB Cca 3G2,5" },
     cableLocation: { legacyKey: "kabel_locatie", kind: "select", options: cableLocations, defaultValue: "N/A" },
@@ -90,6 +121,14 @@ export const CONFIGURED_ITEM_PROPERTY_SCHEMAS: Readonly<Record<string, Configure
   Ventilator: numbered({
     fanType: { legacyKey: "ventilatortype", kind: "select", options: ["ventilator", "afzuigkap"], defaultValue: "ventilator" },
   }),
+  Verbruiker: numbered({
+    text: { legacyKey: "tekst", kind: "text", defaultValue: "" },
+    widthMode: { legacyKey: "heeft_automatische_breedte", kind: "select", options: ["automatisch", "handmatig"], defaultValue: "automatisch" },
+    width: { legacyKey: "breedte", kind: "text", defaultValue: "" },
+    bold: { legacyKey: "is_vet", kind: "boolean", defaultValue: false },
+    italic: { legacyKey: "is_cursief", kind: "boolean", defaultValue: false },
+    alignment: { legacyKey: "horizontale_uitlijning", kind: "select", options: ["links", "centreer", "rechts"], defaultValue: "centreer" },
+  }),
   Verlenging: numbered({
     width: { legacyKey: "breedte", kind: "text", defaultValue: "40" },
   }),
@@ -99,6 +138,22 @@ export const CONFIGURED_ITEM_PROPERTY_SCHEMAS: Readonly<Record<string, Configure
   }),
   "Vrije ruimte": schema({
     width: { legacyKey: "breedte", kind: "text", defaultValue: "25" },
+  }),
+  "Vrije tekst": numbered({
+    text: { legacyKey: "tekst", kind: "text", defaultValue: "" },
+    widthMode: { legacyKey: "heeft_automatische_breedte", kind: "select", options: ["automatisch", "handmatig"], defaultValue: "automatisch" },
+    width: { legacyKey: "breedte", kind: "text", defaultValue: "" },
+    bold: { legacyKey: "is_vet", kind: "boolean", defaultValue: false },
+    italic: { legacyKey: "is_cursief", kind: "boolean", defaultValue: false },
+    alignment: { legacyKey: "horizontale_uitlijning", kind: "select", options: ["links", "centreer", "rechts"], defaultValue: "links" },
+    frameType: { legacyKey: "vrije_tekst_type", kind: "select", options: ["verbruiker", "zonder kader"], defaultValue: "zonder kader" },
+  }),
+  "Warmtepomp/airco": numbered({
+    heatFunction: { legacyKey: "warmtefunctie", kind: "select", options: ["", "Koelend", "Verwarmend", "Verwarmend en koelend"], defaultValue: "Koelend" },
+    count: { legacyKey: "aantal", kind: "select", options: counts20, defaultValue: "1" },
+  }),
+  "Zeldzame symbolen": numbered({
+    symbol: { legacyKey: "symbool", kind: "select", options: ["", "aarding", "deurslot"], defaultValue: "" },
   }),
   Zonnepaneel: numbered({
     count: { legacyKey: "aantal", kind: "select", options: counts40, defaultValue: "1" },
