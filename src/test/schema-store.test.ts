@@ -59,6 +59,30 @@ describe("LegacySchemaStore", () => {
     expect(store.getSnapshot().document.getItem(itemId)?.parentId).toBe(circuitId);
   });
 
+  it("exposes typed circuit properties without leaking legacy property keys", () => {
+    const { store, boardId } = createStore();
+    const circuitId = store.commands.addItem(boardId, "Kring");
+    store.commands.updateItem(circuitId, {
+      autoKringNaam: "manueel",
+      naam: "Garage",
+      bescherming: "differentieelautomaat",
+      differentieel_delta_amperage: "30",
+      kabel_is_aanwezig: true,
+      type_kabel: "XVB Cca 5G6",
+    });
+
+    expect(store.getSnapshot().properties.getCircuit(circuitId)).toMatchObject({
+      itemId: circuitId,
+      nameMode: "manueel",
+      name: "Garage",
+      protection: "differentieelautomaat",
+      differentialCurrent: "30",
+      hasCable: true,
+      cableType: "XVB Cca 5G6",
+    });
+    expect(store.getSnapshot().properties.getCircuit(boardId)).toBeUndefined();
+  });
+
   it("deletes a subtree and restores it through undo and redo", () => {
     const { store, boardId } = createStore();
     const circuitId = store.commands.addItem(boardId, "Kring");

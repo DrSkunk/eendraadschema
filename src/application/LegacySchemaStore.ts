@@ -3,6 +3,7 @@ import { Electro_Item } from "../List_Item/Electro_Item";
 import { structureFromJson } from "../legacy/persistence/EdsCodec";
 import { DocumentSnapshotHistory } from "./DocumentSnapshotHistory";
 import { LegacySchemaDocumentReader } from "./LegacySchemaDocumentReader";
+import { LegacySchemaPropertyReader } from "./LegacySchemaPropertyReader";
 import {
   SchemaCommandError,
   type MoveItemOptions,
@@ -299,6 +300,7 @@ export class LegacySchemaStore implements SchemaStore {
     return Object.freeze({
       revision: this.revision,
       document: new LegacySchemaDocumentReader(this.structure),
+      properties: new LegacySchemaPropertyReader(this.structure),
       canUndo: this.history.canUndo(),
       canRedo: this.history.canRedo(),
     });

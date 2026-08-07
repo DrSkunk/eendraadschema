@@ -1,8 +1,10 @@
 import type { SchemaDocumentReader } from "./SchemaDocumentReader";
+import type { SchemaPropertyReader } from "./SchemaPropertyReader";
 
 export interface SchemaSnapshot {
   readonly revision: number;
   readonly document: SchemaDocumentReader;
+  readonly properties: SchemaPropertyReader;
   readonly canUndo: boolean;
   readonly canRedo: boolean;
 }
