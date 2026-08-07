@@ -114,6 +114,35 @@ describe("LegacySchemaStore", () => {
     });
   });
 
+  it("maps typed circuit commands onto the legacy EDS property model", () => {
+    const { store, boardId } = createStore();
+    const circuitId = store.commands.addItem(boardId, "Kring");
+
+    store.commands.updateCircuit(circuitId, {
+      nameMode: "manueel",
+      name: "Werkplaats",
+      protection: "automatisch",
+      amperage: "16",
+      cableType: "XVB Cca 3G2,5",
+    });
+
+    expect(store.getSnapshot().properties.getCircuit(circuitId)).toMatchObject({
+      nameMode: "manueel",
+      name: "Werkplaats",
+      protection: "automatisch",
+      amperage: "16",
+      cableType: "XVB Cca 3G2,5",
+    });
+    expect(store.getLegacyDocument().getElectroItemById(circuitId)?.props).toMatchObject({
+      autoKringNaam: "manueel",
+      naam: "Werkplaats",
+      bescherming: "automatisch",
+      amperage: "16",
+      type_kabel: "XVB Cca 3G2,5",
+    });
+    expectCommandError(() => store.commands.updateCircuit(boardId, { name: "Geen kring" }), "INVALID_CHANGE");
+  });
+
   it("deletes a subtree and restores it through undo and redo", () => {
     const { store, boardId } = createStore();
     const circuitId = store.commands.addItem(boardId, "Kring");

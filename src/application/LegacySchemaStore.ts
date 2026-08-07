@@ -4,6 +4,7 @@ import { structureFromJson } from "../legacy/persistence/EdsCodec";
 import { DocumentSnapshotHistory } from "./DocumentSnapshotHistory";
 import { LegacySchemaDocumentReader } from "./LegacySchemaDocumentReader";
 import { LegacySchemaPropertyReader } from "./LegacySchemaPropertyReader";
+import type { CircuitPropertyChanges } from "./SchemaPropertyReader";
 import {
   SchemaCommandError,
   type MoveItemOptions,
@@ -34,6 +35,7 @@ export class LegacySchemaStore implements SchemaStore {
       deleteItem: this.deleteItem.bind(this),
       moveItem: this.moveItem.bind(this),
       updateItem: this.updateItem.bind(this),
+      updateCircuit: this.updateCircuit.bind(this),
       duplicateItem: this.duplicateItem.bind(this),
       replaceDocument: this.replaceDocument.bind(this),
       undo: this.undo.bind(this),
@@ -151,6 +153,43 @@ export class LegacySchemaStore implements SchemaStore {
       }
       item.overrideKeys();
     });
+  }
+
+  private updateCircuit(itemId: number, changes: Readonly<CircuitPropertyChanges>): void {
+    const item = this.requireItem(itemId);
+    if (item.getType() !== "Kring") {
+      throw new SchemaCommandError("INVALID_CHANGE", `Item ${itemId} is geen kring.`);
+    }
+
+    const legacyKeys: Readonly<Record<keyof CircuitPropertyChanges, string>> = {
+      nameMode: "autoKringNaam",
+      name: "naam",
+      protection: "bescherming",
+      poleCount: "aantal_polen",
+      amperage: "amperage",
+      differentialCurrent: "differentieel_delta_amperage",
+      differentialType: "type_differentieel",
+      breakerCurve: "curve_automaat",
+      shortCircuitRating: "kortsluitvermogen",
+      selectiveDifferential: "differentieel_is_selectief",
+      phase: "fase",
+      normallyClosed: "normaalGesloten",
+      control: "sturing",
+      hasCable: "kabel_is_aanwezig",
+      cableType: "type_kabel",
+      cableLocation: "kabel_locatie",
+      cableInConduit: "kabel_is_in_buis",
+      residential: "huishoudelijk",
+      address: "adres",
+      text: "tekst",
+      startsNewPage: "newPage",
+    };
+    const legacyChanges: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(changes)) {
+      const legacyKey = legacyKeys[key as keyof CircuitPropertyChanges];
+      if (legacyKey !== undefined) legacyChanges[legacyKey] = value;
+    }
+    this.updateItem(itemId, legacyChanges);
   }
 
   private duplicateItem(itemId: number): number {

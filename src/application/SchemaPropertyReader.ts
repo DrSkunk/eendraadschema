@@ -24,6 +24,10 @@ export interface CircuitProperties {
   readonly canStartNewPage: boolean;
 }
 
+export type CircuitPropertyChanges = Partial<Omit<CircuitProperties,
+  "itemId" | "canStartNewPage"
+>>;
+
 /** Read-only, UI-independent projection for gradually migrated property editors. */
 export interface SchemaPropertyReader {
   getCircuit(itemId: number): CircuitProperties | undefined;
