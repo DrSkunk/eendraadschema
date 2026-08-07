@@ -299,6 +299,35 @@ describe("LegacySchemaStore", () => {
     );
   });
 
+  it("maps and validates typed light-point commands", () => {
+    const { store, boardId } = createStore();
+    const circuitId = store.commands.addItem(boardId, "Kring");
+    const lightId = store.commands.addItem(circuitId, "Lichtpunt");
+
+    store.commands.updateLightPoint(lightId, {
+      lampType: "TL",
+      tubeCount: "3",
+      count: "4",
+      wallLight: true,
+      emergencyLighting: "Decentraal",
+    });
+    expect(store.getSnapshot().properties.getLightPoint(lightId)).toMatchObject({
+      lampType: "TL",
+      tubeCount: "3",
+      count: "4",
+      wallLight: true,
+      emergencyLighting: "Decentraal",
+    });
+    expectCommandError(
+      () => store.commands.updateLightPoint(lightId, { count: "21" } as never),
+      "INVALID_CHANGE",
+    );
+    expectCommandError(
+      () => store.commands.updateLightPoint(circuitId, { wallLight: true }),
+      "INVALID_CHANGE",
+    );
+  });
+
   it("deletes a subtree and restores it through undo and redo", () => {
     const { store, boardId } = createStore();
     const circuitId = store.commands.addItem(boardId, "Kring");

@@ -149,9 +149,46 @@ export interface BasicConsumerPropertyChanges {
   readonly address?: string;
 }
 
+export const LIGHT_POINT_TYPES = ["standaard", "TL", "spot", "led"] as const;
+export const LIGHT_POINT_TUBE_COUNTS = ["1", "2", "3", "4"] as const;
+export const LIGHT_POINT_COUNTS = [
+  "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
+  "11", "12", "13", "14", "15", "16", "17", "18", "19", "20",
+] as const;
+export const EMERGENCY_LIGHTING_TYPES = ["Geen", "Centraal", "Decentraal"] as const;
+
+export interface LightPointProperties {
+  readonly itemId: number;
+  readonly numberMode: string;
+  readonly number: string;
+  readonly canEditNumber: boolean;
+  readonly lampType: string;
+  readonly tubeCount: string;
+  readonly count: string;
+  readonly wallLight: boolean;
+  readonly splashProof: boolean;
+  readonly builtInSwitch: boolean;
+  readonly emergencyLighting: string;
+  readonly address: string;
+}
+
+export interface LightPointPropertyChanges {
+  readonly numberMode?: SocketNumberMode;
+  readonly number?: string;
+  readonly lampType?: typeof LIGHT_POINT_TYPES[number];
+  readonly tubeCount?: typeof LIGHT_POINT_TUBE_COUNTS[number];
+  readonly count?: typeof LIGHT_POINT_COUNTS[number];
+  readonly wallLight?: boolean;
+  readonly splashProof?: boolean;
+  readonly builtInSwitch?: boolean;
+  readonly emergencyLighting?: typeof EMERGENCY_LIGHTING_TYPES[number];
+  readonly address?: string;
+}
+
 /** Read-only, UI-independent projection for gradually migrated property editors. */
 export interface SchemaPropertyReader {
   getCircuit(itemId: number): CircuitProperties | undefined;
   getSocket(itemId: number): SocketProperties | undefined;
   getBasicConsumer(itemId: number): BasicConsumerProperties | undefined;
+  getLightPoint(itemId: number): LightPointProperties | undefined;
 }

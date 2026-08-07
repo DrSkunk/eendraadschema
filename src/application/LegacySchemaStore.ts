@@ -8,12 +8,14 @@ import {
   basicConsumerTypes,
   validateAndMapBasicConsumerChanges,
 } from "./BasicConsumerPropertyValidation";
+import { validateAndMapLightPointChanges } from "./LightPointPropertyValidation";
 import { LegacySchemaDocumentReader } from "./LegacySchemaDocumentReader";
 import { LegacySchemaPropertyReader } from "./LegacySchemaPropertyReader";
 import type {
   BasicConsumerPropertyChanges,
   CircuitPropertyChanges,
   SocketPropertyChanges,
+  LightPointPropertyChanges,
 } from "./SchemaPropertyReader";
 import {
   SchemaCommandError,
@@ -48,6 +50,7 @@ export class LegacySchemaStore implements SchemaStore {
       updateCircuit: this.updateCircuit.bind(this),
       updateSocket: this.updateSocket.bind(this),
       updateBasicConsumer: this.updateBasicConsumer.bind(this),
+      updateLightPoint: this.updateLightPoint.bind(this),
       duplicateItem: this.duplicateItem.bind(this),
       replaceDocument: this.replaceDocument.bind(this),
       undo: this.undo.bind(this),
@@ -198,6 +201,16 @@ export class LegacySchemaStore implements SchemaStore {
       throw new SchemaCommandError("INVALID_CHANGE", `Item ${itemId} gebruikt geen basiseigenschappen.`);
     }
     const legacyChanges = validateAndMapBasicConsumerChanges(changes);
+    if (Object.keys(legacyChanges).length === 0) return;
+    this.updateItem(itemId, legacyChanges);
+  }
+
+  private updateLightPoint(itemId: number, changes: Readonly<LightPointPropertyChanges>): void {
+    const item = this.requireItem(itemId);
+    if (item.getType() !== "Lichtpunt") {
+      throw new SchemaCommandError("INVALID_CHANGE", `Item ${itemId} is geen lichtpunt.`);
+    }
+    const legacyChanges = validateAndMapLightPointChanges(changes);
     if (Object.keys(legacyChanges).length === 0) return;
     this.updateItem(itemId, legacyChanges);
   }

@@ -5,6 +5,7 @@ import type {
   BasicConsumerProperties,
   SchemaPropertyReader,
   SocketProperties,
+  LightPointProperties,
 } from "./SchemaPropertyReader";
 
 const basicConsumerTypes: ReadonlySet<string> = new Set(BASIC_CONSUMER_TYPES);
@@ -17,12 +18,14 @@ export class LegacySchemaPropertyReader implements SchemaPropertyReader {
   private readonly circuits: ReadonlyMap<number, CircuitProperties>;
   private readonly sockets: ReadonlyMap<number, SocketProperties>;
   private readonly basicConsumers: ReadonlyMap<number, BasicConsumerProperties>;
+  private readonly lightPoints: ReadonlyMap<number, LightPointProperties>;
 
   constructor(structure: Hierarchical_List) {
     const firstRootChildId = structure.getFirstChildId(0);
     const circuits = new Map<number, CircuitProperties>();
     const sockets = new Map<number, SocketProperties>();
     const basicConsumers = new Map<number, BasicConsumerProperties>();
+    const lightPoints = new Map<number, LightPointProperties>();
     for (let ordinal = 0; ordinal < structure.length; ordinal += 1) {
       if (!structure.active[ordinal]) continue;
       const item = structure.getElectroItemById(structure.id[ordinal]);
@@ -82,10 +85,28 @@ export class LegacySchemaPropertyReader implements SchemaPropertyReader {
           address: text(item.props.adres),
         }));
       }
+      if (item.getType() === "Lichtpunt") {
+        const parent = item.getParent();
+        lightPoints.set(item.id, Object.freeze({
+          itemId: item.id,
+          numberMode: text(item.props.autonr || "manueel"),
+          number: text(item.props.nr),
+          canEditNumber: parent !== null && ["Kring", "Domotica module (verticaal)"].includes(parent.getType()),
+          lampType: text(item.props.type_lamp),
+          tubeCount: text(item.props.aantal_buizen_indien_TL),
+          count: text(item.props.aantal),
+          wallLight: item.props.is_wandlamp === true,
+          splashProof: item.props.is_halfwaterdicht === true,
+          builtInSwitch: item.props.heeft_ingebouwde_schakelaar === true,
+          emergencyLighting: text(item.props.type_noodverlichting),
+          address: text(item.props.adres),
+        }));
+      }
     }
     this.circuits = circuits;
     this.sockets = sockets;
     this.basicConsumers = basicConsumers;
+    this.lightPoints = lightPoints;
   }
 
   getCircuit(itemId: number): CircuitProperties | undefined {
@@ -98,5 +119,9 @@ export class LegacySchemaPropertyReader implements SchemaPropertyReader {
 
   getBasicConsumer(itemId: number): BasicConsumerProperties | undefined {
     return this.basicConsumers.get(itemId);
+  }
+
+  getLightPoint(itemId: number): LightPointProperties | undefined {
+    return this.lightPoints.get(itemId);
   }
 }

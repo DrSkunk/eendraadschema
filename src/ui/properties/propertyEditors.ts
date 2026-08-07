@@ -3,6 +3,7 @@ import { CircuitPropertiesEditor } from "./CircuitPropertiesEditor";
 import { SocketPropertiesEditor } from "./socket/SocketPropertiesEditor";
 import { BASIC_CONSUMER_TYPES } from "../../application/SchemaPropertyReader";
 import { BasicConsumerPropertiesEditor } from "./basic/BasicConsumerPropertiesEditor";
+import { LightPointPropertiesEditor } from "./light/LightPointPropertiesEditor";
 import type { ItemEditorProps } from "./ItemEditorProps";
 
 const basicConsumerEditors = Object.fromEntries(
@@ -13,4 +14,5 @@ export const propertyEditors: Readonly<Record<string, ComponentType<ItemEditorPr
   ...basicConsumerEditors,
   Kring: CircuitPropertiesEditor,
   Contactdoos: SocketPropertiesEditor,
+  Lichtpunt: LightPointPropertiesEditor,
 });
