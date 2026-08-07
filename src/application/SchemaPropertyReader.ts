@@ -191,4 +191,6 @@ export interface SchemaPropertyReader {
   getSocket(itemId: number): SocketProperties | undefined;
   getBasicConsumer(itemId: number): BasicConsumerProperties | undefined;
   getLightPoint(itemId: number): LightPointProperties | undefined;
+  getConfiguredItem(itemId: number): ConfiguredItemProperties | undefined;
 }
+import type { ConfiguredItemProperties } from "./ConfiguredItemProperties";

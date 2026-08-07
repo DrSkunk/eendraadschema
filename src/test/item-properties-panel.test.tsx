@@ -13,22 +13,24 @@ function createSelectedCircuit() {
   const board = structure.addItem("Bord");
   const circuit = structure.createItem("Kring");
   structure.insertChildAfterId(circuit, board.id);
+  const legacyItem = structure.createItem("Zekering/differentieel");
+  structure.insertChildAfterId(legacyItem, circuit.id);
   const schemaStore = new LegacySchemaStore(structure);
   const editorStore = new LocalEditorStore();
   editorStore.commands.selectItem(circuit.id);
-  return { schemaStore, editorStore, circuitId: circuit.id, boardId: board.id };
+  return { schemaStore, editorStore, circuitId: circuit.id, legacyItemId: legacyItem.id };
 }
 
 describe("ItemPropertiesPanel", () => {
   it("shows a useful empty and legacy fallback state", () => {
-    const { schemaStore, editorStore, boardId } = createSelectedCircuit();
+    const { schemaStore, editorStore, legacyItemId } = createSelectedCircuit();
     editorStore.commands.selectItem(null);
     const view = render(
       <ItemPropertiesPanel schemaStore={schemaStore} editorStore={editorStore} />,
     );
     expect(screen.getByText(/selecteer een onderdeel/i)).toBeVisible();
 
-    act(() => editorStore.commands.selectItem(boardId));
+    act(() => editorStore.commands.selectItem(legacyItemId));
     expect(screen.getByText(/bestaande editor beheerd/i)).toBeVisible();
     view.unmount();
   });

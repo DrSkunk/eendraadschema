@@ -1,4 +1,10 @@
 import type { Hierarchical_List } from "../Hierarchical_List";
+import {
+  CONFIGURED_ITEM_PROPERTY_SCHEMAS,
+  configuredItemTypes,
+  type ConfiguredItemProperties,
+  type ConfiguredPropertyValue,
+} from "./ConfiguredItemProperties";
 import { BASIC_CONSUMER_TYPES } from "./SchemaPropertyReader";
 import type {
   CircuitProperties,
@@ -19,6 +25,7 @@ export class LegacySchemaPropertyReader implements SchemaPropertyReader {
   private readonly sockets: ReadonlyMap<number, SocketProperties>;
   private readonly basicConsumers: ReadonlyMap<number, BasicConsumerProperties>;
   private readonly lightPoints: ReadonlyMap<number, LightPointProperties>;
+  private readonly configuredItems: ReadonlyMap<number, ConfiguredItemProperties>;
 
   constructor(structure: Hierarchical_List) {
     const firstRootChildId = structure.getFirstChildId(0);
@@ -26,6 +33,7 @@ export class LegacySchemaPropertyReader implements SchemaPropertyReader {
     const sockets = new Map<number, SocketProperties>();
     const basicConsumers = new Map<number, BasicConsumerProperties>();
     const lightPoints = new Map<number, LightPointProperties>();
+    const configuredItems = new Map<number, ConfiguredItemProperties>();
     for (let ordinal = 0; ordinal < structure.length; ordinal += 1) {
       if (!structure.active[ordinal]) continue;
       const item = structure.getElectroItemById(structure.id[ordinal]);
@@ -102,11 +110,30 @@ export class LegacySchemaPropertyReader implements SchemaPropertyReader {
           address: text(item.props.adres),
         }));
       }
+      if (configuredItemTypes.has(item.getType())) {
+        const type = item.getType();
+        const itemSchema = CONFIGURED_ITEM_PROPERTY_SCHEMAS[type];
+        const values: Record<string, ConfiguredPropertyValue> = {};
+        for (const [key, field] of Object.entries(itemSchema.fields)) {
+          const rawValue = item.props[field.legacyKey] ?? field.defaultValue;
+          values[key] = field.kind === "boolean" ? rawValue === true : text(rawValue);
+        }
+        const parent = item.getParent();
+        configuredItems.set(item.id, Object.freeze({
+          itemId: item.id,
+          type,
+          canEditNumber: parent !== null && ["Kring", "Domotica module (verticaal)"].includes(parent.getType()),
+          parentType: parent?.getType() ?? null,
+          childCount: item.getNumChilds(),
+          values: Object.freeze(values),
+        }));
+      }
     }
     this.circuits = circuits;
     this.sockets = sockets;
     this.basicConsumers = basicConsumers;
     this.lightPoints = lightPoints;
+    this.configuredItems = configuredItems;
   }
 
   getCircuit(itemId: number): CircuitProperties | undefined {
@@ -123,5 +150,9 @@ export class LegacySchemaPropertyReader implements SchemaPropertyReader {
 
   getLightPoint(itemId: number): LightPointProperties | undefined {
     return this.lightPoints.get(itemId);
+  }
+
+  getConfiguredItem(itemId: number): ConfiguredItemProperties | undefined {
+    return this.configuredItems.get(itemId);
   }
 }

@@ -1,5 +1,6 @@
 import type { SchemaDocumentReader } from "./SchemaDocumentReader";
 import type { SchemaPropertyReader } from "./SchemaPropertyReader";
+import type { ConfiguredItemPropertyChanges } from "./ConfiguredItemProperties";
 import type {
   BasicConsumerPropertyChanges,
   CircuitPropertyChanges,
@@ -29,6 +30,7 @@ export interface SchemaCommands {
   updateSocket(itemId: number, changes: Readonly<SocketPropertyChanges>): void;
   updateBasicConsumer(itemId: number, changes: Readonly<BasicConsumerPropertyChanges>): void;
   updateLightPoint(itemId: number, changes: Readonly<LightPointPropertyChanges>): void;
+  updateConfiguredItem(itemId: number, changes: ConfiguredItemPropertyChanges): void;
   duplicateItem(itemId: number): number;
   replaceDocument(serializedDocument: string, version?: number): void;
   undo(): void;
