@@ -38,14 +38,6 @@ export class Bord extends Electro_Item {
         return 256;
     }
 
-    toHTML(mode: string) {
-        let output = this.toHTMLHeader(mode);
-
-        output += "&nbsp;Naam: " + this.stringPropToHTML('naam',5) + ", "
-               +  "Geaard: " + this.checkboxPropToHTML('is_geaard');
-
-        return(output);
-    }
 
     toSitPlanSVG(mirrortext: boolean = false) {
 
