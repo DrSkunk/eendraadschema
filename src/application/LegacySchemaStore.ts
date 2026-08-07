@@ -1,5 +1,11 @@
 import { Hierarchical_List } from "../Hierarchical_List";
 import { Electro_Item } from "../List_Item/Electro_Item";
+import {
+  boardConnectionCreatesCycle,
+  findBoardIdForItem,
+  type BoardFeeder,
+  type DistributionBoard,
+} from "../domain/DistributionBoard";
 import { structureFromJson } from "../legacy/persistence/EdsCodec";
 import { DocumentSnapshotHistory } from "./DocumentSnapshotHistory";
 import { validateAndMapCircuitChanges } from "./CircuitPropertyValidation";
@@ -22,9 +28,11 @@ import type {
 import {
   SchemaCommandError,
   type MoveItemOptions,
+  type AddDistributionBoardProperties,
   type SchemaCommands,
   type SchemaSnapshot,
   type SchemaStore,
+  type UpdateDistributionBoardChanges,
 } from "./SchemaStore";
 
 const BLOCKED_CHANGE_KEYS = new Set(["__proto__", "constructor", "prototype"]);
@@ -57,6 +65,9 @@ export class LegacySchemaStore implements SchemaStore {
       updateConfiguredItem: this.updateConfiguredItem.bind(this),
       duplicateItem: this.duplicateItem.bind(this),
       expandItem: this.expandItem.bind(this),
+      addDistributionBoard: this.addDistributionBoard.bind(this),
+      updateDistributionBoard: this.updateDistributionBoard.bind(this),
+      deleteDistributionBoard: this.deleteDistributionBoard.bind(this),
       replaceDocument: this.replaceDocument.bind(this),
       undo: this.undo.bind(this),
       redo: this.redo.bind(this),
@@ -113,13 +124,16 @@ export class LegacySchemaStore implements SchemaStore {
   }
 
   private deleteItem(itemId: number): void {
-    this.assertUserEditable(this.requireItem(itemId));
+    const item = this.requireItem(itemId);
+    this.assertUserEditable(item);
+    this.assertNoBoardDependencyInSubtree(itemId);
     this.commitTransaction(() => this.structure.deleteById(itemId));
   }
 
   private moveItem(itemId: number, options: MoveItemOptions): void {
     const item = this.requireItem(itemId);
     this.assertUserEditable(item);
+    this.assertNotBoardRoot(itemId);
 
     if (options.position !== undefined && (!Number.isInteger(options.position) || options.position < 0)) {
       throw new SchemaCommandError("INVALID_POSITION", "De doelpositie moet een positief geheel getal zijn.");
@@ -156,6 +170,7 @@ export class LegacySchemaStore implements SchemaStore {
       ? changes.type
       : undefined;
     if (hasTypeChange) {
+      this.assertNotBoardRoot(itemId);
       if (typeof changedType !== "string") {
         throw new SchemaCommandError("INVALID_CHANGE", "Het itemtype moet tekst zijn.");
       }
@@ -241,6 +256,7 @@ export class LegacySchemaStore implements SchemaStore {
   private duplicateItem(itemId: number): number {
     const item = this.requireItem(itemId);
     this.assertUserEditable(item);
+    this.assertNotBoardRoot(itemId);
     if (!item.checkInsertSibling()) {
       throw new SchemaCommandError("MAX_CHILDREN_REACHED", "De ouder van dit item laat geen extra kinderen toe.");
     }
@@ -264,6 +280,106 @@ export class LegacySchemaStore implements SchemaStore {
     this.commitTransaction(() => {
       item.expand();
       this.structure.reSort();
+    });
+  }
+
+  private addDistributionBoard(
+    feederCircuitId: number,
+    properties: AddDistributionBoardProperties,
+  ): string {
+    const name = this.requireBoardName(properties.name);
+    const { circuit, sourceBoardId } = this.requireAvailableFeeder(feederCircuitId);
+    this.assertParentCapacity(circuit);
+
+    return this.commitTransaction(() => {
+      const placeholder = this.structure.createItem("");
+      this.structure.insertChildAfterId(placeholder, circuit.id);
+      this.structure.adjustTypeById(placeholder.id, "Bord");
+      const boardItem = this.requireItem(placeholder.id);
+      boardItem.props.naam = name;
+      boardItem.props.adres = this.optionalBoardText(properties.location) ?? "";
+
+      const boardId = this.uniqueBoardId(`board-${boardItem.id}`);
+      this.structure.boards = [...this.structure.boards, {
+        id: boardId,
+        name,
+        location: this.optionalBoardText(properties.location),
+        feeder: this.createFeeder(sourceBoardId, feederCircuitId, properties),
+        rootItemIds: [boardItem.id],
+      }];
+      return boardId;
+    });
+  }
+
+  private updateDistributionBoard(
+    boardId: string,
+    changes: UpdateDistributionBoardChanges,
+  ): void {
+    const board = this.requireBoard(boardId);
+    if (!board.feeder && changes.sourceCircuitId !== undefined) {
+      throw new SchemaCommandError("INVALID_BOARD_FEEDER", "Het hoofdbord kan geen voeding vanuit een ander bord krijgen.");
+    }
+
+    const name = changes.name === undefined ? board.name : this.requireBoardName(changes.name);
+    let feeder = board.feeder;
+    let targetCircuit: Electro_Item | undefined;
+    if (changes.sourceCircuitId !== undefined) {
+      const available = this.requireAvailableFeeder(changes.sourceCircuitId, boardId);
+      if (boardConnectionCreatesCycle(this.structure.boards, boardId, available.sourceBoardId)) {
+        throw new SchemaCommandError("INVALID_BOARD_FEEDER", "Deze voeding zou een cyclus tussen verdeelborden maken.");
+      }
+      targetCircuit = available.circuit;
+      feeder = this.createFeeder(available.sourceBoardId, changes.sourceCircuitId, {
+        cableType: changes.cableType ?? board.feeder?.cableType,
+        conductorSection: changes.conductorSection ?? board.feeder?.conductorSection,
+        lengthMeters: changes.lengthMeters ?? board.feeder?.lengthMeters,
+      });
+    } else if (feeder) {
+      feeder = this.createFeeder(feeder.sourceBoardId, feeder.sourceCircuitId, {
+        cableType: changes.cableType ?? feeder.cableType,
+        conductorSection: changes.conductorSection ?? feeder.conductorSection,
+        lengthMeters: changes.lengthMeters ?? feeder.lengthMeters,
+      });
+    }
+
+    this.commitTransaction(() => {
+      if (targetCircuit) {
+        for (const rootItemId of board.rootItemIds) this.requireItem(rootItemId).parent = targetCircuit.id;
+      }
+      for (const rootItemId of board.rootItemIds) {
+        const rootItem = this.requireItem(rootItemId);
+        if (rootItem.getType() === "Bord") {
+          rootItem.props.naam = name;
+          if (changes.location !== undefined) rootItem.props.adres = this.optionalBoardText(changes.location) ?? "";
+        }
+      }
+      this.structure.boards = this.structure.boards.map((candidate) => candidate.id === boardId
+        ? {
+            ...candidate,
+            name,
+            location: changes.location === undefined
+              ? candidate.location
+              : this.optionalBoardText(changes.location),
+            feeder,
+          }
+        : candidate);
+      this.structure.reSort();
+    });
+  }
+
+  private deleteDistributionBoard(boardId: string): void {
+    const board = this.requireBoard(boardId);
+    if (!board.feeder) {
+      throw new SchemaCommandError("BOARD_DEPENDENCY", "Het hoofdbord kan niet worden verwijderd.");
+    }
+    if (this.structure.boards.some((candidate) => candidate.feeder?.sourceBoardId === boardId)) {
+      throw new SchemaCommandError("BOARD_DEPENDENCY", "Verwijder eerst de verdeelborden die vanuit dit bord worden gevoed.");
+    }
+    this.commitTransaction(() => {
+      for (const rootItemId of board.rootItemIds) {
+        if (this.structure.getElectroItemById(rootItemId) !== null) this.structure.deleteById(rootItemId);
+      }
+      this.structure.boards = this.structure.boards.filter((candidate) => candidate.id !== boardId);
     });
   }
 
@@ -303,6 +419,104 @@ export class LegacySchemaStore implements SchemaStore {
       throw new SchemaCommandError("ITEM_NOT_FOUND", `Item ${itemId} bestaat niet.`);
     }
     return item;
+  }
+
+  private requireBoard(boardId: string): DistributionBoard {
+    const board = this.structure.boards.find((candidate) => candidate.id === boardId);
+    if (!board) throw new SchemaCommandError("BOARD_NOT_FOUND", `Verdeelbord '${boardId}' bestaat niet.`);
+    return board;
+  }
+
+  private requireAvailableFeeder(
+    circuitId: number,
+    currentBoardId?: string,
+  ): { circuit: Electro_Item; sourceBoardId: string } {
+    const circuit = this.requireItem(circuitId);
+    if (circuit.getType() !== "Kring") {
+      throw new SchemaCommandError("INVALID_BOARD_FEEDER", "Een verdeelbord moet door een kring worden gevoed.");
+    }
+    const occupied = this.structure.boards.find((board) => (
+      board.id !== currentBoardId && board.feeder?.sourceCircuitId === circuitId
+    ));
+    if (occupied) {
+      throw new SchemaCommandError("INVALID_BOARD_FEEDER", `Deze kring voedt al verdeelbord '${occupied.name}'.`);
+    }
+    const sourceBoardId = findBoardIdForItem(
+      this.structure.boards,
+      circuitId,
+      (id) => {
+        const item = this.structure.getElectroItemById(id);
+        return item === null || item.parent === 0 ? null : item.parent;
+      },
+    );
+    if (!sourceBoardId) {
+      throw new SchemaCommandError("INVALID_BOARD_FEEDER", "De voedende kring hoort niet bij een verdeelbord.");
+    }
+    return { circuit, sourceBoardId };
+  }
+
+  private createFeeder(
+    sourceBoardId: string,
+    sourceCircuitId: number,
+    properties: Pick<UpdateDistributionBoardChanges, "cableType" | "conductorSection" | "lengthMeters">,
+  ): BoardFeeder {
+    if (properties.lengthMeters !== undefined && (!Number.isFinite(properties.lengthMeters) || properties.lengthMeters < 0)) {
+      throw new SchemaCommandError("INVALID_CHANGE", "De kabellengte moet nul of een positief getal zijn.");
+    }
+    return {
+      sourceBoardId,
+      sourceCircuitId,
+      cableType: this.optionalBoardText(properties.cableType),
+      conductorSection: this.optionalBoardText(properties.conductorSection),
+      lengthMeters: properties.lengthMeters,
+    };
+  }
+
+  private requireBoardName(value: string): string {
+    const name = value.trim();
+    if (!name) throw new SchemaCommandError("INVALID_CHANGE", "Een verdeelbord moet een naam hebben.");
+    return name;
+  }
+
+  private optionalBoardText(value: string | undefined): string | undefined {
+    const text = value?.trim();
+    return text ? text : undefined;
+  }
+
+  private uniqueBoardId(preferredId: string): string {
+    const ids = new Set(this.structure.boards.map((board) => board.id));
+    if (!ids.has(preferredId)) return preferredId;
+    let suffix = 2;
+    while (ids.has(`${preferredId}-${suffix}`)) suffix += 1;
+    return `${preferredId}-${suffix}`;
+  }
+
+  private assertNotBoardRoot(itemId: number): void {
+    const board = this.structure.boards.find((candidate) => candidate.rootItemIds.includes(itemId));
+    if (board) {
+      throw new SchemaCommandError("BOARD_DEPENDENCY", `Gebruik de verdeelbordactie om '${board.name}' aan te passen.`);
+    }
+  }
+
+  private assertNoBoardDependencyInSubtree(itemId: number): void {
+    const subtreeIds = new Set<number>([itemId]);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const candidate of this.structure.data as Electro_Item[]) {
+        if (!subtreeIds.has(candidate.id) && subtreeIds.has(candidate.parent)) {
+          subtreeIds.add(candidate.id);
+          changed = true;
+        }
+      }
+    }
+    const affected = this.structure.boards.find((board) => (
+      board.rootItemIds.some((rootId) => subtreeIds.has(rootId))
+      || (board.feeder !== undefined && subtreeIds.has(board.feeder.sourceCircuitId))
+    ));
+    if (affected) {
+      throw new SchemaCommandError("BOARD_DEPENDENCY", `Deze actie zou verdeelbord '${affected.name}' loskoppelen.`);
+    }
   }
 
   private assertChildAllowed(parent: Electro_Item | null, type: string): void {

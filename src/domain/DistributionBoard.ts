@@ -76,3 +76,41 @@ export function parseDistributionBoards(
   if (boards.length === 0) return [createDefaultMainBoard(defaultRootItemIds)];
   return boards;
 }
+
+export function findBoardIdForItem(
+  boards: readonly DistributionBoard[],
+  itemId: number,
+  getParentId: (itemId: number) => number | null | undefined,
+): string | undefined {
+  const boardIdByRootItemId = new Map<number, string>();
+  for (const board of boards) {
+    for (const rootItemId of board.rootItemIds) boardIdByRootItemId.set(rootItemId, board.id);
+  }
+
+  let currentItemId: number | null | undefined = itemId;
+  const visited = new Set<number>();
+  while (currentItemId !== null && currentItemId !== undefined && !visited.has(currentItemId)) {
+    const boardId = boardIdByRootItemId.get(currentItemId);
+    if (boardId !== undefined) return boardId;
+    visited.add(currentItemId);
+    currentItemId = getParentId(currentItemId);
+  }
+  return undefined;
+}
+
+export function boardConnectionCreatesCycle(
+  boards: readonly DistributionBoard[],
+  boardId: string,
+  sourceBoardId: string,
+): boolean {
+  if (boardId === sourceBoardId) return true;
+  const boardsById = new Map(boards.map((board) => [board.id, board]));
+  const visited = new Set<string>();
+  let currentBoardId: string | undefined = sourceBoardId;
+  while (currentBoardId !== undefined && !visited.has(currentBoardId)) {
+    if (currentBoardId === boardId) return true;
+    visited.add(currentBoardId);
+    currentBoardId = boardsById.get(currentBoardId)?.feeder?.sourceBoardId;
+  }
+  return false;
+}

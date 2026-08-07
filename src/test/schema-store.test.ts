@@ -410,6 +410,96 @@ describe("LegacySchemaStore", () => {
     expect(store.getSnapshot().document.getItem(firstCircuit)?.childIds).toEqual([secondItem]);
   });
 
+  it("creates a first-class secondary board and preserves it through undo and redo", () => {
+    const { store, boardId } = createStore();
+    const feederId = store.commands.addItem(boardId, "Kring");
+
+    const garageBoardId = store.commands.addDistributionBoard(feederId, {
+      name: "Garage",
+      location: "Achterbouw",
+      cableType: "XVB",
+      conductorSection: "5G6",
+      lengthMeters: 18,
+    });
+
+    const board = store.getSnapshot().document.getBoard(garageBoardId);
+    expect(board).toMatchObject({
+      id: garageBoardId,
+      name: "Garage",
+      location: "Achterbouw",
+      feeder: {
+        sourceBoardId: "main",
+        sourceCircuitId: feederId,
+        cableType: "XVB",
+        conductorSection: "5G6",
+        lengthMeters: 18,
+      },
+    });
+    const [boardRoot] = store.getSnapshot().document.getBoardRootItems(garageBoardId);
+    expect(boardRoot).toMatchObject({ type: "Bord", parentId: feederId });
+    expect(store.getSnapshot().document.getBoardForItem(boardRoot.id)?.id).toBe(garageBoardId);
+
+    store.commands.undo();
+    expect(store.getSnapshot().document.getBoard(garageBoardId)).toBeUndefined();
+    expect(store.getSnapshot().document.getItem(boardRoot.id)).toBeUndefined();
+    store.commands.redo();
+    expect(store.getSnapshot().document.getBoard(garageBoardId)?.feeder?.sourceCircuitId).toBe(feederId);
+  });
+
+  it("updates a board feeder while preventing duplicate and cyclic connections", () => {
+    const { store, boardId } = createStore();
+    const firstFeeder = store.commands.addItem(boardId, "Kring");
+    const secondFeeder = store.commands.addItem(boardId, "Kring");
+    const garageId = store.commands.addDistributionBoard(firstFeeder, { name: "Garage" });
+    const garageRootId = store.getSnapshot().document.getBoard(garageId)!.rootItemIds[0];
+    const garageCircuitId = store.commands.addItem(garageRootId, "Kring");
+    const shedId = store.commands.addDistributionBoard(garageCircuitId, { name: "Tuinhuis" });
+    const shedRootId = store.getSnapshot().document.getBoard(shedId)!.rootItemIds[0];
+    const shedCircuitId = store.commands.addItem(shedRootId, "Kring");
+
+    store.commands.updateDistributionBoard(garageId, {
+      sourceCircuitId: secondFeeder,
+      name: "Garage vernieuwd",
+      location: "Garage",
+    });
+    expect(store.getSnapshot().document.getBoard(garageId)).toMatchObject({
+      name: "Garage vernieuwd",
+      feeder: { sourceCircuitId: secondFeeder, sourceBoardId: "main" },
+    });
+    expect(store.getSnapshot().document.getItem(garageRootId)?.parentId).toBe(secondFeeder);
+
+    expectCommandError(
+      () => store.commands.addDistributionBoard(secondFeeder, { name: "Dubbel" }),
+      "INVALID_BOARD_FEEDER",
+    );
+    expectCommandError(
+      () => store.commands.updateDistributionBoard(garageId, { sourceCircuitId: shedCircuitId }),
+      "INVALID_BOARD_FEEDER",
+    );
+  });
+
+  it("prevents generic mutations from silently orphaning boards", () => {
+    const { store, boardId } = createStore();
+    const feederId = store.commands.addItem(boardId, "Kring");
+    const garageId = store.commands.addDistributionBoard(feederId, { name: "Garage" });
+    const garageRootId = store.getSnapshot().document.getBoard(garageId)!.rootItemIds[0];
+
+    expectCommandError(() => store.commands.deleteItem(feederId), "BOARD_DEPENDENCY");
+    expectCommandError(() => store.commands.deleteItem(garageRootId), "BOARD_DEPENDENCY");
+    expectCommandError(
+      () => store.commands.moveItem(garageRootId, { targetParentId: boardId }),
+      "BOARD_DEPENDENCY",
+    );
+    expectCommandError(() => store.commands.changeItemType(garageRootId, "Kring"), "BOARD_DEPENDENCY");
+    expectCommandError(() => store.commands.deleteDistributionBoard("main"), "BOARD_DEPENDENCY");
+
+    store.commands.deleteDistributionBoard(garageId);
+    expect(store.getSnapshot().document.getBoard(garageId)).toBeUndefined();
+    expect(store.getSnapshot().document.getItem(garageRootId)).toBeUndefined();
+    store.commands.undo();
+    expect(store.getSnapshot().document.getBoard(garageId)?.name).toBe("Garage");
+  });
+
   it("rejects missing items, invalid child types, cycles, and full parents", () => {
     const { store, boardId } = createStore();
     const circuitId = store.commands.addItem(boardId, "Kring");

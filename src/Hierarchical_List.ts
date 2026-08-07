@@ -1381,7 +1381,8 @@ export class Hierarchical_List {
         const activeRootItemIds = this.data
             .filter((item, index) => this.active[index] && item.parent === 0)
             .map((item) => item.id);
-        const mainBoard = this.boards.find((board) => board.feeder === undefined);
+        const mainBoard = this.boards.find((board) => board.id === "main")
+            ?? this.boards.find((board) => board.feeder === undefined);
         if (mainBoard !== undefined) {
             this.boards = this.boards.map((board) => board.id === mainBoard.id
                 ? { ...board, rootItemIds: activeRootItemIds }

@@ -21,6 +21,23 @@ export interface MoveItemOptions {
   readonly position?: number;
 }
 
+export interface AddDistributionBoardProperties {
+  readonly name: string;
+  readonly location?: string;
+  readonly cableType?: string;
+  readonly conductorSection?: string;
+  readonly lengthMeters?: number;
+}
+
+export interface UpdateDistributionBoardChanges {
+  readonly name?: string;
+  readonly location?: string;
+  readonly sourceCircuitId?: number;
+  readonly cableType?: string;
+  readonly conductorSection?: string;
+  readonly lengthMeters?: number;
+}
+
 export interface SchemaCommands {
   addItem(parentId: number | null, type: string): number;
   deleteItem(itemId: number): void;
@@ -34,6 +51,9 @@ export interface SchemaCommands {
   updateConfiguredItem(itemId: number, changes: ConfiguredItemPropertyChanges): void;
   duplicateItem(itemId: number): number;
   expandItem(itemId: number): void;
+  addDistributionBoard(feederCircuitId: number, properties: AddDistributionBoardProperties): string;
+  updateDistributionBoard(boardId: string, changes: UpdateDistributionBoardChanges): void;
+  deleteDistributionBoard(boardId: string): void;
   replaceDocument(serializedDocument: string, version?: number): void;
   undo(): void;
   redo(): void;
@@ -52,7 +72,10 @@ export type SchemaCommandErrorCode =
   | "MAX_CHILDREN_REACHED"
   | "CYCLIC_PARENT"
   | "INVALID_POSITION"
-  | "INVALID_CHANGE";
+  | "INVALID_CHANGE"
+  | "BOARD_NOT_FOUND"
+  | "INVALID_BOARD_FEEDER"
+  | "BOARD_DEPENDENCY";
 
 export class SchemaCommandError extends Error {
   constructor(

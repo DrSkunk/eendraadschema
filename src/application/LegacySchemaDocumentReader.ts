@@ -1,5 +1,6 @@
 import { Hierarchical_List } from "../Hierarchical_List";
 import { Electro_Item } from "../List_Item/Electro_Item";
+import { findBoardIdForItem, type DistributionBoard } from "../domain/DistributionBoard";
 import type {
   HierarchyNodeRole,
   HierarchyItemSummary,
@@ -68,6 +69,8 @@ export class LegacySchemaDocumentReader implements SchemaDocumentReader {
   private readonly items: readonly HierarchyViewNode[];
   private readonly itemsById: ReadonlyMap<number, HierarchyViewNode>;
   private readonly childrenByParent: ReadonlyMap<number | null, readonly HierarchyViewNode[]>;
+  private readonly boards: readonly DistributionBoard[];
+  private readonly boardsById: ReadonlyMap<string, DistributionBoard>;
 
   constructor(structure: Hierarchical_List) {
     const activeItems: Electro_Item[] = [];
@@ -107,6 +110,38 @@ export class LegacySchemaDocumentReader implements SchemaDocumentReader {
     this.childrenByParent = new Map(
       Array.from(childrenByParent, ([parentId, children]) => [parentId, Object.freeze(children)]),
     );
+    this.boards = Object.freeze(structure.boards.map((board) => Object.freeze({
+      ...board,
+      feeder: board.feeder ? Object.freeze({ ...board.feeder }) : undefined,
+      rootItemIds: Object.freeze([...board.rootItemIds]),
+    })));
+    this.boardsById = new Map(this.boards.map((board) => [board.id, board]));
+  }
+
+  getBoards(): readonly DistributionBoard[] {
+    return this.boards;
+  }
+
+  getBoard(id: string): DistributionBoard | undefined {
+    return this.boardsById.get(id);
+  }
+
+  getBoardForItem(itemId: number): DistributionBoard | undefined {
+    const boardId = findBoardIdForItem(
+      this.boards,
+      itemId,
+      (id) => this.itemsById.get(id)?.parentId,
+    );
+    return boardId === undefined ? undefined : this.boardsById.get(boardId);
+  }
+
+  getBoardRootItems(boardId: string): readonly HierarchyViewNode[] {
+    const board = this.boardsById.get(boardId);
+    if (!board) return Object.freeze([]);
+    return Object.freeze(board.rootItemIds.flatMap((id) => {
+      const item = this.itemsById.get(id);
+      return item ? [item] : [];
+    }));
   }
 
   getRootCapabilities() {

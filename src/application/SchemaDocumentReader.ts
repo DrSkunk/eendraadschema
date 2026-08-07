@@ -29,6 +29,10 @@ export interface HierarchyViewNode {
 }
 
 export interface SchemaDocumentReader {
+  getBoards(): readonly DistributionBoard[];
+  getBoard(id: string): DistributionBoard | undefined;
+  getBoardForItem(itemId: number): DistributionBoard | undefined;
+  getBoardRootItems(boardId: string): readonly HierarchyViewNode[];
   getRootCapabilities(): HierarchyNodeCapabilities;
   getItem(id: number): HierarchyViewNode | undefined;
   getChildren(parentId: number | null): readonly HierarchyViewNode[];
@@ -36,3 +40,4 @@ export interface SchemaDocumentReader {
   getAllItems(): readonly HierarchyViewNode[];
   getHierarchy(): readonly HierarchyViewNode[];
 }
+import type { DistributionBoard } from "../domain/DistributionBoard";
