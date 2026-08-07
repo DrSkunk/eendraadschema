@@ -1,6 +1,7 @@
 import type { SchemaDocumentReader } from "./SchemaDocumentReader";
 import type { SchemaPropertyReader } from "./SchemaPropertyReader";
 import type { ConfiguredItemPropertyChanges } from "./ConfiguredItemProperties";
+import type { ValidationIssue } from "./SchemaValidation";
 import type {
   BasicConsumerPropertyChanges,
   CircuitPropertyChanges,
@@ -14,6 +15,7 @@ export interface SchemaSnapshot {
   readonly properties: SchemaPropertyReader;
   readonly canUndo: boolean;
   readonly canRedo: boolean;
+  readonly validationIssues: readonly ValidationIssue[];
 }
 
 export interface MoveItemOptions {

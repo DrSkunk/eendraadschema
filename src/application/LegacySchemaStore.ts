@@ -19,6 +19,7 @@ import { configuredItemTypes, type ConfiguredItemPropertyChanges } from "./Confi
 import { validateAndMapConfiguredItemChanges } from "./ConfiguredItemPropertyValidation";
 import { LegacySchemaDocumentReader } from "./LegacySchemaDocumentReader";
 import { LegacySchemaPropertyReader } from "./LegacySchemaPropertyReader";
+import { validateSchemaDocument } from "./SchemaValidation";
 import type {
   BasicConsumerPropertyChanges,
   CircuitPropertyChanges,
@@ -609,12 +610,14 @@ export class LegacySchemaStore implements SchemaStore {
   }
 
   private createSnapshot(): SchemaSnapshot {
+    const document = new LegacySchemaDocumentReader(this.structure);
     return Object.freeze({
       revision: this.revision,
-      document: new LegacySchemaDocumentReader(this.structure),
+      document,
       properties: new LegacySchemaPropertyReader(this.structure),
       canUndo: this.history.canUndo(),
       canRedo: this.history.canRedo(),
+      validationIssues: validateSchemaDocument(document),
     });
   }
 
