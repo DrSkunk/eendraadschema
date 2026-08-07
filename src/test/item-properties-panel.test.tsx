@@ -76,4 +76,19 @@ describe("ItemPropertiesPanel", () => {
     expect(screen.getByLabelText("Tekst")).toBeInTheDocument();
     expect(screen.getByLabelText("Adres")).toBeInTheDocument();
   });
+
+  it("shows an unknown legacy option without rewriting it", () => {
+    const { schemaStore, editorStore, circuitId } = createSelectedCircuit();
+    const circuit = schemaStore.getLegacyDocument().getElectroItemById(circuitId)!;
+    circuit.props.bescherming = "historische-keuze";
+    schemaStore.synchronizeLegacyDocument(schemaStore.getLegacyDocument());
+
+    render(<ItemPropertiesPanel schemaStore={schemaStore} editorStore={editorStore} />);
+
+    expect(screen.getByLabelText<HTMLSelectElement>("Bescherming").value)
+      .toBe("historische-keuze");
+    expect(screen.getByRole("option", { name: "Huidige waarde: historische-keuze" }))
+      .toBeInTheDocument();
+    expect(circuit.props.bescherming).toBe("historische-keuze");
+  });
 });
