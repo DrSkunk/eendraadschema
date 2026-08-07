@@ -137,7 +137,7 @@ export function HierarchyNode({
           <button
             type="button"
             aria-label={`${node.label} omhoog verplaatsen`}
-            disabled={siblingIndex <= 0}
+            disabled={!node.capabilities.canMove || siblingIndex <= 0}
             onClick={() => runCommand(() => schemaStore.commands.moveItem(node.id, {
               targetParentId: node.parentId,
               position: siblingIndex - 1,
@@ -146,7 +146,7 @@ export function HierarchyNode({
           <button
             type="button"
             aria-label={`${node.label} omlaag verplaatsen`}
-            disabled={siblingIndex < 0 || siblingIndex >= siblings.length - 1}
+            disabled={!node.capabilities.canMove || siblingIndex < 0 || siblingIndex >= siblings.length - 1}
             onClick={() => runCommand(() => schemaStore.commands.moveItem(node.id, {
               targetParentId: node.parentId,
               position: siblingIndex + 1,

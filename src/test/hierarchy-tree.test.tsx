@@ -199,4 +199,30 @@ describe("HierarchyTree", () => {
     expect(schemaStore.getSnapshot().document.getRootItems()).toHaveLength(1);
     expect(schemaStore.getSnapshot().document.getRootItems()[0].type).toBe("Aansluiting");
   });
+
+  it("creates and navigates secondary boards without mixing their editable trees", () => {
+    const { schemaStore, editorStore, board, circuit } = createHierarchy();
+    editorStore.commands.expandItem(board.id);
+    editorStore.commands.expandItem(circuit.id);
+    const view = render(<HierarchyTree schemaStore={schemaStore} editorStore={editorStore} />);
+
+    fireEvent.click(screen.getByText("+ Verdeelbord toevoegen"));
+    const addForm = screen.getByText("+ Verdeelbord toevoegen").closest("details")!;
+    fireEvent.change(within(addForm).getByLabelText("Naam"), { target: { value: "Garage" } });
+    fireEvent.change(within(addForm).getByLabelText("Locatie"), { target: { value: "Achterbouw" } });
+    fireEvent.change(within(addForm).getByLabelText("Gevoed door"), { target: { value: String(circuit.id) } });
+    fireEvent.click(within(addForm).getByRole("button", { name: "Verdeelbord toevoegen" }));
+
+    const garage = schemaStore.getSnapshot().document.getBoards().find((candidate) => candidate.name === "Garage")!;
+    const garageRootId = garage.rootItemIds[0];
+    expect(editorStore.getSnapshot().activeBoardId).toBe(garage.id);
+    expect(screen.getByRole("button", { name: /▣ Garage/ })).toHaveAttribute("aria-current", "page");
+    expect(view.container.querySelector(`[data-hierarchy-item-id="${garageRootId}"]`)).toBeVisible();
+    expect(view.container.querySelector(`[data-hierarchy-item-id="${circuit.id}"]`)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /▣ Hoofdbord/ }));
+    expect(editorStore.getSnapshot().activeBoardId).toBe("main");
+    expect(view.container.querySelector(`[data-hierarchy-item-id="${circuit.id}"]`)).toBeVisible();
+    expect(view.container.querySelector(`[data-hierarchy-item-id="${garageRootId}"]`)).not.toBeInTheDocument();
+  });
 });

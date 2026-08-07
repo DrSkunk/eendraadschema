@@ -74,6 +74,7 @@ export class LegacySchemaDocumentReader implements SchemaDocumentReader {
 
   constructor(structure: Hierarchical_List) {
     const activeItems: Electro_Item[] = [];
+    const boardRootIds = new Set(structure.boards.flatMap((board) => board.rootItemIds));
     for (let ordinal = 0; ordinal < structure.length; ordinal += 1) {
       if (structure.active[ordinal]) activeItems.push(structure.data[ordinal] as Electro_Item);
     }
@@ -89,6 +90,7 @@ export class LegacySchemaDocumentReader implements SchemaDocumentReader {
       canAddChild: true,
       canDelete: false,
       canDuplicate: false,
+      canMove: false,
       canExpand: false,
       allowedChildTypes: Object.freeze(
         structure.allowedRootChilds().filter((type) => type !== ""),
@@ -98,6 +100,7 @@ export class LegacySchemaDocumentReader implements SchemaDocumentReader {
     this.items = Object.freeze(activeItems.map((item) => this.toViewNode(
       item,
       childIdsByParent.get(item.id) ?? [],
+      boardRootIds.has(item.id),
     )));
     this.itemsById = new Map(this.items.map((item) => [item.id, item]));
 
@@ -168,7 +171,11 @@ export class LegacySchemaDocumentReader implements SchemaDocumentReader {
     return this.items;
   }
 
-  private toViewNode(item: Electro_Item, childIds: readonly number[]): HierarchyViewNode {
+  private toViewNode(
+    item: Electro_Item,
+    childIds: readonly number[],
+    isBoardRoot: boolean,
+  ): HierarchyViewNode {
     const summary = getSummary(item);
     const role = getRole(item);
     const isEditableItem = role === "item";
@@ -183,14 +190,17 @@ export class LegacySchemaDocumentReader implements SchemaDocumentReader {
       role,
       capabilities: Object.freeze({
         canAddChild: isEditableItem && item.checkInsertChild(),
-        canDelete: isEditableItem,
-        canDuplicate: isEditableItem && item.checkInsertSibling(),
+        canDelete: isEditableItem && !isBoardRoot,
+        canDuplicate: isEditableItem && !isBoardRoot && item.checkInsertSibling(),
+        canMove: isEditableItem && !isBoardRoot,
         canExpand: isEditableItem && item.isExpandable(),
         allowedChildTypes: isEditableItem ? allowedChildTypes(item) : Object.freeze([]),
-        allowedItemTypes: isEditableItem ? Object.freeze(Array.from(new Set([
-          item.getType(),
-          ...(item.parent === 0 ? item.sourcelist.allowedRootChilds() : item.getParent().allowedChilds()),
-        ])).filter((type) => type !== "" && type !== "-" && type !== "---")) : Object.freeze([]),
+        allowedItemTypes: isEditableItem ? Object.freeze(isBoardRoot
+          ? [item.getType()]
+          : Array.from(new Set([
+              item.getType(),
+              ...(item.parent === 0 ? item.sourcelist.allowedRootChilds() : item.getParent().allowedChilds()),
+            ])).filter((type) => type !== "" && type !== "-" && type !== "---")) : Object.freeze([]),
       }),
     });
   }

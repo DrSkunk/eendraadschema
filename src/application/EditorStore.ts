@@ -1,15 +1,18 @@
 export interface EditorSnapshot {
   readonly revision: number;
   readonly selectedItemId: number | null;
+  readonly activeBoardId: string;
   readonly expandedItemIds: ReadonlySet<number>;
 }
 
 export interface EditorCommands {
   selectItem(itemId: number | null): void;
+  selectBoard(boardId: string, fallbackItemId?: number | null): void;
   toggleExpanded(itemId: number): void;
   expandItem(itemId: number): void;
   collapseItem(itemId: number): void;
   reconcileItemIds(validItemIds: ReadonlySet<number>): void;
+  reconcileBoardIds(validBoardIds: ReadonlySet<string>, fallbackBoardId: string): void;
 }
 
 export interface EditorStore {
@@ -22,15 +25,18 @@ export class LocalEditorStore implements EditorStore {
   private readonly listeners = new Set<() => void>();
   private readonly expandedItemIds = new Set<number>();
   private selectedItemId: number | null = null;
+  private activeBoardId = "main";
   private revision = 0;
   private snapshot = this.createSnapshot();
 
   readonly commands: EditorCommands = Object.freeze({
     selectItem: this.selectItem.bind(this),
+    selectBoard: this.selectBoard.bind(this),
     toggleExpanded: this.toggleExpanded.bind(this),
     expandItem: this.expandItem.bind(this),
     collapseItem: this.collapseItem.bind(this),
     reconcileItemIds: this.reconcileItemIds.bind(this),
+    reconcileBoardIds: this.reconcileBoardIds.bind(this),
   });
 
   getSnapshot(): EditorSnapshot {
@@ -45,6 +51,13 @@ export class LocalEditorStore implements EditorStore {
   private selectItem(itemId: number | null): void {
     if (this.selectedItemId === itemId) return;
     this.selectedItemId = itemId;
+    this.publish();
+  }
+
+  private selectBoard(boardId: string, fallbackItemId: number | null = null): void {
+    if (this.activeBoardId === boardId && this.selectedItemId === fallbackItemId) return;
+    this.activeBoardId = boardId;
+    this.selectedItemId = fallbackItemId;
     this.publish();
   }
 
@@ -80,10 +93,18 @@ export class LocalEditorStore implements EditorStore {
     if (changed) this.publish();
   }
 
+  private reconcileBoardIds(validBoardIds: ReadonlySet<string>, fallbackBoardId: string): void {
+    if (validBoardIds.has(this.activeBoardId)) return;
+    this.activeBoardId = fallbackBoardId;
+    this.selectedItemId = null;
+    this.publish();
+  }
+
   private createSnapshot(): EditorSnapshot {
     return Object.freeze({
       revision: this.revision,
       selectedItemId: this.selectedItemId,
+      activeBoardId: this.activeBoardId,
       expandedItemIds: new Set(this.expandedItemIds),
     });
   }

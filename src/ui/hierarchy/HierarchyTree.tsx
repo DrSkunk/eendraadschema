@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { EditorStore } from "../../application/EditorStore";
 import type { SchemaStore } from "../../application/SchemaStore";
 import { useEditorSnapshot } from "../useEditorSnapshot";
 import { useSchemaSnapshot } from "../useSchemaSnapshot";
+import { BoardNavigator } from "../boards/BoardNavigator";
 import { AddItemControl } from "./AddItemControl";
 import { HierarchyNode } from "./HierarchyNode";
 import {
@@ -30,16 +31,27 @@ export function HierarchyTree({
   const editorSnapshot = useEditorSnapshot(editorStore);
   const [errorMessage, setErrorMessage] = useState("");
   const hierarchyDocument = schemaSnapshot.document;
+  const boards = hierarchyDocument.getBoards();
+  const activeBoard = hierarchyDocument.getBoard(editorSnapshot.activeBoardId) ?? boards[0];
+  const activeBoardId = activeBoard?.id ?? "main";
   const hierarchyIndex = useMemo(
-    () => createHierarchyIndex(hierarchyDocument),
-    [hierarchyDocument],
+    () => createHierarchyIndex(hierarchyDocument, activeBoardId),
+    [hierarchyDocument, activeBoardId],
   );
-  const rootItems = getEditableChildren(hierarchyIndex, null);
+  const rootItems = activeBoard
+    ? hierarchyDocument.getBoardRootItems(activeBoard.id).filter((item) => item.role === "item")
+    : getEditableChildren(hierarchyIndex, null);
   const visibleItemIds = getVisibleHierarchy(
     hierarchyIndex,
     editorSnapshot.expandedItemIds,
+    rootItems,
   ).map(({ node }) => node.id);
-  const rootCapabilities = hierarchyDocument.getRootCapabilities();
+
+  useEffect(() => {
+    if (boards.length > 0) {
+      editorStore.commands.reconcileBoardIds(new Set(boards.map((board) => board.id)), boards[0].id);
+    }
+  }, [boards, editorStore]);
 
   function reconcileEditorState(): void {
     editorStore.commands.reconcileItemIds(new Set(
@@ -65,16 +77,26 @@ export function HierarchyTree({
 
   return (
     <nav className="react-hierarchy" aria-labelledby="react-hierarchy-title">
+      <BoardNavigator
+        schemaStore={schemaStore}
+        editorStore={editorStore}
+        document={hierarchyDocument}
+        activeBoardId={activeBoardId}
+        validationIssues={schemaSnapshot.validationIssues}
+        reportError={setErrorMessage}
+      />
       <header className="react-hierarchy__header">
         <div>
-          <span className="react-hierarchy__eyebrow">Document</span>
+          <span className="react-hierarchy__eyebrow">{activeBoard?.name ?? "Document"}</span>
           <h2 id="react-hierarchy-title">Elektrische hiërarchie</h2>
         </div>
-        <AddItemControl
-          label="Onderdeel op hoofdniveau toevoegen"
-          allowedTypes={rootCapabilities.allowedChildTypes}
-          onAdd={addRootItem}
-        />
+        {rootItems.length === 0 && !activeBoard?.feeder ? (
+          <AddItemControl
+            label="Onderdeel op hoofdniveau toevoegen"
+            allowedTypes={hierarchyDocument.getRootCapabilities().allowedChildTypes}
+            onAdd={addRootItem}
+          />
+        ) : null}
         <div className="react-hierarchy__history" aria-label="Bewerkingsgeschiedenis">
           <button
             type="button"
@@ -93,7 +115,7 @@ export function HierarchyTree({
 
       {rootItems.length === 0 ? (
         <p className="react-hierarchy__empty">
-          Dit schema bevat nog geen elektrische onderdelen. Voeg hierboven het eerste onderdeel toe.
+          Dit verdeelbord bevat nog geen elektrische onderdelen.
         </p>
       ) : (
         <ol className="react-hierarchy__tree">
