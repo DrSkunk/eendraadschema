@@ -2,6 +2,8 @@
 
 Status: Living inventory through the React editor, distribution-board and legacy hierarchy-renderer migration (7 August 2026).
 
+For a concise continuation checklist, read [`migration-handoff.md`](migration-handoff.md) first.
+
 ## Current migration state
 
 The original Phase 0 inventory below is retained as historical context. The active architecture now has these boundaries:
