@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Hierarchical_List } from "../Hierarchical_List";
-import { decodeEds, structureFromJson } from "../legacy/persistence/EdsCodec";
+import { decodeEds, structureFromJson, wrapCurrentEdsPayload } from "../legacy/persistence/EdsCodec";
 import { SituationPlanElement } from "../sitplan/SituationPlanElement";
 import { hierarchySnapshot, loadCurrentFixture, loadFixture } from "./helpers";
 
@@ -41,10 +41,10 @@ describe("EDS compatibility", () => {
   it("decodes the current uncompressed EDS envelope", () => {
     const original = loadFixture("example_default.eds");
     const text = original.toJsonObject(true);
-    const decoded = decodeEds(`TXT0040000${text}`);
+    const decoded = decodeEds(wrapCurrentEdsPayload("TXT", text));
     const reloaded = structureFromJson(decoded.text, null, decoded.version);
 
-    expect(decoded.version).toBe(4);
+    expect(decoded.version).toBe(5);
     expect(hierarchySnapshot(reloaded)).toEqual(hierarchySnapshot(original));
   });
 
@@ -86,5 +86,57 @@ describe("EDS compatibility", () => {
       "Overspanningsbeveiliging",
     ]);
     expect(structure.sitplan.getElements()[0].getElectroItemId()).toBe(4);
+  });
+
+  it("migrates documents without board metadata to one default main board", () => {
+    const original = loadFixture("example001.eds");
+    const legacyJson = JSON.parse(original.toJsonObject(true));
+    delete legacyJson.boards;
+
+    const reloaded = structureFromJson(JSON.stringify(legacyJson), null, 4);
+    const rootItemIds = reloaded.data
+      .filter((item, index) => reloaded.active[index] && item.parent === 0)
+      .map((item) => item.id);
+
+    expect(reloaded.boards).toEqual([{
+      id: "main",
+      name: "Hoofdbord",
+      rootItemIds,
+    }]);
+  });
+
+  it("round trips stable distribution-board IDs and feeder metadata", () => {
+    const original = new Hierarchical_List();
+    const connection = original.addItem("Aansluiting");
+    const mainBoard = original.createItem("Bord");
+    original.insertChildAfterId(mainBoard, connection.id);
+    const feederCircuit = original.createItem("Kring");
+    original.insertChildAfterId(feederCircuit, mainBoard.id);
+    const garageBoard = original.createItem("Bord");
+    original.insertChildAfterId(garageBoard, feederCircuit.id);
+    const garageCircuit = original.createItem("Kring");
+    original.insertChildAfterId(garageCircuit, garageBoard.id);
+    original.boards = [
+      { id: "main", name: "Hoofdbord", rootItemIds: [connection.id] },
+      {
+        id: "garage-board",
+        name: "Garage",
+        location: "Garage",
+        rootItemIds: [garageBoard.id],
+        feeder: {
+          sourceBoardId: "main",
+          sourceCircuitId: feederCircuit.id,
+          cableType: "XVB",
+          conductorSection: "5G6",
+          lengthMeters: 18,
+        },
+      },
+    ];
+
+    const reloaded = structureFromJson(original.toJsonObject(true), null, 0);
+
+    expect(reloaded.boards).toEqual(original.boards);
+    expect(reloaded.boards[1].feeder?.sourceCircuitId).toBe(feederCircuit.id);
+    expect(reloaded.getElectroItemById(garageCircuit.id)?.parent).toBe(garageBoard.id);
   });
 });

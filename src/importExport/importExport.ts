@@ -1,6 +1,7 @@
 import {
     decodeEds,
     structureFromJson,
+    wrapCurrentEdsPayload,
 } from "../legacy/persistence/EdsCodec";
 
 declare var pako: any;
@@ -199,21 +200,21 @@ globalThis.exportjson = (saveAs: boolean = true) => { // Indien de boolean false
         let encoder = new TextEncoder();
         let pako_inflated = new Uint8Array(encoder.encode(origtext));
         let pako_deflated = new Uint8Array(pako.deflate(pako_inflated));
-        text = "EDS0040000" + uint8ArrayToBase64(pako_deflated);
+        text = wrapCurrentEdsPayload("EDS", uint8ArrayToBase64(pako_deflated));
     } catch (error) {
         console.log("Terugvallen naar TXT-uitvoer vanwege compressiefout: " + error);
-        text = "TXT0040000" + origtext;
+        text = wrapCurrentEdsPayload("TXT", origtext);
     } finally {
         if ((window as any).showOpenFilePicker) { // Gebruik fileAPI    
             if ( (globalThis.fileAPIobj.filename == null) && (saveAs == false) ) saveAs = true; // Default to SaveAs if we have no file name
             if (saveAs) {
-                globalThis.fileAPIobj.saveAs(text).then(() => {globalThis.autoSaver.saveManually("TXT0040000" + origtext);}) 
+                globalThis.fileAPIobj.saveAs(text).then(() => {globalThis.autoSaver.saveManually(wrapCurrentEdsPayload("TXT", origtext));})
             } else { 
-                globalThis.fileAPIobj.save(text).then(() => {globalThis.autoSaver.saveManually("TXT0040000" + origtext);});
+                globalThis.fileAPIobj.save(text).then(() => {globalThis.autoSaver.saveManually(wrapCurrentEdsPayload("TXT", origtext));});
             }          
         } else { // legacy
           download_by_blob(text, filename, 'data:text/eds;charset=utf-8');
-          globalThis.autoSaver.saveManually("TXT0040000" + origtext); // Needs to be as TXT to be able to check with last autosave
+          globalThis.autoSaver.saveManually(wrapCurrentEdsPayload("TXT", origtext)); // Needs to be as TXT to be able to check with last autosave
         }
     }
 

@@ -51,6 +51,7 @@ import { Zekering } from "./List_Item/Zekering";
 import { Zeldzame_symbolen } from "./List_Item/Zeldzame_symbolen";
 import { Zonnepaneel } from "./List_Item/Zonnepaneel";
 import { Properties } from "./Properties";
+import { createDefaultMainBoard, type DistributionBoard } from "./domain/DistributionBoard";
 import { SVGelement } from "./SVGelement";
 import { SVGSymbols } from "./SVGSymbols";
 import { Print_Table } from "./print/Print_Table";
@@ -144,6 +145,7 @@ export class Hierarchical_List {
     sitplan: SituationPlan;
     sitplanjson: any; //this is where we store the situation plan in plan object exporting to json
     sitplanview: SituationPlanView;
+    boards: DistributionBoard[];
     currentView: string = ""; // Here we store '2col' | 'config' | 'draw'
     
     // -- Hash table for efficient ID to ordinal lookups --
@@ -161,6 +163,7 @@ export class Hierarchical_List {
         this.curid = 1;
         this.mode = "edit";
         this.sitplan = new SituationPlan();
+        this.boards = [createDefaultMainBoard([])];
       };
 
     /** dispose
@@ -1374,6 +1377,16 @@ export class Hierarchical_List {
     }
 
     toJsonObject(removeUnneededDataMembers = true) {
+
+        const activeRootItemIds = this.data
+            .filter((item, index) => this.active[index] && item.parent === 0)
+            .map((item) => item.id);
+        const mainBoard = this.boards.find((board) => board.feeder === undefined);
+        if (mainBoard !== undefined) {
+            this.boards = this.boards.map((board) => board.id === mainBoard.id
+                ? { ...board, rootItemIds: activeRootItemIds }
+                : board);
+        }
 
         // Remove some unneeded data members that would only inflate the size of the output file
         for (let listitem of this.data) {

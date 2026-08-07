@@ -1,10 +1,17 @@
 import { Hierarchical_List } from "../../Hierarchical_List";
 import { Electro_Item } from "../../List_Item/Electro_Item";
 import { SituationPlan } from "../../sitplan/SituationPlan";
+import { parseDistributionBoards, type DistributionBoard } from "../../domain/DistributionBoard";
 
 export interface DecodedEds {
   readonly text: string;
   readonly version: number;
+}
+
+export const CURRENT_EDS_VERSION = 5;
+
+export function wrapCurrentEdsPayload(format: "EDS" | "TXT", payload: string): string {
+  return `${format}${String(CURRENT_EDS_VERSION).padStart(3, "0")}0000${payload}`;
 }
 
 type LegacyStructure = {
@@ -16,6 +23,7 @@ type LegacyStructure = {
   properties?: any;
   print_table?: any;
   sitplanjson?: any;
+  boards?: DistributionBoard[];
 };
 
 type Inflate = (input: Uint8Array) => Uint8Array;
@@ -176,6 +184,10 @@ export function structureFromJson(
 
   output.curid = input.curid;
   output.voegAttributenToeAlsNodigEnReSort();
+  const activeRootItemIds = output.data
+    .filter((item, index) => output.active[index] && item.parent === 0)
+    .map((item) => item.id);
+  output.boards = parseDistributionBoards(input.boards, activeRootItemIds);
   return output;
 }
 
