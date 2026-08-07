@@ -2,7 +2,10 @@
 
 import { describe, expect, it, vi } from "vitest";
 import { LegacySchemaStore } from "../application/LegacySchemaStore";
-import type { CircuitPropertyChanges } from "../application/SchemaPropertyReader";
+import type {
+  CircuitPropertyChanges,
+  SocketPropertyChanges,
+} from "../application/SchemaPropertyReader";
 import { SchemaCommandError } from "../application/SchemaStore";
 import { Hierarchical_List } from "../Hierarchical_List";
 
@@ -171,6 +174,91 @@ describe("LegacySchemaStore", () => {
     expect(listener).not.toHaveBeenCalled();
     expect(store.getSnapshot()).toBe(before);
     expect(store.getSnapshot().properties.getCircuit(circuitId)?.amperage).toBe("20");
+  });
+
+  it("exposes immutable typed socket properties and maps socket commands", () => {
+    const { store, boardId } = createStore();
+    const circuitId = store.commands.addItem(boardId, "Kring");
+    const socketId = store.commands.addItem(circuitId, "Contactdoos");
+    const beforeUpdate = store.getSnapshot();
+
+    store.commands.updateSocket(socketId, {
+      numberMode: "manueel",
+      number: "G1",
+      grounded: false,
+      childSafe: false,
+      splashProof: true,
+      multiPhase: true,
+      phaseCount: "2",
+      hasNeutral: true,
+      builtInSwitch: true,
+      outletCount: "4",
+      inDistributionBoard: true,
+      address: "Werkbank",
+    });
+
+    expect(store.getSnapshot().properties.getSocket(socketId)).toEqual({
+      itemId: socketId,
+      numberMode: "manueel",
+      number: "G1",
+      canEditNumber: true,
+      grounded: false,
+      childSafe: false,
+      splashProof: true,
+      multiPhase: true,
+      phaseCount: "2",
+      hasNeutral: true,
+      builtInSwitch: true,
+      outletCount: "4",
+      inDistributionBoard: true,
+      address: "Werkbank",
+    });
+    expect(beforeUpdate.properties.getSocket(socketId)).toMatchObject({
+      grounded: true,
+      outletCount: "1",
+      address: "",
+    });
+    expect(store.getLegacyDocument().getElectroItemById(socketId)?.props).toMatchObject({
+      autonr: "manueel",
+      nr: "G1",
+      is_geaard: false,
+      is_kinderveilig: false,
+      is_halfwaterdicht: true,
+      is_meerfasig: true,
+      aantal_fases_indien_meerfasig: "2",
+      heeft_nul_indien_meerfasig: true,
+      heeft_ingebouwde_schakelaar: true,
+      aantal: "4",
+      in_verdeelbord: true,
+      adres: "Werkbank",
+    });
+    expect(store.getSnapshot().properties.getSocket(circuitId)).toBeUndefined();
+  });
+
+  it("rejects invalid socket changes without publishing or creating history", () => {
+    const { store, boardId } = createStore();
+    const circuitId = store.commands.addItem(boardId, "Kring");
+    const socketId = store.commands.addItem(circuitId, "Contactdoos");
+    const before = store.getSnapshot();
+    const listener = vi.fn();
+    store.subscribe(listener);
+    const invalidChanges: unknown[] = [
+      { outletCount: "7" },
+      { phaseCount: "4" },
+      { grounded: "ja" },
+      { unknownRuntimeKey: true },
+    ];
+
+    for (const changes of invalidChanges) {
+      expectCommandError(
+        () => store.commands.updateSocket(socketId, changes as SocketPropertyChanges),
+        "INVALID_CHANGE",
+      );
+    }
+
+    expect(listener).not.toHaveBeenCalled();
+    expect(store.getSnapshot()).toBe(before);
+    expectCommandError(() => store.commands.updateSocket(circuitId, { grounded: false }), "INVALID_CHANGE");
   });
 
   it("deletes a subtree and restores it through undo and redo", () => {

@@ -1,5 +1,9 @@
 import type { Hierarchical_List } from "../Hierarchical_List";
-import type { CircuitProperties, SchemaPropertyReader } from "./SchemaPropertyReader";
+import type {
+  CircuitProperties,
+  SchemaPropertyReader,
+  SocketProperties,
+} from "./SchemaPropertyReader";
 
 function text(value: unknown): string {
   return value === null || value === undefined ? "" : String(value);
@@ -7,15 +11,17 @@ function text(value: unknown): string {
 
 export class LegacySchemaPropertyReader implements SchemaPropertyReader {
   private readonly circuits: ReadonlyMap<number, CircuitProperties>;
+  private readonly sockets: ReadonlyMap<number, SocketProperties>;
 
   constructor(structure: Hierarchical_List) {
     const firstRootChildId = structure.getFirstChildId(0);
     const circuits = new Map<number, CircuitProperties>();
+    const sockets = new Map<number, SocketProperties>();
     for (let ordinal = 0; ordinal < structure.length; ordinal += 1) {
       if (!structure.active[ordinal]) continue;
       const item = structure.getElectroItemById(structure.id[ordinal]);
-      if (item === null || item.getType() !== "Kring") continue;
-      circuits.set(item.id, Object.freeze({
+      if (item === null) continue;
+      if (item.getType() === "Kring") circuits.set(item.id, Object.freeze({
         itemId: item.id,
         nameMode: text(item.props.autoKringNaam || "auto"),
         name: text(item.props.naam),
@@ -40,11 +46,35 @@ export class LegacySchemaPropertyReader implements SchemaPropertyReader {
         startsNewPage: item.props.newPage === true,
         canStartNewPage: item.parent === 0 && item.id !== firstRootChildId,
       }));
+      if (item.getType() === "Contactdoos") {
+        const parent = item.getParent();
+        sockets.set(item.id, Object.freeze({
+          itemId: item.id,
+          numberMode: text(item.props.autonr || "manueel"),
+          number: text(item.props.nr),
+          canEditNumber: parent !== null && ["Kring", "Domotica module (verticaal)"].includes(parent.getType()),
+          grounded: item.props.is_geaard === true,
+          childSafe: item.props.is_kinderveilig === true,
+          splashProof: item.props.is_halfwaterdicht === true,
+          multiPhase: item.props.is_meerfasig === true,
+          phaseCount: text(item.props.aantal_fases_indien_meerfasig),
+          hasNeutral: item.props.heeft_nul_indien_meerfasig === true,
+          builtInSwitch: item.props.heeft_ingebouwde_schakelaar === true,
+          outletCount: text(item.props.aantal),
+          inDistributionBoard: item.props.in_verdeelbord === true,
+          address: text(item.props.adres),
+        }));
+      }
     }
     this.circuits = circuits;
+    this.sockets = sockets;
   }
 
   getCircuit(itemId: number): CircuitProperties | undefined {
     return this.circuits.get(itemId);
+  }
+
+  getSocket(itemId: number): SocketProperties | undefined {
+    return this.sockets.get(itemId);
   }
 }

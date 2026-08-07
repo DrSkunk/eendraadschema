@@ -3,9 +3,10 @@ import { Electro_Item } from "../List_Item/Electro_Item";
 import { structureFromJson } from "../legacy/persistence/EdsCodec";
 import { DocumentSnapshotHistory } from "./DocumentSnapshotHistory";
 import { validateAndMapCircuitChanges } from "./CircuitPropertyValidation";
+import { validateAndMapSocketChanges } from "./SocketPropertyValidation";
 import { LegacySchemaDocumentReader } from "./LegacySchemaDocumentReader";
 import { LegacySchemaPropertyReader } from "./LegacySchemaPropertyReader";
-import type { CircuitPropertyChanges } from "./SchemaPropertyReader";
+import type { CircuitPropertyChanges, SocketPropertyChanges } from "./SchemaPropertyReader";
 import {
   SchemaCommandError,
   type MoveItemOptions,
@@ -37,6 +38,7 @@ export class LegacySchemaStore implements SchemaStore {
       moveItem: this.moveItem.bind(this),
       updateItem: this.updateItem.bind(this),
       updateCircuit: this.updateCircuit.bind(this),
+      updateSocket: this.updateSocket.bind(this),
       duplicateItem: this.duplicateItem.bind(this),
       replaceDocument: this.replaceDocument.bind(this),
       undo: this.undo.bind(this),
@@ -163,6 +165,17 @@ export class LegacySchemaStore implements SchemaStore {
     }
 
     const legacyChanges = validateAndMapCircuitChanges(changes);
+    if (Object.keys(legacyChanges).length === 0) return;
+    this.updateItem(itemId, legacyChanges);
+  }
+
+  private updateSocket(itemId: number, changes: Readonly<SocketPropertyChanges>): void {
+    const item = this.requireItem(itemId);
+    if (item.getType() !== "Contactdoos") {
+      throw new SchemaCommandError("INVALID_CHANGE", `Item ${itemId} is geen contactdoos.`);
+    }
+
+    const legacyChanges = validateAndMapSocketChanges(changes);
     if (Object.keys(legacyChanges).length === 0) return;
     this.updateItem(itemId, legacyChanges);
   }

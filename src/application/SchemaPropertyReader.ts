@@ -71,7 +71,48 @@ export interface CircuitPropertyChanges {
   readonly startsNewPage?: boolean;
 }
 
+export interface SocketProperties {
+  readonly itemId: number;
+  readonly numberMode: string;
+  readonly number: string;
+  readonly canEditNumber: boolean;
+  readonly grounded: boolean;
+  readonly childSafe: boolean;
+  readonly splashProof: boolean;
+  readonly multiPhase: boolean;
+  readonly phaseCount: string;
+  readonly hasNeutral: boolean;
+  readonly builtInSwitch: boolean;
+  readonly outletCount: string;
+  readonly inDistributionBoard: boolean;
+  readonly address: string;
+}
+
+export const SOCKET_NUMBER_MODES = ["auto", "manueel"] as const;
+export const SOCKET_PHASE_COUNTS = ["1", "2", "3"] as const;
+export const SOCKET_OUTLET_COUNTS = ["1", "2", "3", "4", "5", "6"] as const;
+
+export type SocketNumberMode = typeof SOCKET_NUMBER_MODES[number];
+export type SocketPhaseCount = typeof SOCKET_PHASE_COUNTS[number];
+export type SocketOutletCount = typeof SOCKET_OUTLET_COUNTS[number];
+
+export interface SocketPropertyChanges {
+  readonly numberMode?: SocketNumberMode;
+  readonly number?: string;
+  readonly grounded?: boolean;
+  readonly childSafe?: boolean;
+  readonly splashProof?: boolean;
+  readonly multiPhase?: boolean;
+  readonly phaseCount?: SocketPhaseCount;
+  readonly hasNeutral?: boolean;
+  readonly builtInSwitch?: boolean;
+  readonly outletCount?: SocketOutletCount;
+  readonly inDistributionBoard?: boolean;
+  readonly address?: string;
+}
+
 /** Read-only, UI-independent projection for gradually migrated property editors. */
 export interface SchemaPropertyReader {
   getCircuit(itemId: number): CircuitProperties | undefined;
+  getSocket(itemId: number): SocketProperties | undefined;
 }
