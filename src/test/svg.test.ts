@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { LegacySchemaStore } from "../application/LegacySchemaStore";
+import { Hierarchical_List } from "../Hierarchical_List";
 import { SVGSymbols } from "../SVGSymbols";
 import { loadFixture } from "./helpers";
 
@@ -40,5 +42,30 @@ describe("one-line SVG generation", () => {
     expect(svg).toContain("#contactdoos");
     expect(svg).toContain("#lamp");
     expect(svg).toMatch(/>A<\/text>/);
+  });
+
+  it("renders secondary boards at their feeder with board export metadata", () => {
+    const structure = new Hierarchical_List();
+    const mainBoard = structure.addItem("Bord");
+    mainBoard.props.naam = "Hoofdbord";
+    const store = new LegacySchemaStore(structure);
+    const feederCircuitId = store.commands.addItem(mainBoard.id, "Kring");
+    const garageBoardId = store.commands.addDistributionBoard(feederCircuitId, {
+      name: "Garage",
+      location: "Achterbouw",
+      cableType: "XVB",
+      conductorSection: "5G6",
+      lengthMeters: 18,
+    });
+    const garageRootId = store.getSnapshot().document.getBoard(garageBoardId)!.rootItemIds[0];
+    store.commands.addItem(garageRootId, "Kring");
+
+    const svg = store.getLegacyDocument().toSVG(0, "horizontal").data;
+    expect(svg).toContain('data-distribution-board-name="true"');
+    expect(svg).toContain("Hoofdbord");
+    expect(svg).toContain("Garage");
+    expect(svg).toContain("Locatie: Achterbouw");
+    expect(svg).toContain("Voeding: XVB · 5G6 · 18 m");
+    expect(store.getSnapshot().document.getItem(garageRootId)?.parentId).toBe(feederCircuitId);
   });
 });
