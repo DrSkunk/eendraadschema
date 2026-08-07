@@ -50,6 +50,8 @@ declare global {
         load_example: (nr: number) => void;
         undoClicked: () => void;
         redoClicked: () => void;
+        historyCanUndo: () => boolean;
+        historyCanRedo: () => boolean;
         read_settings: () => void;
         dosvgdownload: () => void;
         displayButtonPrintToPdf: () => void;

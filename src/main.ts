@@ -41,6 +41,21 @@ globalThis.fileAPIobj = new importExportUsingFileAPI();
 
 let schemaStore: LegacySchemaStore | null = null;
 let editorStore: LocalEditorStore | null = null;
+let reactSchemaHistoryEnabled = false;
+
+function schemaCommandHistoryIsActive(): boolean {
+    return reactSchemaHistoryEnabled
+        && schemaStore !== null
+        && globalThis.structure.properties.currentView === '2col';
+}
+
+globalThis.historyCanUndo = () => schemaCommandHistoryIsActive()
+    ? schemaStore!.getSnapshot().canUndo
+    : globalThis.undostruct.undoStackSize() > 0;
+
+globalThis.historyCanRedo = () => schemaCommandHistoryIsActive()
+    ? schemaStore!.getSnapshot().canRedo
+    : globalThis.undostruct.redoStackSize() > 0;
 
 function synchronizeSchemaStoreWithLegacyDocument(): void {
     schemaStore?.synchronizeLegacyDocument(globalThis.structure);
@@ -631,12 +646,14 @@ globalThis.load_example = (nr: number) => {
 
 globalThis.undoClicked = () => {
     if ((globalThis.structure.sitplanview != null) && (globalThis.structure.sitplanview.contextMenu != null)) globalThis.structure.sitplanview.contextMenu.hide();
-    globalThis.undostruct.undo();    
+    if (schemaCommandHistoryIsActive()) schemaStore!.commands.undo();
+    else globalThis.undostruct.undo();
 }
 
 globalThis.redoClicked = () => {
     if ((globalThis.structure.sitplanview != null) && (globalThis.structure.sitplanview.contextMenu != null)) globalThis.structure.sitplanview.contextMenu.hide();
-    globalThis.undostruct.redo();    
+    if (schemaCommandHistoryIsActive()) schemaStore!.commands.redo();
+    else globalThis.undostruct.redo();
 }
 
 globalThis.read_settings = () => {
@@ -824,6 +841,7 @@ const reactShellIsEnabled = reactEditorShellEnabled(window.location.search);
 const reactHierarchyIsEnabled = reactShellIsEnabled
     && reactEditorHierarchyEnabled(window.location.search)
     && reactHierarchyRoot !== null;
+reactSchemaHistoryEnabled = reactHierarchyIsEnabled;
 
 if (legacyHierarchyRoot !== null) legacyHierarchyRoot.hidden = reactHierarchyIsEnabled;
 if (reactHierarchyRoot !== null) reactHierarchyRoot.hidden = !reactHierarchyIsEnabled;
@@ -840,7 +858,11 @@ if (reactEditorRoot !== null && reactShellIsEnabled) {
     );
 }
 if (reactHierarchyIsEnabled) {
-    schemaStore.subscribe(() => globalThis.HLRedrawTreeSVG());
+    schemaStore.subscribe(() => {
+        globalThis.structure = schemaStore!.getLegacyDocument();
+        globalThis.HLRedrawTreeSVG();
+        globalThis.structure.updateRibbon();
+    });
 }
 
 // Create the autoSaver

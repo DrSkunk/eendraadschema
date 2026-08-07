@@ -233,6 +233,7 @@ The first item property editor is available on the opt-in React path:
 - circuit inputs cover every field in the legacy `Kring.toHTML()` editor, retain its conditional visibility, group uncommon fields under “Geavanceerde instellingen”, and use Belgian Dutch labels;
 - numeric drafts are validated on blur and invalid intermediate input is not written to the domain document;
 - selection remains editor-only state, while every valid property change flows through the command layer and existing undo/redo history;
+- on the opt-in one-line editor, both React controls and the visible legacy ribbon delegate to `SchemaStore` history; undo/redo also rebinds the transitional global document before SVG, autosave and ribbon refreshes;
 - compatibility coverage compares command-path serialization and SVG output with the legacy property mutation path.
 
 The properties panel is mounted in a dedicated right sidebar when `?reactHierarchy=on`; the unchanged SVG remains in the center workspace and the hierarchy remains on the left. Narrow viewports keep all three surfaces reachable with horizontal scrolling. The default legacy path remains fully functional. Unregistered item types clearly indicate that their properties are still managed by the existing editor rather than attempting a partial form.

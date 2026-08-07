@@ -4,6 +4,7 @@ import { LocalEditorStore } from "../application/EditorStore";
 import { LegacySchemaStore } from "../application/LegacySchemaStore";
 import { Hierarchical_List } from "../Hierarchical_List";
 import { ItemPropertiesPanel } from "../ui/properties/ItemPropertiesPanel";
+import { HierarchyTree } from "../ui/hierarchy/HierarchyTree";
 
 afterEach(cleanup);
 
@@ -90,5 +91,34 @@ describe("ItemPropertiesPanel", () => {
     expect(screen.getByRole("option", { name: "Huidige waarde: historische-keuze" }))
       .toBeInTheDocument();
     expect(circuit.props.bescherming).toBe("historische-keuze");
+  });
+
+  it("updates history controls and restores property edits through undo and redo", () => {
+    const { schemaStore, editorStore, circuitId } = createSelectedCircuit();
+    render(
+      <>
+        <HierarchyTree schemaStore={schemaStore} editorStore={editorStore} />
+        <ItemPropertiesPanel schemaStore={schemaStore} editorStore={editorStore} />
+      </>,
+    );
+
+    const undo = screen.getByRole("button", { name: "Ongedaan maken" });
+    const redo = screen.getByRole("button", { name: "Opnieuw" });
+    expect(undo).toBeDisabled();
+    expect(redo).toBeDisabled();
+
+    const amperage = screen.getByLabelText("Stroom (A)");
+    fireEvent.change(amperage, { target: { value: "16" } });
+    fireEvent.blur(amperage);
+    expect(undo).toBeEnabled();
+    expect(schemaStore.getSnapshot().properties.getCircuit(circuitId)?.amperage).toBe("16");
+
+    fireEvent.click(undo);
+    expect(schemaStore.getSnapshot().properties.getCircuit(circuitId)?.amperage).toBe("20");
+    expect(redo).toBeEnabled();
+
+    fireEvent.click(redo);
+    expect(schemaStore.getSnapshot().properties.getCircuit(circuitId)?.amperage).toBe("16");
+    expect(redo).toBeDisabled();
   });
 });
