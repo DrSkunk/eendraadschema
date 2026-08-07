@@ -1,6 +1,5 @@
 import { TopMenu } from "./TopMenu";
 import type { MenuItem } from "./TopMenu";
-import { Electro_Item } from "./List_Item/Electro_Item";
 import { Hierarchical_List } from "./Hierarchical_List";
 import { showFilePage } from "./importExport/importExport";
 import { EDStoStructure } from "./importExport/importExport";
@@ -9,8 +8,7 @@ import { showSituationPlanPage } from "./sitplan/SituationPlanView";
 import { printsvg } from "./print/print";
 import { PROP_edit_menu } from "../prop/prop_scripts";
 import { CookieBanner } from "../prop/CookieBanner";
-import { flattenSVGfromString, isFirefox, trimString } from "./general";
-import { isInt } from "./general";
+import { flattenSVGfromString, trimString } from "./general";
 import { Bord } from "./List_Item/Bord";
 import { Kring } from "./List_Item/Kring";
 import { PROP_Contact_Text, PROP_development_options } from "../prop/prop_scripts";
@@ -24,7 +22,6 @@ import { importExportUsingFileAPI } from "./importExport/importExport";
 import { changelog } from "./changelog";
 import { LocalEditorStore } from "./application/EditorStore";
 import { LegacySchemaStore } from "./application/LegacySchemaStore";
-import { reactEditorHierarchyEnabled, reactEditorShellEnabled } from "./ui/featureFlags";
 import { mountEditorApp } from "./ui/mountEditorApp";
 
 import "../css/all.css";
@@ -169,200 +166,6 @@ globalThis.EXAMPLE1 = `EDS0040000eJztWm1v2zYQ/iuGvk4LrBc7iTEMS1KgHdoOBVIEA4pCoK2
 globalThis.EXAMPLE_DEFAULT = `EDS0040000eJytVN9v00AM/leieyWM/GgniBCivICE4GVoL9MUuTk3PfVyF91dunbT+NuxkzZZAQ0VqKLq4rM/f/7s+EFoNHVYi2IWCwkBRHHzIJQURRqLFhyaIIokFsrI47GyWkPrkXxWoD2Sn7OtF8WDME4UQsQi7Fuk0wKM150KytRkBDABdNlayiiKLBZL9NUaXcPXhZBqtULOpxA1uzctOqgJ53I+IJYbWKIuDZQBtUbOle3SS/I9iS0l6gDlFJ8nxBqkQz+xK0/T9faqc1ssoQu2AQiD7RRZ+dKjxoreVmP1G+tCX+aWarE1F8eRBqB5km/gvrXWTezFYyy87VyFWnlKaDqtH+NB/mySP53kT8+R/4N1kt6IdI0AdC6C6/Aps1GUZ4jkE5FsIpKdQ+Sz+68T8LvO/NpzisCNP7RxUF/bCsidTF9fLc4chAGBtFSmXHbKj0X//YSMkKTLHd6regw4duiZtsymtuRTW/J/m4+f0v9hQG7pngrdEtZNP1mnf3TNRG/SOIvzeHbLRJQJZYClRqaDhk8LkrntezZM5xpVveZRv3wTiwZ2d0ryekpfp6y1bzXsB/eEFaiZHm2skygfwA27yhN2H8tk2bsBt0HnhwoI30qkpgRVAfce6MP04gCwHxH2B9wWaLy8uu9324w1YWk5HHt9V4oGGxq+RjTSAUie7wYuUDKsvTP9d39NW4A1jhbVOmB/fLt0764CRYQo4XNCv4joEk5ANnxDXUQv8iwi+/Fh+8erL0f76QW+bEBRzPaQ7ALGZO+lbVCZiyVy+w1Ve1hISmLD829NcJYFYaDeZ2V520a7KMuT6+j7PIk+3bMA9Klwk+eDlFy4VEE8/gDGURmI`;
 
 
-globalThis.forceUndoStore = () => {
-    globalThis.undostruct.store();
-}
-
-globalThis.HLCollapseExpand = (my_id: number, state?: Boolean) => {
-    let ordinal: number|null;
-    ordinal = globalThis.structure.getOrdinalById(my_id);
-    if (ordinal == null) return;
-    if (state == undefined) {
-       globalThis.structure.data[ordinal].collapsed = !globalThis.structure.data[ordinal].collapsed;
-    } else {
-       globalThis.structure.data[ordinal].collapsed = state;
-    }
-    globalThis.undostruct.store();
-
-    if (!isFirefox()) {
-        globalThis.structure.updateHTMLinner(my_id);
-        globalThis.HLRedrawTreeSVG();
-    } else {
-        globalThis.HLRedrawTree();
-    }
-}
-
-globalThis.HLDelete = (my_id: number) => {
-    const electroItem = globalThis.structure.getElectroItemById(my_id);
-    if (electroItem === null) return;
-    const parent = electroItem.getParent();
-    
-    globalThis.structure.deleteById(my_id);
-    globalThis.undostruct.store();
-    
-    if ((parent !== null) && (!isFirefox())) {
-        globalThis.structure.reNumber();
-        globalThis.structure.updateHTMLinner(parent.id); 
-        globalThis.HLRedrawTreeSVG();
-    } else {
-        globalThis.HLRedrawTree();
-    }
-}
-
-globalThis.HLAdd = () => {
-    globalThis.structure.addItem("");
-    globalThis.undostruct.store();
-
-    globalThis.HLRedrawTree();
-}
-
-globalThis.HLInsertBefore = (my_id: number) => {
-    const electroItem = globalThis.structure.getElectroItemById(my_id);
-    if (electroItem === null) return;
-    const parent = electroItem.getParent();
-
-    globalThis.structure.insertItemBeforeId(new Electro_Item(globalThis.structure), my_id);
-    globalThis.undostruct.store();
-
-    if ((parent !== null) && (!isFirefox())) {
-        globalThis.structure.reNumber();
-        globalThis.structure.updateHTMLinner(parent.id);
-        globalThis.HLRedrawTreeSVG();
-    } else {
-        globalThis.HLRedrawTree();
-    }
-}
-
-globalThis.HLInsertAfter = (my_id: number) => {
-    const electroItem = globalThis.structure.getElectroItemById(my_id);
-    if (electroItem === null) return;
-    const parent = electroItem.getParent();
-
-    globalThis.structure.insertItemAfterId(new Electro_Item(globalThis.structure), my_id);
-    globalThis.undostruct.store();
-
-    if ((parent !== null) && (!isFirefox())) {
-        globalThis.structure.reNumber();
-        globalThis.structure.updateHTMLinner(parent.id);
-        globalThis.HLRedrawTreeSVG();
-    } else {
-        globalThis.HLRedrawTree();
-    }
-}
-
-globalThis.HLMoveDown = (my_id: number) => {
-    const electroItem = globalThis.structure.getElectroItemById(my_id);
-    if (electroItem === null) return;
-    const parent = electroItem.getParent();
-
-    globalThis.structure.moveDown(my_id);
-    globalThis.undostruct.store();
-
-    if ((parent !== null) && (!isFirefox())) {
-        globalThis.structure.reNumber();
-        globalThis.structure.updateHTMLinner(parent.id);
-        globalThis.HLRedrawTreeSVG();
-    } else {
-        globalThis.HLRedrawTree();
-    }
-}
-
-globalThis.HLMoveUp = (my_id: number) => {
-    const electroItem = globalThis.structure.getElectroItemById(my_id);
-    if (electroItem === null) return;
-    const parent = electroItem.getParent();
-
-    globalThis.structure.moveUp(my_id);
-    globalThis.undostruct.store();
-
-    if ((parent !== null) && (!isFirefox())) {
-        globalThis.structure.reNumber();
-        globalThis.structure.updateHTMLinner(parent.id);
-        globalThis.HLRedrawTreeSVG();
-    } else {
-        globalThis.HLRedrawTree();
-    }
-}
-
-globalThis.HLClone = (my_id: number) => {
-    const electroItem = globalThis.structure.getElectroItemById(my_id);
-    if (electroItem === null) return;
-    const parent = electroItem.getParent();
-    
-    globalThis.structure.clone(my_id);
-    globalThis.undostruct.store();
-
-    if ((parent !== null) && (!isFirefox())) {
-        globalThis.structure.reNumber();
-        globalThis.structure.updateHTMLinner(parent.id);
-        globalThis.HLRedrawTreeSVG();
-    } else {
-        globalThis.HLRedrawTree();
-    }
-}
-
-globalThis.HLInsertChild = (my_id: number) => {
-    globalThis.structure.insertChildAfterId(new Electro_Item(globalThis.structure), my_id);
-    globalThis.structure.reNumber();
-    //globalThis.undostruct.store();  We should not call this as the CollapseExpand already does that
-    globalThis.HLCollapseExpand(my_id, false);
-    //No need to call HLRedrawTree as HLCollapseExpand already does that
-}
-
-globalThis.HL_editmode = () => {
-    globalThis.structure.mode = (document.getElementById("edit_mode") as HTMLInputElement).value;
-    globalThis.HLRedrawTreeHTML();
-}
-
-globalThis.HLExpand = (my_id: number ) => {
-    let element: Electro_Item = globalThis.structure.getElectroItemById(my_id) as Electro_Item;
-    if (element !== null) {
-        element.expand();
-    }
-    
-    globalThis.structure.reSort();
-    globalThis.undostruct.store();
-    globalThis.HLRedrawTree();
-}
-
-globalThis.HL_changeparent = (my_id: number) => {
-    // See what the new parentid is
-    let str_newparentid = (document.getElementById("id_parent_change_"+my_id) as HTMLInputElement).value;
-
-    //-- Check that it is valid. It needs to be a number and the parent an active component --
-    let error = 0;
-    let parentOrdinal: number|null = 0;
-    if (!isInt(str_newparentid)) { error=1; }
-    let int_newparentid = parseInt(str_newparentid);
-    if (int_newparentid != 0) {
-        parentOrdinal = globalThis.structure.getOrdinalById(int_newparentid);
-        if (parentOrdinal == null)
-            error=1;
-        else if ( (!globalThis.structure.active[parentOrdinal]) || (int_newparentid == my_id) ) 
-            error=1;
-        else {
-            // We need to check that newparentid is not a decendant of my_id
-            let id = int_newparentid;
-            while (id != 0) {
-                id = globalThis.structure.getElectroItemById(id)?.parent ?? 0;
-                if (id == my_id) error = 2;
-            } 
-        }
-    }
-
-    switch (error) {
-        case 1: alert("Dat is geen geldig moeder-object. Probeer opnieuw."); break;
-        case 2: alert("Circulaire referentie. Nieuwe moeder kan geen afstammeling van het te verplaatsen element zijn."); break;
-        default:
-            const idx = globalThis.structure.getOrdinalById(my_id);
-            if (idx !== null) globalThis.structure.data[idx].parent = int_newparentid;
-    }
-
-    globalThis.structure.reSort();
-    globalThis.undostruct.store();
-    globalThis.HLRedrawTree();
-}
-
 globalThis.HL_cancelFilename = () => {
     const settings = document.getElementById("settings");
     if (settings === null) return;
@@ -393,15 +196,12 @@ globalThis.HLRedrawTreeHTML = () => {
     globalThis.toggleAppView('2col');
     const settings = document.getElementById("settings");
     if (settings !== null) settings.innerHTML = "";
-    var output:string = globalThis.structure.toHTML(0) + "<br>" + renderAddressStacked();
     const left_col_inner = document.getElementById("left_col_inner");
-    if (left_col_inner !== null) left_col_inner.innerHTML = output;
+    if (left_col_inner !== null) left_col_inner.replaceChildren();
 }
 
 globalThis.HLRedrawTreeHTMLLight = () => {
-    var output:string = globalThis.structure.toHTML(0) + "<br>" + renderAddressStacked();
-    const left_col_inner = document.getElementById("left_col_inner");
-    if (left_col_inner !== null) left_col_inner.innerHTML = output;
+    // React subscribes to SchemaStore and renders interactive HTML itself.
 }
 
 globalThis.HLRedrawTreeSVG = () => {
@@ -474,38 +274,6 @@ function reset_all() {
     globalThis.topMenu.selectMenuItemByName('Eéndraadschema');
     globalThis.undostruct.clear();
     globalThis.undostruct.store();
-}
-
-function renderAddressStacked() {
-    var outHTML: string = "";
-
-    if (!globalThis.structure.properties.control) globalThis.structure.properties.control = "<br>";
-
-    outHTML = 'Plaats van de elektrische installatie' +
-              '<table width="90%" cols="1" rows="1" style="border-collapse: collapse;border-style: solid; border-width:thin;" cellpadding="5">' +
-              '<tr><td style="border-style: solid; border-width:thin;" contenteditable="true" valign="top" id="conf_owner" onblur="javascript:forceUndoStore()" onkeyup="javascript:changeAddressParams()">' + globalThis.structure.properties.owner + '</td></tr>' +
-              '</table><br>' +
-              'Installateur' +
-              '<table width="90%" cols="1" rows="1" style="border-collapse: collapse;border-style: solid; border-width:thin;" cellpadding="5">' +
-              '<tr><td style="border-style: solid; border-width:thin;" contenteditable="true" valign="top" id="conf_installer" onblur="javascript:forceUndoStore()" onkeyup="javascript:changeAddressParams()">' + globalThis.structure.properties.installer + '</td></tr>' +
-              '</table><br>' +
-              'Erkend organisme (keuring)' +
-              '<table width="90%" cols="1" rows="1" style="border-collapse: collapse;border-style: solid; border-width:thin;" cellpadding="5">' +
-              '<tr><td style="border-style: solid; border-width:thin;" contenteditable="true" valign="top" id="conf_control" onblur="javascript:forceUndoStore()" onkeyup="javascript:changeAddressParams()">' + globalThis.structure.properties.control + '</td></tr>' +
-              '</table><br>' +
-              'Info <i>(wordt overschreven bij handmatig pagineren in het print-menu)</i>' +
-              '<table width="90%" cols="1" rows="1" style="border-collapse: collapse;border-style: solid; border-width:thin;" cellpadding="5">' +
-              '<tr><td style="border-style: solid; border-width:thin;" contenteditable="true" valign="top" id="conf_info" onblur="javascript:forceUndoStore()" onkeyup="javascript:changeAddressParams()">' + globalThis.structure.properties.info + '</td></tr>' +
-              '</table>';
-
-    return outHTML;
-}
-
-globalThis.changeAddressParams = () => {
-    globalThis.structure.properties.owner = (document.getElementById("conf_owner") as HTMLElement).innerHTML;
-    globalThis.structure.properties.installer = (document.getElementById("conf_installer") as HTMLElement).innerHTML;
-    globalThis.structure.properties.control = (document.getElementById("conf_control") as HTMLElement).innerHTML;
-    globalThis.structure.properties.info = (document.getElementById("conf_info") as HTMLElement).innerHTML;
 }
 
 function openContactForm() {
@@ -755,78 +523,6 @@ PROP_edit_menu(menuItems);
 
 globalThis.topMenu = new TopMenu('minitabs', 'menu-item', menuItems);
 
-// Now add handlers for everything that changes in the left column
-const left_col_inner = document.querySelector('#left_col_inner');
-if (left_col_inner == null) throw new Error("HTML element left_col_inner is null");
-left_col_inner.addEventListener('change', function(event) {
-
-    function propUpdate(my_id: number, item: string, type: string, value: string | boolean): void {
-
-        let electroItem = globalThis.structure.getElectroItemById(my_id);
-
-        switch (type) {
-            case "select-one":
-                if (item == "type") { // Type changed
-                    globalThis.structure.adjustTypeById(my_id, value as string);
-                    if (isFirefox()) {
-                        globalThis.HLRedrawTreeHTML();
-                    } else {
-                        globalThis.structure.reNumber();
-                        const parent = electroItem.getParent();
-                        if (parent !== null) globalThis.structure.updateHTMLinner(parent.id); else globalThis.structure.updateHTMLinner(my_id);
-                    }
-                } else {
-                    electroItem.props[item] = (value as string);
-                    if (isFirefox()) {
-                        globalThis.HLRedrawTreeHTML();
-                    } else {
-                        globalThis.structure.reNumber();
-                        globalThis.structure.updateHTMLinner(my_id);
-                    } 
-                }
-                break;
-            case "text":
-                electroItem.props[item] = (value as string);
-                globalThis.structure.reNumber();
-                if (item==='kortsluitvermogen')
-                    if (isFirefox()) {
-                        globalThis.HLRedrawTreeHTML();
-                    } else {
-                        globalThis.structure.updateHTMLinner(my_id);
-                    } 
-                break;
-            case "checkbox":
-                electroItem.props[item] = (value as boolean);
-                if (!isFirefox()) {
-                    globalThis.structure.reNumber();
-                    globalThis.structure.updateHTMLinner(my_id);
-                } else globalThis.HLRedrawTreeHTML();
-                break;
-        }
-
-        if (electroItem.getType() == "Domotica gestuurde verbruiker")
-            globalThis.structure.voegAttributenToeAlsNodigEnReSort();
-
-        globalThis.undostruct.store();
-        globalThis.HLRedrawTreeSVG();
-    }
-
-    const element: HTMLInputElement = event.target as HTMLInputElement;
-
-    // Ensure the id starts with 'HL_edit_'
-    if (!element.id.startsWith('HL_edit_')) return;
-
-    const { type, id } = element;
-    const value = type === 'checkbox' ? element.checked : element.value;
-
-    // Extract id and key from id
-    const match = id.match(/^HL_edit_(\d+)_(.+)$/);
-    const idNumber = match ? match[1] : null;
-    const key = match ? match[2] : null;
-    if (idNumber == null || key == null) return;
-    propUpdate(parseInt(idNumber),key,type,value);
-});
-
 EDStoStructure(globalThis.EXAMPLE_DEFAULT,false); //Just in case the user doesn't select a scheme and goes to drawing immediately, there should be something there
 
 schemaStore = new LegacySchemaStore(globalThis.structure);
@@ -837,18 +533,15 @@ const reactPropertiesRoot = document.getElementById("react-properties-root");
 const reactPropertiesColumn = document.getElementById("properties_col");
 const reactEditorCanvas = document.getElementById("canvas_2col");
 const legacyHierarchyRoot = document.getElementById("left_col_inner");
-const reactShellIsEnabled = reactEditorShellEnabled(window.location.search);
-const reactHierarchyIsEnabled = reactShellIsEnabled
-    && reactEditorHierarchyEnabled(window.location.search)
-    && reactHierarchyRoot !== null;
+const reactHierarchyIsEnabled = reactHierarchyRoot !== null;
 reactSchemaHistoryEnabled = reactHierarchyIsEnabled;
 
-if (legacyHierarchyRoot !== null) legacyHierarchyRoot.hidden = reactHierarchyIsEnabled;
-if (reactHierarchyRoot !== null) reactHierarchyRoot.hidden = !reactHierarchyIsEnabled;
-if (reactPropertiesRoot !== null) reactPropertiesRoot.hidden = !reactHierarchyIsEnabled;
-if (reactPropertiesColumn !== null) reactPropertiesColumn.hidden = !reactHierarchyIsEnabled;
-reactEditorCanvas?.classList.toggle("react-editor-layout", reactHierarchyIsEnabled);
-if (reactEditorRoot !== null && reactShellIsEnabled) {
+if (legacyHierarchyRoot !== null) legacyHierarchyRoot.hidden = true;
+if (reactHierarchyRoot !== null) reactHierarchyRoot.hidden = false;
+if (reactPropertiesRoot !== null) reactPropertiesRoot.hidden = false;
+if (reactPropertiesColumn !== null) reactPropertiesColumn.hidden = false;
+reactEditorCanvas?.classList.add("react-editor-layout");
+if (reactEditorRoot !== null) {
     mountEditorApp(
         reactEditorRoot,
         schemaStore,

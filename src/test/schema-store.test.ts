@@ -446,6 +446,26 @@ describe("LegacySchemaStore", () => {
     expect(store.getSnapshot().document.getBoard(garageBoardId)?.feeder?.sourceCircuitId).toBe(feederId);
   });
 
+  it("updates persistent document details through undoable commands", () => {
+    const { store } = createStore();
+    store.commands.updateDocumentDetails({
+      owner: "Jan Janssens<br>Brussel",
+      installer: "Installateur NV",
+      control: "Keuringsorganisme",
+      info: "3 x 400V + N ~50 Hz",
+    });
+    expect(store.getSnapshot().document.getDocumentDetails()).toEqual({
+      owner: "Jan Janssens<br>Brussel",
+      installer: "Installateur NV",
+      control: "Keuringsorganisme",
+      info: "3 x 400V + N ~50 Hz",
+    });
+    store.commands.undo();
+    expect(store.getSnapshot().document.getDocumentDetails().owner).not.toContain("Jan Janssens");
+    store.commands.redo();
+    expect(store.getSnapshot().document.getDocumentDetails().owner).toContain("Jan Janssens");
+  });
+
   it("updates a board feeder while preventing duplicate and cyclic connections", () => {
     const { store, boardId } = createStore();
     const firstFeeder = store.commands.addItem(boardId, "Kring");

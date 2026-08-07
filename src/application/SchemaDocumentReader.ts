@@ -29,7 +29,15 @@ export interface HierarchyViewNode {
   readonly capabilities: HierarchyNodeCapabilities;
 }
 
+export interface SchemaDocumentDetails {
+  readonly owner: string;
+  readonly installer: string;
+  readonly control: string;
+  readonly info: string;
+}
+
 export interface SchemaDocumentReader {
+  getDocumentDetails(): SchemaDocumentDetails;
   getBoards(): readonly DistributionBoard[];
   getBoard(id: string): DistributionBoard | undefined;
   getBoardForItem(itemId: number): DistributionBoard | undefined;

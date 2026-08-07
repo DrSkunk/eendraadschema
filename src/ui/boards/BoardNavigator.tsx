@@ -3,6 +3,7 @@ import type { EditorStore } from "../../application/EditorStore";
 import type { HierarchyViewNode, SchemaDocumentReader } from "../../application/SchemaDocumentReader";
 import type { SchemaStore } from "../../application/SchemaStore";
 import type { ValidationIssue } from "../../application/SchemaValidation";
+import { DocumentDetailsEditor } from "../document/DocumentDetailsEditor";
 
 interface BoardNavigatorProps {
   readonly schemaStore: SchemaStore;
@@ -100,6 +101,12 @@ export function BoardNavigator({
           );
         })}
       </ol>
+
+      <DocumentDetailsEditor
+        details={document.getDocumentDetails()}
+        schemaStore={schemaStore}
+        reportError={reportError}
+      />
 
       {activeBoard ? (
         <ActiveBoardEditor

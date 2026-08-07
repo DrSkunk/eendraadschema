@@ -91,12 +91,14 @@
 }
 
 .board-navigator__add,
+.board-navigator__document,
 .board-navigator__edit,
 .board-navigator__validation {
   margin-top: 0.75rem;
 }
 
 .board-navigator__add summary,
+.board-navigator__document summary,
 .board-navigator__edit summary,
 .board-navigator__validation summary {
   cursor: pointer;
@@ -104,6 +106,7 @@
 }
 
 .board-navigator__add form,
+.board-navigator__document form,
 .board-navigator__edit form {
   display: grid;
   gap: 0.5rem;
@@ -111,6 +114,7 @@
 }
 
 .board-navigator__add label,
+.board-navigator__document label,
 .board-navigator__edit label {
   display: grid;
   font-size: 0.8125rem;
@@ -126,6 +130,13 @@
   box-sizing: border-box;
   font: inherit;
   min-height: 2.25rem;
+  width: 100%;
+}
+
+.board-navigator__document textarea,
+.board-navigator__document button {
+  box-sizing: border-box;
+  font: inherit;
   width: 100%;
 }
 

@@ -40,6 +40,13 @@ export interface UpdateDistributionBoardChanges {
   readonly lengthMeters?: number;
 }
 
+export interface UpdateDocumentDetailsChanges {
+  readonly owner?: string;
+  readonly installer?: string;
+  readonly control?: string;
+  readonly info?: string;
+}
+
 export interface SchemaCommands {
   addItem(parentId: number | null, type: string): number;
   deleteItem(itemId: number): void;
@@ -56,6 +63,7 @@ export interface SchemaCommands {
   addDistributionBoard(feederCircuitId: number, properties: AddDistributionBoardProperties): string;
   updateDistributionBoard(boardId: string, changes: UpdateDistributionBoardChanges): void;
   deleteDistributionBoard(boardId: string): void;
+  updateDocumentDetails(changes: UpdateDocumentDetailsChanges): void;
   replaceDocument(serializedDocument: string, version?: number): void;
   undo(): void;
   redo(): void;

@@ -28,24 +28,11 @@ declare global {
         HLRedrawTree: () => void;
         HLRedrawTreeSVG: () => void;
         HLDisplayPage: () => void;
-        HLCollapseExpand: (my_id: number, state?: Boolean) => void;
-        HLDelete: (my_id: number) => void;
-        HLAdd: () => void;
-        HLInsertBefore: (my_id: number) => void;
-        HLInsertAfter: (my_id: number) => void;
-        HLMoveDown: (my_id: number) => void;
-        HLMoveUp: (my_id: number) => void;
-        HLClone: (my_id: number) => void;
-        HLInsertChild: (my_id: number) => void;
-        HL_editmode: () => void;
-        HLExpand: (my_id: number) => void;
         HLRedrawTreeHTML: () => void;
-        HL_changeparent: (my_id: number) => void;
         HL_cancelFilename: () => void;
         HL_changeFilename: () => void;
         HL_enterSettings: () => void;
         HLRedrawTreeHTMLLight: () => void;
-        changeAddressParams: () => void;
         toggleAppView: (type: '2col' | 'config' | 'draw') => void;
         load_example: (nr: number) => void;
         undoClicked: () => void;
@@ -58,7 +45,6 @@ declare global {
         handleButtonPrintToPdf: () => void;
         propUpload: (text: string) => void;
         loadFileFromText: () => void;
-        forceUndoStore: () => void;
     }
 }
 

@@ -5,6 +5,7 @@ import type {
   HierarchyNodeRole,
   HierarchyItemSummary,
   HierarchyViewNode,
+  SchemaDocumentDetails,
   SchemaDocumentReader,
 } from "./SchemaDocumentReader";
 
@@ -71,6 +72,7 @@ export class LegacySchemaDocumentReader implements SchemaDocumentReader {
   private readonly childrenByParent: ReadonlyMap<number | null, readonly HierarchyViewNode[]>;
   private readonly boards: readonly DistributionBoard[];
   private readonly boardsById: ReadonlyMap<string, DistributionBoard>;
+  private readonly documentDetails: SchemaDocumentDetails;
 
   constructor(structure: Hierarchical_List) {
     const activeItems: Electro_Item[] = [];
@@ -119,6 +121,16 @@ export class LegacySchemaDocumentReader implements SchemaDocumentReader {
       rootItemIds: Object.freeze([...board.rootItemIds]),
     })));
     this.boardsById = new Map(this.boards.map((board) => [board.id, board]));
+    this.documentDetails = Object.freeze({
+      owner: structure.properties.owner,
+      installer: structure.properties.installer,
+      control: structure.properties.control,
+      info: structure.properties.info,
+    });
+  }
+
+  getDocumentDetails(): SchemaDocumentDetails {
+    return this.documentDetails;
   }
 
   getBoards(): readonly DistributionBoard[] {

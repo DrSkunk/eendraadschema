@@ -34,6 +34,7 @@ import {
   type SchemaSnapshot,
   type SchemaStore,
   type UpdateDistributionBoardChanges,
+  type UpdateDocumentDetailsChanges,
 } from "./SchemaStore";
 
 const BLOCKED_CHANGE_KEYS = new Set(["__proto__", "constructor", "prototype"]);
@@ -69,6 +70,7 @@ export class LegacySchemaStore implements SchemaStore {
       addDistributionBoard: this.addDistributionBoard.bind(this),
       updateDistributionBoard: this.updateDistributionBoard.bind(this),
       deleteDistributionBoard: this.deleteDistributionBoard.bind(this),
+      updateDocumentDetails: this.updateDocumentDetails.bind(this),
       replaceDocument: this.replaceDocument.bind(this),
       undo: this.undo.bind(this),
       redo: this.redo.bind(this),
@@ -381,6 +383,22 @@ export class LegacySchemaStore implements SchemaStore {
         if (this.structure.getElectroItemById(rootItemId) !== null) this.structure.deleteById(rootItemId);
       }
       this.structure.boards = this.structure.boards.filter((candidate) => candidate.id !== boardId);
+    });
+  }
+
+  private updateDocumentDetails(changes: UpdateDocumentDetailsChanges): void {
+    for (const [key, value] of Object.entries(changes)) {
+      if (!(["owner", "installer", "control", "info"] as const).includes(key as never)
+          || typeof value !== "string") {
+        throw new SchemaCommandError("INVALID_CHANGE", `Documenteigenschap '${key}' is niet geldig.`);
+      }
+    }
+    if (Object.keys(changes).length === 0) return;
+    this.commitTransaction(() => {
+      if (changes.owner !== undefined) this.structure.properties.owner = changes.owner;
+      if (changes.installer !== undefined) this.structure.properties.installer = changes.installer;
+      if (changes.control !== undefined) this.structure.properties.control = changes.control;
+      if (changes.info !== undefined) this.structure.properties.info = changes.info;
     });
   }
 

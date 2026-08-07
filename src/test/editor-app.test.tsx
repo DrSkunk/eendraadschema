@@ -4,10 +4,6 @@ import { LocalEditorStore } from "../application/EditorStore";
 import { LegacySchemaStore } from "../application/LegacySchemaStore";
 import { Hierarchical_List } from "../Hierarchical_List";
 import { EditorApp } from "../ui/App";
-import {
-  reactEditorHierarchyEnabled,
-  reactEditorShellEnabled,
-} from "../ui/featureFlags";
 
 afterEach(cleanup);
 
@@ -49,11 +45,4 @@ describe("EditorApp", () => {
     expect(screen.getByRole("status")).toHaveTextContent("2 elektrische onderdelen");
   });
 
-  it("allows the React shell to be disabled for legacy fallback", () => {
-    expect(reactEditorShellEnabled("")).toBe(true);
-    expect(reactEditorShellEnabled("?reactShell=off")).toBe(false);
-    expect(reactEditorHierarchyEnabled("")).toBe(true);
-    expect(reactEditorHierarchyEnabled("?reactHierarchy=on")).toBe(true);
-    expect(reactEditorHierarchyEnabled("?reactHierarchy=off")).toBe(false);
-  });
 });

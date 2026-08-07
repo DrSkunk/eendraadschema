@@ -1,4 +1,4 @@
-import { htmlspecialchars, insertArrow, contains, trimString } from "./general";
+import { htmlspecialchars, contains, trimString } from "./general";
 import { Aansluiting } from "./List_Item/Aansluiting";
 import { Aansluitpunt } from "./List_Item/Aansluitpunt";
 import { Aardingsonderbreker } from "./List_Item/Aardingsonderbreker";
@@ -795,30 +795,6 @@ export class Hierarchical_List {
         //}
     }
 
-    // -- Functie om de tree links te tekenen te starten by node met id = myParent --
-
-    toHTMLinner(ordinal: number) {
-        if (this.data[ordinal].collapsed) {
-            return(`<tr>
-                        <td bgcolor="#8AB2E4" onclick="HLCollapseExpand(${this.data[ordinal].id})" valign= "top">&#x229E;</td>
-                        <td width="100%">${this.data[ordinal].toHTML(this.mode)}<br></td>
-                    </tr>`);
-        } else {
-            return(`<tr>
-                       <td bgcolor="C0C0C0" onclick="HLCollapseExpand(${this.data[ordinal].id})" valign= "top">&#x229F;</td>
-                       <td width="100%">${this.data[ordinal].toHTML(this.mode)}<br>${this.toHTML(this.id[ordinal])}</td>
-                    </tr>`);
-        }
-    }
-
-    updateHTMLinner(id: number) {
-        let ordinal: number = this.getOrdinalById(id);
-        if (ordinal === null) return; // If id is not found, do nothing
-
-        let div = document.getElementById('id_elem_'+id) as HTMLElement;
-        div.innerHTML = this.toHTMLinner(ordinal);
-    }
-
     voegAttributenToeAlsNodigEnReSort() {
 
         // Verwijder alle attributen die geen kind zijn van een domotica gestuurde verbruiker met externe sturing
@@ -895,65 +871,6 @@ export class Hierarchical_List {
 
         this.reSort();
           
-    }
-
-    toHTML(myParent: number) {
-        
-        // Als we alles tekenen mogen we ook de ribbon niet vergeten te updaten
-        if (myParent==0) {
-            this.updateRibbon();
-            this.reNumber();
-        }
-
-        // Enkele variabelen initialiseren
-        let parent = this.getElectroItemById(myParent);
-        let output: string = "";
-        let aantalElementen: number = 0;
-        let aantalKringen: number = 0;
-
-        // Genereer de HTML voor de elementen die onder myParent hangen
-        for (let i = 0; i<this.length; i++) {
-            if (this.active[i] && (this.data[i].parent == myParent)
-            && !( (this.data[i] as Electro_Item).isAttribuut() ) 
-            && !((this.data[i] as Electro_Item).getType() == "Container") ) {
-                aantalElementen++;
-                const electroItemType = (this.data[i] as Electro_Item).getType();
-                if (electroItemType == "Container") continue; // We tekenen de container niet zelf
-                if (electroItemType != null && electroItemType == "Kring") aantalKringen++;
-                output += '<table class="html_edit_table" id="id_elem_' + this.id[i]  + '">';
-                output += this.toHTMLinner(i);
-                output += "</table>";
-            }
-        };
-
-        // Indien we het volledige schema aan het tekenen zijn, maar er valt niets te tekenen, dan gevven we enkel een melding om een nieuw schema te starten
-        if ( (myParent == 0) && (aantalElementen<1) ) {
-            output += "<button onclick=\"HLAdd()\">Voeg eerste object toe of kies bovenaan \"Nieuw\"</button><br>"; //no need for the add button if we have items
-        };
-        
-        // Indien we een kring hebben met meer dan 1 kring als kind, dan geven we een waarschuwing en vragen we dit anders te doen
-        if (parent != null && parent.getType() == "Kring" && aantalKringen > 1) {
-            const EDStekenFoutKleur = trimString(getComputedStyle(document.documentElement).getPropertyValue('--EDStekenFoutKleur'));
-            const arrowstr = insertArrow(EDStekenFoutKleur);
-            output = `<div class="EDS-tekenfout">`
-                   + `<b>Tekenfout:</b> U heeft meer dan 1 kring achter deze kring gehangen, Kring ${arrowstr} {Kring, Kring, &#8230;}. Dat is niet gebruikelijk.<br>`
-                   + `Als u hier een vertakking wilt, gebruik dan eerst het "Splitsing"-element: Kring ${arrowstr} Splitsing ${arrowstr} {Kring, Kring, &#8230;}.<br>`
-                   + `Als u daadwerkelijk verticaal gestapelde kringen in het schema wilt, is het correcter ze hiërarchisch onder elkaar te hangen: Kring ${arrowstr} Kring ${arrowstr} Kring.<br>`
-                   + "</div>" + output;
-        }
-
-        // Indien we een Aansluiting hebben met meer dan 1 kind, dan geven we een waarschuwing en vragen we dit anders te doen
-        if (parent != null && parent.getType() == "Aansluiting" && aantalElementen > 1) {
-            const EDStekenFoutKleur = trimString(getComputedStyle(document.documentElement).getPropertyValue('--EDStekenFoutKleur'));
-            const arrowstr = insertArrow(EDStekenFoutKleur);
-            output = `<div class="EDS-tekenfout">`
-                   + `<b>Tekenfout:</b> U heeft meer dan 1 element achter een aansluiting gehangen, Aansluiting ${arrowstr} {Element1, Element2, &#8230;}. Dat is niet gebruikelijk.<br>`
-                   + `Het is correcter om elementen achter een aansluiting als volgt te stapelen: Aansluiting ${arrowstr} Element1 ${arrowstr} Element2 ${arrowstr} &#8230;.<br>`
-                   + `Verwijder het teveel aan elementen of gebruik de werkmodus "Verplaatsen/Clone" bovenaan om ze onder elkaar te hangen.`
-                   + "</div>" + output;
-        }
-
-        return(output);
     }
 
     /** Functie om de naam van een kring te vinden waartoe een element behoord 
