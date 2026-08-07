@@ -228,17 +228,17 @@ The first item property editor is available on the opt-in React path:
 - `SchemaCommands.updateCircuit()` accepts application-level property names and translates them to stable EDS keys inside the legacy adapter;
 - the circuit command rejects unknown keys, invalid choices, invalid numeric text and wrong runtime types before mutation or history publication;
 - command updates invoke `normalizeProperties()`, an explicit application-facing seam over existing subclass invariants, before publishing;
-- `ItemPropertiesPanel` selects editors through a registry; only `Kring` is registered, so additional item types can migrate independently;
+- `ItemPropertiesPanel` selects editors through a registry; `Kring` and `Contactdoos` are registered and additional item types can migrate independently;
 - the circuit editor composes reusable fields and focused protection, cable and advanced sections, with option metadata outside render paths;
 - circuit inputs cover every field in the legacy `Kring.toHTML()` editor, retain its conditional visibility, group uncommon fields under “Geavanceerde instellingen”, and use Belgian Dutch labels;
 - numeric drafts are validated on blur and invalid intermediate input is not written to the domain document;
 - selection remains editor-only state, while every valid property change flows through the command layer and existing undo/redo history;
 - on the opt-in one-line editor, both React controls and the visible legacy ribbon delegate to `SchemaStore` history; undo/redo also rebinds the transitional global document before SVG, autosave and ribbon refreshes;
-- compatibility coverage compares command-path serialization and SVG output with the legacy property mutation path.
+- compatibility coverage compares command-path serialization and SVG output with the legacy property mutation path for both migrated types.
 
 The properties panel is mounted in a dedicated right sidebar when `?reactHierarchy=on`; the unchanged SVG remains in the center workspace and the hierarchy remains on the left. Narrow viewports keep all three surfaces reachable with horizontal scrolling. The default legacy path remains fully functional. Unregistered item types clearly indicate that their properties are still managed by the existing editor rather than attempting a partial form.
 
-Remaining Phase 6 dependencies are deliberate: concrete item classes other than `Kring` still render their property forms through `toHTML()`, the default hierarchy still uses delegated DOM mutation, and the React opt-in cannot yet edit those types. A real-browser keyboard, responsive-layout and live-preview pass remains a release criterion before enabling the flag by default; component tests cover those interaction boundaries, but do not replace that pass. The next property-editor PR should migrate one common leaf type (preferably `Contactdoos`) through the same typed reader, command and registry seams before enabling the React hierarchy by default.
+Remaining Phase 6 dependencies are deliberate: concrete item classes other than `Kring` and `Contactdoos` still render their property forms through `toHTML()`, the default hierarchy still uses delegated DOM mutation, and the React opt-in cannot yet edit those types. A real-browser keyboard and responsive-layout pass remains a release criterion before enabling the flag by default; manual validation has confirmed the three-pane layout, circuit editing, validation, live SVG updates and unified undo/redo. The next property-editor slice should migrate another common leaf type, preferably `Lichtpunt`, through the same typed reader, command and registry seams.
 
 ## First change batch
 
