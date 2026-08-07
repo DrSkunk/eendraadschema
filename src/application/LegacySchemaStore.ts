@@ -149,6 +149,7 @@ export class LegacySchemaStore implements SchemaStore {
       for (const [key, value] of Object.entries(changes)) {
         if (key !== "type") item.props[key] = value;
       }
+      item.overrideKeys();
     });
   }
 

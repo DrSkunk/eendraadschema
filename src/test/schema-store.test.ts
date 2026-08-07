@@ -83,6 +83,37 @@ describe("LegacySchemaStore", () => {
     expect(store.getSnapshot().properties.getCircuit(boardId)).toBeUndefined();
   });
 
+  it("applies existing circuit invariants before publishing command updates", () => {
+    const { store, boardId } = createStore();
+    const circuitId = store.commands.addItem(boardId, "Kring");
+
+    store.commands.updateItem(circuitId, {
+      bescherming: "contact",
+      normaalGesloten: true,
+      sturing: "spoel",
+      fase: "L2",
+      differentieel_is_selectief: true,
+      kabel_locatie: "Luchtleiding",
+      kabel_is_in_buis: true,
+    });
+
+    expect(store.getSnapshot().properties.getCircuit(circuitId)).toMatchObject({
+      protection: "contact",
+      normallyClosed: true,
+      control: "spoel",
+      phase: "",
+      selectiveDifferential: false,
+      cableLocation: "Luchtleiding",
+      cableInConduit: false,
+    });
+
+    store.commands.updateItem(circuitId, { bescherming: "automatisch" });
+    expect(store.getSnapshot().properties.getCircuit(circuitId)).toMatchObject({
+      normallyClosed: false,
+      control: "",
+    });
+  });
+
   it("deletes a subtree and restores it through undo and redo", () => {
     const { store, boardId } = createStore();
     const circuitId = store.commands.addItem(boardId, "Kring");
