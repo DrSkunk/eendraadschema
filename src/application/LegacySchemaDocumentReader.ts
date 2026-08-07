@@ -64,68 +64,84 @@ function allowedChildTypes(item: Electro_Item): readonly string[] {
  * a separate property-editor adapter.
  */
 export class LegacySchemaDocumentReader implements SchemaDocumentReader {
-  constructor(private readonly structure: Hierarchical_List) {}
+  private readonly rootCapabilities;
+  private readonly items: readonly HierarchyViewNode[];
+  private readonly itemsById: ReadonlyMap<number, HierarchyViewNode>;
+  private readonly childrenByParent: ReadonlyMap<number | null, readonly HierarchyViewNode[]>;
 
-  getRootCapabilities() {
-    return Object.freeze({
+  constructor(structure: Hierarchical_List) {
+    const activeItems: Electro_Item[] = [];
+    for (let ordinal = 0; ordinal < structure.length; ordinal += 1) {
+      if (structure.active[ordinal]) activeItems.push(structure.data[ordinal] as Electro_Item);
+    }
+
+    const childIdsByParent = new Map<number, number[]>();
+    for (const item of activeItems) {
+      const childIds = childIdsByParent.get(item.parent);
+      if (childIds) childIds.push(item.id);
+      else childIdsByParent.set(item.parent, [item.id]);
+    }
+
+    this.rootCapabilities = Object.freeze({
       canAddChild: true,
       canDelete: false,
       canDuplicate: false,
       allowedChildTypes: Object.freeze(
-        this.structure.allowedRootChilds().filter((type) => type !== ""),
+        structure.allowedRootChilds().filter((type) => type !== ""),
       ),
     });
+    this.items = Object.freeze(activeItems.map((item) => this.toViewNode(
+      item,
+      childIdsByParent.get(item.id) ?? [],
+    )));
+    this.itemsById = new Map(this.items.map((item) => [item.id, item]));
+
+    const childrenByParent = new Map<number | null, HierarchyViewNode[]>();
+    for (const item of this.items) {
+      const siblings = childrenByParent.get(item.parentId);
+      if (siblings) siblings.push(item);
+      else childrenByParent.set(item.parentId, [item]);
+    }
+    this.childrenByParent = new Map(
+      Array.from(childrenByParent, ([parentId, children]) => [parentId, Object.freeze(children)]),
+    );
+  }
+
+  getRootCapabilities() {
+    return this.rootCapabilities;
   }
 
   getItem(id: number): HierarchyViewNode | undefined {
-    const ordinal = this.structure.getOrdinalById(id);
-    if (ordinal === null || !this.structure.active[ordinal]) return undefined;
-    return this.toViewNode(ordinal);
+    return this.itemsById.get(id);
   }
 
-  getChildren(parentId: number | null): HierarchyViewNode[] {
-    const legacyParentId = parentId ?? 0;
-    return this.activeOrdinals()
-      .filter((ordinal) => this.structure.data[ordinal].parent === legacyParentId)
-      .map((ordinal) => this.toViewNode(ordinal));
+  getChildren(parentId: number | null): readonly HierarchyViewNode[] {
+    return this.childrenByParent.get(parentId) ?? Object.freeze([]);
   }
 
-  getRootItems(): HierarchyViewNode[] {
+  getRootItems(): readonly HierarchyViewNode[] {
     return this.getChildren(null);
   }
 
-  getAllItems(): HierarchyViewNode[] {
-    return this.activeOrdinals().map((ordinal) => this.toViewNode(ordinal));
+  getAllItems(): readonly HierarchyViewNode[] {
+    return this.items;
   }
 
-  getHierarchy(): HierarchyViewNode[] {
-    return this.getAllItems();
+  getHierarchy(): readonly HierarchyViewNode[] {
+    return this.items;
   }
 
-  private activeOrdinals(): number[] {
-    const ordinals: number[] = [];
-    for (let ordinal = 0; ordinal < this.structure.length; ordinal += 1) {
-      if (this.structure.active[ordinal]) ordinals.push(ordinal);
-    }
-    return ordinals;
-  }
-
-  private toViewNode(ordinal: number): HierarchyViewNode {
-    const item = this.structure.data[ordinal] as Electro_Item;
+  private toViewNode(item: Electro_Item, childIds: readonly number[]): HierarchyViewNode {
     const summary = getSummary(item);
     const role = getRole(item);
     const isEditableItem = role === "item";
-    const childIds = this.activeOrdinals()
-      .filter((childOrdinal) => this.structure.data[childOrdinal].parent === item.id)
-      .map((childOrdinal) => this.structure.id[childOrdinal]);
-
     return Object.freeze({
       id: item.id,
       parentId: item.parent === 0 ? null : item.parent,
       type: item.getType() ?? "",
       label: getLabel(item.getType() ?? "", summary),
       description: getDescription(summary),
-      childIds: Object.freeze(childIds),
+      childIds: Object.freeze([...childIds]),
       summary,
       role,
       capabilities: Object.freeze({

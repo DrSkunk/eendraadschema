@@ -39,6 +39,8 @@ describe("LegacySchemaStore", () => {
     expect(after.canUndo).toBe(true);
     expect(after.document.getItem(circuitId)?.type).toBe("Kring");
     expect(after.document.getItem(circuitId)?.parentId).toBe(boardId);
+    expect(before.document.getItem(circuitId)).toBeUndefined();
+    expect(before.document.getItem(boardId)?.childIds).toEqual([]);
 
     unsubscribe();
     store.commands.addItem(circuitId, "Contactdoos");
@@ -62,6 +64,7 @@ describe("LegacySchemaStore", () => {
   it("exposes typed circuit properties without leaking legacy property keys", () => {
     const { store, boardId } = createStore();
     const circuitId = store.commands.addItem(boardId, "Kring");
+    const beforeUpdate = store.getSnapshot();
     store.commands.updateItem(circuitId, {
       autoKringNaam: "manueel",
       naam: "Garage",
@@ -81,6 +84,7 @@ describe("LegacySchemaStore", () => {
       cableType: "XVB Cca 5G6",
     });
     expect(store.getSnapshot().properties.getCircuit(boardId)).toBeUndefined();
+    expect(beforeUpdate.properties.getCircuit(circuitId)?.name).not.toBe("Garage");
   });
 
   it("applies existing circuit invariants before publishing command updates", () => {

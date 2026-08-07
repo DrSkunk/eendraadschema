@@ -64,7 +64,8 @@ describe("LegacySchemaDocumentReader", () => {
     expect(Object.isFrozen(node)).toBe(true);
     expect(Object.isFrozen(node.summary)).toBe(true);
     expect(node).not.toHaveProperty("properties");
-    expect(reader.getItem(circuit.id)?.label).toBe("Kring H");
+    expect(reader.getItem(circuit.id)?.label).toBe("Kring G");
+    expect(new LegacySchemaDocumentReader(structure).getItem(circuit.id)?.label).toBe("Kring H");
   });
 
   it("exposes domain roles and capabilities without UI-specific filtering", () => {
@@ -91,7 +92,7 @@ describe("LegacySchemaDocumentReader", () => {
     ]);
   });
 
-  it("reflects later document mutations while keeping prior snapshots stable", () => {
+  it("keeps a complete revision stable across later document mutations", () => {
     const { structure, circuit } = createNamedHierarchy();
     const reader = new LegacySchemaDocumentReader(structure);
     const before = reader.getItem(circuit.id)!;
@@ -99,7 +100,11 @@ describe("LegacySchemaDocumentReader", () => {
     structure.insertChildAfterId(light, circuit.id);
 
     expect(before.childIds).not.toContain(light.id);
-    expect(reader.getItem(circuit.id)?.childIds).toContain(light.id);
-    expect(reader.getItem(light.id)?.parentId).toBe(circuit.id);
+    expect(reader.getItem(circuit.id)?.childIds).not.toContain(light.id);
+    expect(reader.getItem(light.id)).toBeUndefined();
+
+    const nextReader = new LegacySchemaDocumentReader(structure);
+    expect(nextReader.getItem(circuit.id)?.childIds).toContain(light.id);
+    expect(nextReader.getItem(light.id)?.parentId).toBe(circuit.id);
   });
 });
