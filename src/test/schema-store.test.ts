@@ -373,6 +373,28 @@ describe("LegacySchemaStore", () => {
     expect(store.getSnapshot().document.getItem(duplicate.childIds[0])?.type).toBe("Verbruiker");
   });
 
+  it("changes item types and expands composite items through dedicated commands", () => {
+    const { store, boardId } = createStore();
+    const circuitId = store.commands.addItem(boardId, "Kring");
+    const itemId = store.commands.addItem(circuitId, "Contactdoos");
+
+    store.commands.changeItemType(itemId, "Lichtcircuit");
+    store.commands.updateConfiguredItem(itemId, { lightCount: "2" });
+    expect(store.getSnapshot().document.getItem(itemId)).toMatchObject({
+      type: "Lichtcircuit",
+      capabilities: { canExpand: true },
+    });
+
+    store.commands.expandItem(itemId);
+    const circuitChildren = store.getSnapshot().document.getChildren(circuitId);
+    expect(circuitChildren.some((item) => item.type === "Schakelaars")).toBe(true);
+    expect(store.getSnapshot().document.getAllItems().some((item) => item.type === "Lichtpunt")).toBe(true);
+
+    store.commands.undo();
+    expect(store.getSnapshot().document.getItem(itemId)?.type).toBe("Lichtcircuit");
+    expectCommandError(() => store.commands.expandItem(circuitId), "INVALID_CHANGE");
+  });
+
   it("moves items between parents and to a requested sibling position", () => {
     const { store, boardId } = createStore();
     const firstCircuit = store.commands.addItem(boardId, "Kring");

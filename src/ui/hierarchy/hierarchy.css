@@ -44,7 +44,7 @@
   border-radius: 6px;
   display: grid;
   gap: 0.25rem;
-  grid-template-columns: 2rem minmax(8rem, 1fr) auto;
+  grid-template-columns: 2rem minmax(8rem, 1fr) minmax(8rem, auto) auto;
   margin-left: calc(var(--hierarchy-depth, 0) * 1.25rem);
   padding: 0.25rem;
 }
@@ -90,6 +90,15 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.react-hierarchy__type {
+  align-self: center;
+}
+
+.react-hierarchy__type select {
+  max-width: 13rem;
+  width: 100%;
 }
 
 .react-hierarchy__actions,
@@ -150,6 +159,10 @@
   }
 
   .react-hierarchy__actions {
+    grid-column: 2;
+  }
+
+  .react-hierarchy__type {
     grid-column: 2;
   }
 }

@@ -113,6 +113,23 @@ describe("HierarchyTree", () => {
       .filter((item) => item.type === "Contactdoos")).toHaveLength(2);
   });
 
+  it("changes types and expands composite items through dedicated controls", () => {
+    const { schemaStore, editorStore, board, circuit, socket } = createHierarchy();
+    editorStore.commands.expandItem(board.id);
+    editorStore.commands.expandItem(circuit.id);
+    render(<HierarchyTree schemaStore={schemaStore} editorStore={editorStore} />);
+
+    fireEvent.change(screen.getByLabelText("Type van Contactdoos 1"), {
+      target: { value: "Lichtcircuit" },
+    });
+    schemaStore.commands.updateConfiguredItem(socket.id, { lightCount: "2" });
+
+    fireEvent.click(screen.getByRole("button", { name: /Lichtcircuit.*uitpakken/ }));
+    expect(schemaStore.getSnapshot().document.getItem(socket.id)?.type).toBe("Lichtpunt");
+    expect(schemaStore.getSnapshot().document.getChildren(circuit.id)
+      .some((item) => item.type === "Schakelaars")).toBe(true);
+  });
+
   it("requires confirmation before deleting a subtree", () => {
     const { schemaStore, editorStore, board, circuit, socket } = createHierarchy();
     editorStore.commands.expandItem(board.id);

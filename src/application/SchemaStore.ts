@@ -25,6 +25,7 @@ export interface SchemaCommands {
   addItem(parentId: number | null, type: string): number;
   deleteItem(itemId: number): void;
   moveItem(itemId: number, options: MoveItemOptions): void;
+  changeItemType(itemId: number, type: string): void;
   updateItem(itemId: number, changes: Readonly<Record<string, unknown>>): void;
   updateCircuit(itemId: number, changes: Readonly<CircuitPropertyChanges>): void;
   updateSocket(itemId: number, changes: Readonly<SocketPropertyChanges>): void;
@@ -32,6 +33,7 @@ export interface SchemaCommands {
   updateLightPoint(itemId: number, changes: Readonly<LightPointPropertyChanges>): void;
   updateConfiguredItem(itemId: number, changes: ConfiguredItemPropertyChanges): void;
   duplicateItem(itemId: number): number;
+  expandItem(itemId: number): void;
   replaceDocument(serializedDocument: string, version?: number): void;
   undo(): void;
   redo(): void;

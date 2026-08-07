@@ -86,9 +86,11 @@ export class LegacySchemaDocumentReader implements SchemaDocumentReader {
       canAddChild: true,
       canDelete: false,
       canDuplicate: false,
+      canExpand: false,
       allowedChildTypes: Object.freeze(
         structure.allowedRootChilds().filter((type) => type !== ""),
       ),
+      allowedItemTypes: Object.freeze([]),
     });
     this.items = Object.freeze(activeItems.map((item) => this.toViewNode(
       item,
@@ -148,7 +150,12 @@ export class LegacySchemaDocumentReader implements SchemaDocumentReader {
         canAddChild: isEditableItem && item.checkInsertChild(),
         canDelete: isEditableItem,
         canDuplicate: isEditableItem && item.checkInsertSibling(),
+        canExpand: isEditableItem && item.isExpandable(),
         allowedChildTypes: isEditableItem ? allowedChildTypes(item) : Object.freeze([]),
+        allowedItemTypes: isEditableItem ? Object.freeze(Array.from(new Set([
+          item.getType(),
+          ...(item.parent === 0 ? item.sourcelist.allowedRootChilds() : item.getParent().allowedChilds()),
+        ])).filter((type) => type !== "" && type !== "-" && type !== "---")) : Object.freeze([]),
       }),
     });
   }

@@ -48,6 +48,7 @@ export class LegacySchemaStore implements SchemaStore {
       addItem: this.addItem.bind(this),
       deleteItem: this.deleteItem.bind(this),
       moveItem: this.moveItem.bind(this),
+      changeItemType: this.changeItemType.bind(this),
       updateItem: this.updateItem.bind(this),
       updateCircuit: this.updateCircuit.bind(this),
       updateSocket: this.updateSocket.bind(this),
@@ -55,6 +56,7 @@ export class LegacySchemaStore implements SchemaStore {
       updateLightPoint: this.updateLightPoint.bind(this),
       updateConfiguredItem: this.updateConfiguredItem.bind(this),
       duplicateItem: this.duplicateItem.bind(this),
+      expandItem: this.expandItem.bind(this),
       replaceDocument: this.replaceDocument.bind(this),
       undo: this.undo.bind(this),
       redo: this.redo.bind(this),
@@ -173,6 +175,13 @@ export class LegacySchemaStore implements SchemaStore {
     });
   }
 
+  private changeItemType(itemId: number, type: string): void {
+    if (type.trim() === "") {
+      throw new SchemaCommandError("INVALID_CHANGE", "Het itemtype mag niet leeg zijn.");
+    }
+    this.updateItem(itemId, { type });
+  }
+
   private updateCircuit(itemId: number, changes: Readonly<CircuitPropertyChanges>): void {
     const item = this.requireItem(itemId);
     if (item.getType() !== "Kring") {
@@ -243,6 +252,18 @@ export class LegacySchemaStore implements SchemaStore {
         throw new SchemaCommandError("INVALID_CHANGE", "Het item kon niet worden gedupliceerd.");
       }
       return duplicateId;
+    });
+  }
+
+  private expandItem(itemId: number): void {
+    const item = this.requireItem(itemId);
+    this.assertUserEditable(item);
+    if (!item.isExpandable()) {
+      throw new SchemaCommandError("INVALID_CHANGE", `Item ${itemId} kan niet worden uitgepakt.`);
+    }
+    this.commitTransaction(() => {
+      item.expand();
+      this.structure.reSort();
     });
   }
 

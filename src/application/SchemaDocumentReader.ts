@@ -4,7 +4,9 @@ export interface HierarchyNodeCapabilities {
   readonly canAddChild: boolean;
   readonly canDelete: boolean;
   readonly canDuplicate: boolean;
+  readonly canExpand: boolean;
   readonly allowedChildTypes: readonly string[];
+  readonly allowedItemTypes: readonly string[];
 }
 
 export interface HierarchyItemSummary {

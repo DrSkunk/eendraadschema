@@ -122,6 +122,17 @@ export function HierarchyNode({
           {node.description ? <small>{node.description}</small> : null}
         </button>
 
+        <label className="react-hierarchy__type">
+          <span className="react-hierarchy__visually-hidden">Type van {node.label}</span>
+          <select
+            aria-label={`Type van ${node.label}`}
+            value={node.type}
+            onChange={(event) => runCommand(() => schemaStore.commands.changeItemType(node.id, event.target.value))}
+          >
+            {node.capabilities.allowedItemTypes.map((type) => <option key={type} value={type}>{type}</option>)}
+          </select>
+        </label>
+
         <div className="react-hierarchy__actions" aria-label={`Acties voor ${node.label}`}>
           <button
             type="button"
@@ -150,6 +161,16 @@ export function HierarchyNode({
               editorStore.commands.selectItem(duplicateId);
             })}
           >Dupliceren</button>
+          {node.capabilities.canExpand ? (
+            <button
+              type="button"
+              aria-label={`${node.label} uitpakken`}
+              onClick={() => runCommand(() => {
+                schemaStore.commands.expandItem(node.id);
+                reconcileEditorState();
+              })}
+            >Uitpakken</button>
+          ) : null}
           <button
             type="button"
             className="react-hierarchy__delete"
