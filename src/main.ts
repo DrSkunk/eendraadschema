@@ -673,12 +673,14 @@ container.innerHTML = `
 <div id="canvas_2col" style="display:none;"> <!-- Eendraadschema-->
     <div id="left_col">
     <div id="react-hierarchy-root"></div>
-    <div id="react-properties-root"></div>
     <div id="left_col_inner"></div>
     </div>
     <div id="right_col">
     <div id="right_col_inner"></div>
     </div>
+    <aside id="properties_col" aria-label="Eigenschappen van het geselecteerde onderdeel">
+    <div id="react-properties-root"></div>
+    </aside>
 </div>
 <div id="outerdiv" style="display:none;"> <!-- Situatieschets -->
     <div id="sidebar"></div>
@@ -815,6 +817,8 @@ editorStore = new LocalEditorStore();
 const reactEditorRoot = document.getElementById("react-editor-root");
 const reactHierarchyRoot = document.getElementById("react-hierarchy-root");
 const reactPropertiesRoot = document.getElementById("react-properties-root");
+const reactPropertiesColumn = document.getElementById("properties_col");
+const reactEditorCanvas = document.getElementById("canvas_2col");
 const legacyHierarchyRoot = document.getElementById("left_col_inner");
 const reactShellIsEnabled = reactEditorShellEnabled(window.location.search);
 const reactHierarchyIsEnabled = reactShellIsEnabled
@@ -824,6 +828,8 @@ const reactHierarchyIsEnabled = reactShellIsEnabled
 if (legacyHierarchyRoot !== null) legacyHierarchyRoot.hidden = reactHierarchyIsEnabled;
 if (reactHierarchyRoot !== null) reactHierarchyRoot.hidden = !reactHierarchyIsEnabled;
 if (reactPropertiesRoot !== null) reactPropertiesRoot.hidden = !reactHierarchyIsEnabled;
+if (reactPropertiesColumn !== null) reactPropertiesColumn.hidden = !reactHierarchyIsEnabled;
+reactEditorCanvas?.classList.toggle("react-editor-layout", reactHierarchyIsEnabled);
 if (reactEditorRoot !== null && reactShellIsEnabled) {
     mountEditorApp(
         reactEditorRoot,

@@ -235,7 +235,7 @@ The first item property editor is available on the opt-in React path:
 - selection remains editor-only state, while every valid property change flows through the command layer and existing undo/redo history;
 - compatibility coverage compares command-path serialization and SVG output with the legacy property mutation path.
 
-The properties panel is mounted below the hierarchy when `?reactHierarchy=on`; the unchanged SVG remains in the right column. The default legacy path remains fully functional. Unregistered item types clearly indicate that their properties are still managed by the existing editor rather than attempting a partial form.
+The properties panel is mounted in a dedicated right sidebar when `?reactHierarchy=on`; the unchanged SVG remains in the center workspace and the hierarchy remains on the left. Narrow viewports keep all three surfaces reachable with horizontal scrolling. The default legacy path remains fully functional. Unregistered item types clearly indicate that their properties are still managed by the existing editor rather than attempting a partial form.
 
 Remaining Phase 6 dependencies are deliberate: concrete item classes other than `Kring` still render their property forms through `toHTML()`, the default hierarchy still uses delegated DOM mutation, and the React opt-in cannot yet edit those types. A real-browser keyboard, responsive-layout and live-preview pass remains a release criterion before enabling the flag by default; component tests cover those interaction boundaries, but do not replace that pass. The next property-editor PR should migrate one common leaf type (preferably `Contactdoos`) through the same typed reader, command and registry seams before enabling the React hierarchy by default.
 
