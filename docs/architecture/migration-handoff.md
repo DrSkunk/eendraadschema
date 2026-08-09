@@ -116,7 +116,7 @@ Earlier React/property-editor commits immediately precede these in branch histor
 
 ## Recommended next sequence
 
-1. Add editor search, board breadcrumbs, save status and a bottom status/zoom area. Keep these in React/editor state.
+1. Add board breadcrumbs, save status and a bottom status/zoom area. Keep these in React/editor state. (Editor search is done: `HierarchySearch` above the tree searches label/type/summary across all boards and reveals a result via `EditorCommands.revealItem`.)
 2. Put the existing print preview and export controls behind a React-facing adapter without changing SVG, pagination or PDF generation.
 3. Move file open/save/save-as UI behind an application service while preserving the File System Access fallback and browser storage.
 4. Treat the situation plan as a separate migration: first split its document state from `SituationPlanView`, then migrate UI incrementally.

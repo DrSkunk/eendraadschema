@@ -6,6 +6,7 @@ import { useSchemaSnapshot } from "../useSchemaSnapshot";
 import { BoardNavigator } from "../boards/BoardNavigator";
 import { AddItemControl } from "./AddItemControl";
 import { HierarchyNode } from "./HierarchyNode";
+import { HierarchySearch } from "./HierarchySearch";
 import {
   createHierarchyIndex,
   getEditableChildren,
@@ -85,6 +86,7 @@ export function HierarchyTree({
         validationIssues={schemaSnapshot.validationIssues}
         reportError={setErrorMessage}
       />
+      <HierarchySearch document={hierarchyDocument} editorStore={editorStore} />
       <header className="react-hierarchy__header">
         <div>
           <span className="react-hierarchy__eyebrow">{activeBoard?.name ?? "Document"}</span>

@@ -273,6 +273,70 @@
   padding: 1rem 0;
 }
 
+.react-hierarchy-search {
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.react-hierarchy-search__field input {
+  border: 1px solid #cbd3dc;
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.react-hierarchy-search__results {
+  background: #ffffff;
+  border: 1px solid #cbd3dc;
+  border-radius: 0.375rem;
+  margin-top: 0.25rem;
+  padding: 0.5rem;
+}
+
+.react-hierarchy-search__count {
+  color: #64707d;
+  font-size: 0.85rem;
+  margin: 0 0 0.25rem;
+}
+
+.react-hierarchy-search__results ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.react-hierarchy-search__results li + li {
+  border-top: 1px solid #eef1f5;
+}
+
+.react-hierarchy-search__results button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.375rem 0.25rem;
+  text-align: left;
+  width: 100%;
+}
+
+.react-hierarchy-search__results button:hover,
+.react-hierarchy-search__results button:focus-visible {
+  background: #eef4fd;
+}
+
+.react-hierarchy-search__results small {
+  color: #64707d;
+}
+
+.react-hierarchy-search__more {
+  color: #64707d;
+  font-size: 0.8rem;
+  margin: 0.25rem 0 0;
+}
+
 .react-hierarchy__visually-hidden {
   height: 1px;
   margin: -1px;

@@ -11,6 +11,8 @@ export interface EditorCommands {
   toggleExpanded(itemId: number): void;
   expandItem(itemId: number): void;
   collapseItem(itemId: number): void;
+  /** Select an item on a possibly different board and expand its ancestors in one update. */
+  revealItem(itemId: number, boardId: string | undefined, ancestorItemIds: readonly number[]): void;
   reconcileItemIds(validItemIds: ReadonlySet<number>): void;
   reconcileBoardIds(validBoardIds: ReadonlySet<string>, fallbackBoardId: string): void;
 }
@@ -35,6 +37,7 @@ export class LocalEditorStore implements EditorStore {
     toggleExpanded: this.toggleExpanded.bind(this),
     expandItem: this.expandItem.bind(this),
     collapseItem: this.collapseItem.bind(this),
+    revealItem: this.revealItem.bind(this),
     reconcileItemIds: this.reconcileItemIds.bind(this),
     reconcileBoardIds: this.reconcileBoardIds.bind(this),
   });
@@ -75,6 +78,17 @@ export class LocalEditorStore implements EditorStore {
 
   private collapseItem(itemId: number): void {
     if (!this.expandedItemIds.delete(itemId)) return;
+    this.publish();
+  }
+
+  private revealItem(
+    itemId: number,
+    boardId: string | undefined,
+    ancestorItemIds: readonly number[],
+  ): void {
+    if (boardId !== undefined) this.activeBoardId = boardId;
+    for (const ancestorItemId of ancestorItemIds) this.expandedItemIds.add(ancestorItemId);
+    this.selectedItemId = itemId;
     this.publish();
   }
 

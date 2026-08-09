@@ -33,6 +33,53 @@ export function getEditableChildren(
   return index.childrenByParent.get(parentId) ?? EMPTY_CHILDREN;
 }
 
+export interface HierarchySearchResult {
+  readonly node: HierarchyViewNode;
+  readonly boardId: string | undefined;
+  readonly boardName: string | undefined;
+  readonly ancestorItemIds: readonly number[];
+}
+
+/** Case-insensitive substring search over label, type and the summary fields
+ *  of every editable item, across all distribution boards. */
+export function searchHierarchyItems(
+  document: SchemaDocumentReader,
+  query: string,
+): HierarchySearchResult[] {
+  const trimmedQuery = query.trim().toLowerCase();
+  if (trimmedQuery === "") return [];
+
+  const results: HierarchySearchResult[] = [];
+  for (const node of document.getAllItems()) {
+    if (node.role !== "item") continue;
+    const haystack = [
+      node.label,
+      node.type,
+      node.description,
+      node.summary.name,
+      node.summary.number,
+      node.summary.address,
+      node.summary.text,
+    ];
+    if (!haystack.some((value) => value !== undefined && value.toLowerCase().includes(trimmedQuery))) {
+      continue;
+    }
+
+    const ancestorItemIds: number[] = [];
+    let parentId = node.parentId;
+    while (parentId !== null) {
+      const parent = document.getItem(parentId);
+      if (parent === undefined) break;
+      ancestorItemIds.unshift(parent.id);
+      parentId = parent.parentId;
+    }
+
+    const board = document.getBoardForItem(node.id);
+    results.push({ node, boardId: board?.id, boardName: board?.name, ancestorItemIds });
+  }
+  return results;
+}
+
 export function getVisibleHierarchy(
   index: HierarchyIndex,
   expandedItemIds: ReadonlySet<number>,
