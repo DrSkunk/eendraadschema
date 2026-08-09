@@ -16,12 +16,13 @@ import { browser_ie_detected } from "./general";
 import { showDocumentationPage } from "./documentation/documentation";
 import { HelperTip } from "./documentation/HelperTip";
 import { Session } from "./Session";
-import { MultiLevelStorage } from "./storage/MultiLevelStorage";   
+import { MultiLevelStorage } from "./storage/MultiLevelStorage";
 import { undoRedo } from "./undoRedo";
 import { importExportUsingFileAPI } from "./importExport/importExport";
 import { changelog } from "./changelog";
 import { LocalEditorStore } from "./application/EditorStore";
 import { LegacySchemaStore } from "./application/LegacySchemaStore";
+import { LegacySaveStatusStore } from "./application/SaveStatusStore";
 import { mountEditorApp } from "./ui/mountEditorApp";
 
 import "../css/all.css";
@@ -74,12 +75,12 @@ globalThis.CONFIGPAGE_LEFT = `
         <p><font size="+2">
           <b>Welkom op ééndraadschema</b>
         </font></p>
-      <p><font size="+1">  
+      <p><font size="+1">
            Deze gratis tool laat toe zowel ééndraadschema's als situatieschema's te tekenen, inclusief complexere schema's
            met bijvoorbeeld domotica. De schema's kunnen als PDF bestand worden geëxporteerd en geprint.
            Voor de experts kunnen schema's eveneens worden omgezet in SVG vectorformaat om in andere programma's verder te bewerken.
       </font></p>
-      <p><font size="+1">  
+      <p><font size="+1">
            Kies één van onderstaande voorbeelden om van te starten of start van een leeg schema (optie 3).
       </font></p>
       <font size="+1">
@@ -222,7 +223,7 @@ globalThis.HLRedrawTreeSVG = () => {
 
 globalThis.HLRedrawTree = () => {
     globalThis.HLRedrawTreeHTML();
-    globalThis.HLRedrawTreeSVG();  
+    globalThis.HLRedrawTreeSVG();
 }
 
 function buildNewStructure(structure: Hierarchical_List) {
@@ -326,7 +327,7 @@ function restart_all() {
 globalThis.toggleAppView = (type: '2col' | 'config' | 'draw') => {
     let lastview = globalThis.structure.properties.currentView;
     if ((globalThis.structure.sitplanview != null) && (globalThis.structure.sitplanview.contextMenu != null)) globalThis.structure.sitplanview.contextMenu.hide();
-    
+
     globalThis.structure.properties.currentView = type;
 
     const configsection = document.getElementById("configsection");
@@ -336,7 +337,7 @@ globalThis.toggleAppView = (type: '2col' | 'config' | 'draw') => {
     const left_col_inner = document.getElementById("left_col_inner");
     const EDSSVG = document.getElementById("EDSSVG");
 
-    if (type === '2col') {  
+    if (type === '2col') {
         if (configsection == null) return;
         if (outerdiv == null) return;
         if (ribbon == null) return;
@@ -349,7 +350,7 @@ globalThis.toggleAppView = (type: '2col' | 'config' | 'draw') => {
             outerdiv.style.display = 'none';
 
             configsection.innerHTML = '';
-            
+
             globalThis.structure.updateRibbon();
         }
 
@@ -365,7 +366,7 @@ globalThis.toggleAppView = (type: '2col' | 'config' | 'draw') => {
             outerdiv.style.display = 'none';
             ribbon.style.display = 'none';
 
-            ribbon.innerHTML = ''; // Voor performance redenen    
+            ribbon.innerHTML = ''; // Voor performance redenen
         }
 
         left_col_inner.innerHTML = ''; // Voor performance redenen
@@ -450,7 +451,7 @@ container.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:center;height:100vh;font-size:larger;font-weight:bold; text-align: center;">
     De App wordt geladen.<br><br>Even geduld..
     </div>
-</div> <!-- Full page configuratie --> 
+</div> <!-- Full page configuratie -->
 <div id="ribbon" style="display:none;">
     <div id="left-icons" class="left-icons"></div>
     <div id="right-icons" class="right-icons"></div>
@@ -466,6 +467,7 @@ container.innerHTML = `
     <aside id="properties_col" aria-label="Eigenschappen van het geselecteerde onderdeel">
     <div id="react-properties-root"></div>
     </aside>
+    <div id="react-statusbar-root"></div>
 </div>
 <div id="outerdiv" style="display:none;"> <!-- Situatieschets -->
     <div id="sidebar"></div>
@@ -480,7 +482,7 @@ container.innerHTML = `
 const svgdefs = document.getElementById('svgdefs');
 if (svgdefs == null) throw new Error("HTML element svgdefs is null");
 
-svgdefs.innerHTML = 
+svgdefs.innerHTML =
     '<pattern id="VerticalStripe" x="5" y="0" width="5" height="10" patternUnits="userSpaceOnUse" >' +
     '<line x1="0" y1="0" x2="0" y2="10" stroke="black" />' +
     '</pattern>';
@@ -531,10 +533,18 @@ const reactEditorRoot = document.getElementById("react-editor-root");
 const reactHierarchyRoot = document.getElementById("react-hierarchy-root");
 const reactPropertiesRoot = document.getElementById("react-properties-root");
 const reactPropertiesColumn = document.getElementById("properties_col");
+const reactStatusBarRoot = document.getElementById("react-statusbar-root");
 const reactEditorCanvas = document.getElementById("canvas_2col");
 const legacyHierarchyRoot = document.getElementById("left_col_inner");
+const svgPreviewElement = document.getElementById("right_col_inner");
 const reactHierarchyIsEnabled = reactHierarchyRoot !== null;
 reactSchemaHistoryEnabled = reactHierarchyIsEnabled;
+
+const saveStatusStore = new LegacySaveStatusStore(() => ({
+    hasUnsavedChanges: globalThis.autoSaver !== undefined
+        && globalThis.autoSaver.hasChangesSinceLastManualSave(),
+    filename: globalThis.structure.properties.filename,
+}));
 
 if (legacyHierarchyRoot !== null) legacyHierarchyRoot.hidden = true;
 if (reactHierarchyRoot !== null) reactHierarchyRoot.hidden = false;
@@ -547,7 +557,12 @@ if (reactEditorRoot !== null) {
         schemaStore,
         editorStore,
         reactHierarchyIsEnabled ? reactHierarchyRoot : null,
-        reactHierarchyIsEnabled ? reactPropertiesRoot : null,
+        {
+            propertiesMountElement: reactHierarchyIsEnabled ? reactPropertiesRoot : null,
+            saveStatusStore,
+            statusBarMountElement: reactStatusBarRoot,
+            zoomTargetElement: svgPreviewElement,
+        },
     );
 }
 if (reactHierarchyIsEnabled) {
@@ -555,8 +570,12 @@ if (reactHierarchyIsEnabled) {
         globalThis.structure = schemaStore!.getLegacyDocument();
         globalThis.HLRedrawTreeSVG();
         globalThis.structure.updateRibbon();
+        saveStatusStore.refresh();
     });
 }
+// Filename edits and legacy-view mutations bypass the schema store; a coarse
+// timer keeps the React save status in sync with them.
+window.setInterval(() => saveStatusStore.refresh(), 2000);
 
 // Create the autoSaver
 // - the constructor takes a function that points it to the latest globalThis.structure whenever it asks for it
@@ -566,11 +585,12 @@ globalThis.autoSaver = new AutoSaver(5, () => {return(globalThis.structure);}); 
 globalThis.autoSaver.setCallbackAfterSave((() => { // Update ribbons after each save (automatic or manual) by the autoSaver, but only if the lastSavedType changed
     let lastSavedType = globalThis.autoSaver.getSavedType();
     function updateRibbons(){
+        saveStatusStore.refresh();
         const currentSavedType = globalThis.autoSaver.getSavedType();
         if (lastSavedType === currentSavedType) return; // Only update the ribbons if the type changed
         lastSavedType = currentSavedType;
-        globalThis.structure.updateRibbon(); 
-        if (globalThis.structure.sitplanview) globalThis.structure.sitplanview.updateRibbon(); 
+        globalThis.structure.updateRibbon();
+        if (globalThis.structure.sitplanview) globalThis.structure.sitplanview.updateRibbon();
     }
     return updateRibbons;
 })());
@@ -581,7 +601,7 @@ let recoveryAvailable = false
 let lastSavedStr:string|null = null;
 let lastSavedInfo:any = null;
 
-(async () => {   
+(async () => {
     [lastSavedStr, lastSavedInfo] = await globalThis.autoSaver.loadLastSaved();
     if ((lastSavedStr != null) /* && (lastSavedInfo.recovery == true) */ ) recoveryAvailable = true;
 })().then(() => {
@@ -606,9 +626,9 @@ let lastSavedInfo:any = null;
                         }).bind(this));
         if (lastSavedStr == null) return;
         EDStoStructure(lastSavedStr, true, true);
-        if (globalThis.structure.sitplan) globalThis.structure.sitplan.activePage = 1;  
-    } 
-    globalThis.autoSaver.start();    
+        if (globalThis.structure.sitplan) globalThis.structure.sitplan.activePage = 1;
+    }
+    globalThis.autoSaver.start();
 });
 
 

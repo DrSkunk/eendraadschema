@@ -1,15 +1,23 @@
 import { StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { EditorStore } from "../application/EditorStore";
+import type { SaveStatusStore } from "../application/SaveStatusStore";
 import type { SchemaStore } from "../application/SchemaStore";
 import { EditorApp } from "./App";
+
+export interface EditorAppMountOptions {
+  readonly propertiesMountElement?: HTMLElement | null;
+  readonly saveStatusStore?: SaveStatusStore | null;
+  readonly statusBarMountElement?: HTMLElement | null;
+  readonly zoomTargetElement?: HTMLElement | null;
+}
 
 export function mountEditorApp(
   element: HTMLElement,
   schemaStore: SchemaStore,
   editorStore: EditorStore,
   hierarchyMountElement: HTMLElement | null,
-  propertiesMountElement: HTMLElement | null = null,
+  options: EditorAppMountOptions = {},
 ): Root {
   const root = createRoot(element);
   root.render(
@@ -18,7 +26,10 @@ export function mountEditorApp(
         schemaStore={schemaStore}
         editorStore={editorStore}
         hierarchyMountElement={hierarchyMountElement}
-        propertiesMountElement={propertiesMountElement}
+        propertiesMountElement={options.propertiesMountElement ?? null}
+        saveStatusStore={options.saveStatusStore ?? null}
+        statusBarMountElement={options.statusBarMountElement ?? null}
+        zoomTargetElement={options.zoomTargetElement ?? null}
       />
     </StrictMode>,
   );

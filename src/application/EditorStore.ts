@@ -3,7 +3,12 @@ export interface EditorSnapshot {
   readonly selectedItemId: number | null;
   readonly activeBoardId: string;
   readonly expandedItemIds: ReadonlySet<number>;
+  readonly zoomPercent: number;
 }
+
+export const MIN_ZOOM_PERCENT = 25;
+export const MAX_ZOOM_PERCENT = 400;
+export const DEFAULT_ZOOM_PERCENT = 100;
 
 export interface EditorCommands {
   selectItem(itemId: number | null): void;
@@ -13,6 +18,7 @@ export interface EditorCommands {
   collapseItem(itemId: number): void;
   /** Select an item on a possibly different board and expand its ancestors in one update. */
   revealItem(itemId: number, boardId: string | undefined, ancestorItemIds: readonly number[]): void;
+  setZoomPercent(zoomPercent: number): void;
   reconcileItemIds(validItemIds: ReadonlySet<number>): void;
   reconcileBoardIds(validBoardIds: ReadonlySet<string>, fallbackBoardId: string): void;
 }
@@ -28,6 +34,7 @@ export class LocalEditorStore implements EditorStore {
   private readonly expandedItemIds = new Set<number>();
   private selectedItemId: number | null = null;
   private activeBoardId = "main";
+  private zoomPercent = DEFAULT_ZOOM_PERCENT;
   private revision = 0;
   private snapshot = this.createSnapshot();
 
@@ -38,6 +45,7 @@ export class LocalEditorStore implements EditorStore {
     expandItem: this.expandItem.bind(this),
     collapseItem: this.collapseItem.bind(this),
     revealItem: this.revealItem.bind(this),
+    setZoomPercent: this.setZoomPercent.bind(this),
     reconcileItemIds: this.reconcileItemIds.bind(this),
     reconcileBoardIds: this.reconcileBoardIds.bind(this),
   });
@@ -92,6 +100,13 @@ export class LocalEditorStore implements EditorStore {
     this.publish();
   }
 
+  private setZoomPercent(zoomPercent: number): void {
+    const clamped = Math.min(MAX_ZOOM_PERCENT, Math.max(MIN_ZOOM_PERCENT, Math.round(zoomPercent)));
+    if (Number.isNaN(clamped) || this.zoomPercent === clamped) return;
+    this.zoomPercent = clamped;
+    this.publish();
+  }
+
   private reconcileItemIds(validItemIds: ReadonlySet<number>): void {
     let changed = false;
     if (this.selectedItemId !== null && !validItemIds.has(this.selectedItemId)) {
@@ -120,6 +135,7 @@ export class LocalEditorStore implements EditorStore {
       selectedItemId: this.selectedItemId,
       activeBoardId: this.activeBoardId,
       expandedItemIds: new Set(this.expandedItemIds),
+      zoomPercent: this.zoomPercent,
     });
   }
 

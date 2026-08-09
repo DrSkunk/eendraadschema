@@ -3,6 +3,7 @@ import type { EditorStore } from "../../application/EditorStore";
 import type { SchemaStore } from "../../application/SchemaStore";
 import { useEditorSnapshot } from "../useEditorSnapshot";
 import { useSchemaSnapshot } from "../useSchemaSnapshot";
+import { BoardBreadcrumbs } from "../boards/BoardBreadcrumbs";
 import { BoardNavigator } from "../boards/BoardNavigator";
 import { AddItemControl } from "./AddItemControl";
 import { HierarchyNode } from "./HierarchyNode";
@@ -87,6 +88,11 @@ export function HierarchyTree({
         reportError={setErrorMessage}
       />
       <HierarchySearch document={hierarchyDocument} editorStore={editorStore} />
+      <BoardBreadcrumbs
+        document={hierarchyDocument}
+        activeBoardId={activeBoardId}
+        editorStore={editorStore}
+      />
       <header className="react-hierarchy__header">
         <div>
           <span className="react-hierarchy__eyebrow">{activeBoard?.name ?? "Document"}</span>

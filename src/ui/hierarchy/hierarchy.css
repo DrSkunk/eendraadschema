@@ -337,6 +337,47 @@
   margin: 0.25rem 0 0;
 }
 
+.board-breadcrumbs {
+  margin-bottom: 0.5rem;
+}
+
+.board-breadcrumbs ol {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.board-breadcrumbs li {
+  align-items: center;
+  color: #64707d;
+  display: flex;
+  font-size: 0.85rem;
+  gap: 0.25rem;
+}
+
+.board-breadcrumbs li + li::before {
+  content: "›";
+}
+
+.board-breadcrumbs button {
+  background: none;
+  border: none;
+  color: #175cd3;
+  cursor: pointer;
+  font-size: inherit;
+  padding: 0.125rem 0.25rem;
+  text-decoration: underline;
+}
+
+.board-breadcrumbs [aria-current="page"] {
+  color: #101828;
+  font-weight: 600;
+}
+
 .react-hierarchy__visually-hidden {
   height: 1px;
   margin: -1px;
