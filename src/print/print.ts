@@ -1,60 +1,38 @@
+import { LegacyPrintService } from "../application/PrintService";
 import { download_by_blob } from "../importExport/importExport";
 import { SVGelement } from "../SVGelement";
-import { flattenSVGfromString } from "../general";
-import { printPDF } from './printToJsPDF';
+
+/** Single React-facing print adapter over the authoritative legacy document.
+ *  The imperative print page below and any future React print UI share it. */
+export const printService = new LegacyPrintService(() => globalThis.structure);
 
 globalThis.HLDisplayPage = () => {
-    globalThis.structure.print_table.displaypage = parseInt((document.getElementById("id_select_page") as HTMLInputElement).value)-1;
+    printService.setDisplayPageIndex(parseInt((document.getElementById("id_select_page") as HTMLInputElement).value) - 1);
     printsvg();
 }
 
 globalThis.dosvgdownload = () => {
-    const printsvgarea = document.getElementById("printsvgarea");    
-    let filename: string;
+    const prtContent = printService.getPreviewSvg();
+    if (prtContent === "") return;
 
-    if (printsvgarea == null) return;
-    let prtContent = printsvgarea.innerHTML;
- 
     const dosvgname = (document.getElementById("dosvgname") as HTMLInputElement);
-    if (dosvgname == null)
-        filename = "eendraadschema.svg";
-    else
-        filename = (document.getElementById("dosvgname") as HTMLInputElement).value;
+    const filename = dosvgname == null ? "eendraadschema.svg" : dosvgname.value;
 
     download_by_blob(prtContent, filename, 'data:image/svg+xml;charset=utf-8'); //Was text/plain
 }
 
-export function getPrintSVGWithoutAddress(outSVG: SVGelement, page:number = globalThis.structure.print_table.displaypage) {
-    var scale = 1;
-
-    var startx = globalThis.structure.print_table.pages[page].start;
-    var width = globalThis.structure.print_table.pages[page].stop - startx;
-    var starty = globalThis.structure.print_table.getstarty();
-    var height = globalThis.structure.print_table.getstopy() - starty;
-
-    var viewbox = '' + startx + ' ' + starty + ' ' + width + ' ' + height;
-
-    var outstr = '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" transform="scale(1,1)" style="border:1px solid white" ' +
-              'height="' + (height*scale) + '" width="' + (width*scale) + '" viewBox="' + viewbox + '">' +
-              flattenSVGfromString(outSVG.data) + '</svg>';
-
-    return(outstr);
+export function getPrintSVGWithoutAddress(outSVG: SVGelement, page: number = globalThis.structure.print_table.displaypage) {
+    return printService.getPreviewSvg(page, outSVG);
 }
 
 export function printsvg() {
 
     function generatePdf() {
-
-        if (typeof(globalThis.structure.properties.dpi) == 'undefined') globalThis.structure.properties.dpi = 300;
-    
-        let svg = flattenSVGfromString(globalThis.structure.toSVG(0,"horizontal").data);
-        
-        let pages: (number | null)[];
-        const totalPages = globalThis.structure.print_table.pages.length + (globalThis.structure.sitplan ? globalThis.structure.sitplan.getNumPages() : 0);
+        const state = printService.getPreviewState();
 
         const modeSelect = document.getElementById("print_page_mode") as HTMLSelectElement | null;
         const rangeInput = document.getElementById("print_page_range") as HTMLInputElement | null;
-        if (!globalThis.structure.print_table.canPrint()) {
+        if (!state.canPrint) {
             modeSelect.value = "all";
             rangeInput.value = "";
             rangeInput.style.display = "none";
@@ -64,59 +42,28 @@ export function printsvg() {
             }
         }
 
-        let pagerange = "1-" + totalPages; // Default to all pages
-
+        let pagerange: string | undefined = undefined;
         if (modeSelect && modeSelect.value === "custom" && rangeInput && rangeInput.value.trim() !== "") {
             pagerange = rangeInput.value.trim();
         }
 
-        const sitplanprint = globalThis.structure.sitplan.toSitPlanPrint();
-
-        // If autopage, overwrite the input fields
-        if (globalThis.structure.print_table.enableAutopage) {
-            const info = globalThis.structure.properties.info;
-            for (let page of globalThis.structure.print_table.pages) {
-                page.info = info;
-            }
-        }
-
-        // Print everything
-    
-        printPDF(
-            svg,
-            globalThis.structure.print_table,
-            globalThis.structure.properties,
-            pagerange,
-            (document.getElementById("dopdfname") as HTMLInputElement).value, //filename
-            document.getElementById("progress_pdf"), //HTML element where callback status can be given
-            sitplanprint
-        );
+        printService.generatePdf({
+            filename: (document.getElementById("dopdfname") as HTMLInputElement).value,
+            pageRange: pagerange,
+            statusElement: document.getElementById("progress_pdf"),
+        });
     }
 
-    function renderPrintSVG_EDS(outSVG: SVGelement) {
+    function renderPreview(pageIndex: number, outSVG: SVGelement) {
         const printarea = document.getElementById("printarea");
         if (printarea == null) return;
-        printarea.innerHTML = '<div id="printsvgarea">' + getPrintSVGWithoutAddress(outSVG) + '</div>';
+        printarea.innerHTML = '<div id="printsvgarea">' + printService.getPreviewSvg(pageIndex, outSVG) + '</div>';
     }
 
-    function renderPrintSVG_sitplan(page: number) {
-        const outstruct = globalThis.structure.sitplan.toSitPlanPrint();
-        const printarea = document.getElementById("printarea");
-        if (printarea == null) return;
-        printarea.innerHTML = '<div id="printsvgarea">' + outstruct.pages[page].svg + '</div>';
-    }
-    
-    // First we generate an SVG image. We do this first because we need the size
-    // We will display it at the end of this function    
+    // First we generate an SVG image and feed its dimensions to the pagination
+    // table. We keep the result because the preview at the end reuses it.
 
-    var outSVG = new SVGelement();
-    outSVG = globalThis.structure.toSVG(0,"horizontal");
-
-    var height = outSVG.yup + outSVG.ydown;
-    var width = outSVG.xleft + outSVG.xright;
-
-    globalThis.structure.print_table.setHeight(height);
-    globalThis.structure.print_table.setMaxWidth(width+10);
+    const outSVG = printService.computeLayout();
 
     // Then we display all the print options
 
@@ -125,7 +72,7 @@ export function printsvg() {
 
     const configsection = document.getElementById("configsection");
     if (configsection != null)
-        configsection.innerHTML 
+        configsection.innerHTML
             = '<div>'
             +   '<button id="button_pdfdownload">Genereer PDF</button>&nbsp;'
             +   '<span id="select_papersize"></span>&nbsp;'
@@ -145,7 +92,7 @@ export function printsvg() {
     // Insert page range selector
     globalThis.structure.print_table.insertHTMLselectPageRange(document.getElementById('select_page_range') as HTMLElement, printsvg);
 
-    outstr 
+    outstr
         = '<div>'
         +   '<span style="margin-right: 2em" id="check_autopage"></span>' // Checkbox to choose if we want to auto paginate or not comes here
         +   '<span style="margin-right: 2em" id="id_verticals"></span>' // An optional area to choose what part of the y-space of the image is shown
@@ -154,7 +101,7 @@ export function printsvg() {
 
     if (configsection != null)
         configsection.insertAdjacentHTML('beforeend', outstr);
-        
+
     globalThis.structure.print_table.insertHTMLcheckAutopage(document.getElementById('check_autopage') as HTMLElement, printsvg);
     if (!globalThis.structure.print_table.enableAutopage) {
         globalThis.structure.print_table.insertHTMLchooseVerticals(document.getElementById('id_verticals') as HTMLElement, printsvg);
@@ -162,7 +109,7 @@ export function printsvg() {
     }
 
     if (!globalThis.structure.print_table.enableAutopage) {
-        outstr 
+        outstr
             = '<br>'
             + '<table border="0">'
                 + '<tr>'
@@ -177,34 +124,33 @@ export function printsvg() {
                 + '</tr>'
             + '</table>'
             + '<br>';
-        
+
         if (configsection != null)
-            configsection.insertAdjacentHTML('beforeend', outstr);    
+            configsection.insertAdjacentHTML('beforeend', outstr);
 
         globalThis.structure.print_table.insertHTMLposxTable(document.getElementById('id_print_table') as HTMLElement, printsvg)
     }
 
     strleft += '<hr>';
 
-    const numPages = globalThis.structure.print_table.pages.length + (globalThis.structure.sitplan? globalThis.structure.sitplan.getNumPages() : 0);
-    if (globalThis.structure.print_table.displaypage >= numPages) {
-        globalThis.structure.print_table.displaypage = numPages-1;
-    }
+    const previewState = printService.getPreviewState();
+    const numPages = previewState.totalPageCount;
+    const displayPageIndex = previewState.displayPageIndex;
 
     strleft += '<b>Printvoorbeeld: </b>Pagina <select onchange="HLDisplayPage()" id="id_select_page">'
-    for (let i=0; i<numPages; i++) {
-        if (i==globalThis.structure.print_table.displaypage) {
+    for (let i = 0; i < numPages; i++) {
+        if (i == displayPageIndex) {
             strleft += '<option value=' + (i+1) + ' selected>' + (i+1) + '</option>';
         } else {
             strleft += '<option value=' + (i+1) + '>' + (i+1) + '</option>';
-        }  
+        }
     }
     strleft += '</select>&nbsp;&nbsp;(Enkel tekening, kies "Genereer PDF" om ook de tekstuele gegevens te zien)';
-    
+
     strleft += '<br><br>';
-    
+
     strleft += '<table border="0"><tr><td style="vertical-align:top"><button onclick="dosvgdownload()">Zichtbare pagina als SVG opslaan</button></td><td>&nbsp;</td><td style="vertical-align:top"><input id="dosvgname" size="20" value="eendraadschema_print.svg"></td><td>&nbsp;&nbsp;</td><td>Sla tekening hieronder op als SVG en converteer met een ander programma naar PDF (bvb Inkscape).</td></tr></table><br>';
-    
+
     strleft += globalThis.displayButtonPrintToPdf(); // This is only for the online version
 
     strleft += '<div id="printarea"></div>';
@@ -214,11 +160,7 @@ export function printsvg() {
 
     // Finally we show the actual SVG
 
-    if (globalThis.structure.print_table.displaypage < globalThis.structure.print_table.pages.length) { //displaypage starts counting at 0
-        renderPrintSVG_EDS(outSVG);    
-    } else {
-        renderPrintSVG_sitplan(globalThis.structure.print_table.displaypage - globalThis.structure.print_table.pages.length);
-    }
+    renderPreview(displayPageIndex, outSVG);
 
     globalThis.toggleAppView('config');
 }

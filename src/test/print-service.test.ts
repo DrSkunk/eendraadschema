@@ -1,0 +1,73 @@
+import { afterEach, describe, expect, it } from "vitest";
+import { LegacyPrintService } from "../application/PrintService";
+import { getPrintSVGWithoutAddress } from "../print/print";
+import { SVGSymbols } from "../SVGSymbols";
+import { loadFixture } from "./helpers";
+
+afterEach(() => {
+  delete (globalThis as { structure?: unknown }).structure;
+});
+
+function createService() {
+  SVGSymbols.clearSymbols();
+  const structure = loadFixture("example001.eds");
+  // Print_Table.canPrint() still reads globalThis.structure internally.
+  globalThis.structure = structure;
+  const service = new LegacyPrintService(() => structure);
+  return { structure, service };
+}
+
+describe("LegacyPrintService", () => {
+  it("computes the layout and reports the preview state", () => {
+    const { structure, service } = createService();
+    const outSVG = service.computeLayout();
+
+    expect(structure.print_table.getHeight()).toBe(outSVG.yup + outSVG.ydown);
+    expect(structure.print_table.getMaxWidth()).toBe(outSVG.xleft + outSVG.xright + 10);
+
+    const state = service.getPreviewState();
+    expect(state.edsPageCount).toBe(structure.print_table.pages.length);
+    expect(state.sitplanPageCount).toBe(structure.sitplan ? structure.sitplan.getNumPages() : 0);
+    expect(state.totalPageCount).toBe(state.edsPageCount + state.sitplanPageCount);
+    expect(state.displayPageIndex).toBe(0);
+    expect(state.paperSize).toBe(structure.print_table.getPaperSize());
+    expect(state.dpi).toBeGreaterThan(0);
+  });
+
+  it("clamps the display page to the available pages", () => {
+    const { structure, service } = createService();
+    service.computeLayout();
+    const state = service.getPreviewState();
+
+    service.setDisplayPageIndex(state.totalPageCount + 5);
+    expect(structure.print_table.displaypage).toBe(state.totalPageCount - 1);
+
+    service.setDisplayPageIndex(-3);
+    expect(structure.print_table.displaypage).toBe(0);
+
+    service.setDisplayPageIndex(0);
+    expect(structure.print_table.displaypage).toBe(0);
+  });
+
+  it("produces a viewbox-cropped SVG for an EDS preview page", () => {
+    const { structure, service } = createService();
+    const outSVG = service.computeLayout();
+    const previewSvg = service.getPreviewSvg(0, outSVG);
+
+    const page = structure.print_table.pages[0];
+    const expectedViewbox = `${page.start} ${structure.print_table.getstarty()}`
+      + ` ${page.stop - page.start}`
+      + ` ${structure.print_table.getstopy() - structure.print_table.getstarty()}`;
+
+    expect(previewSvg).toMatch(/^<svg /);
+    expect(previewSvg).toContain(`viewBox="${expectedViewbox}"`);
+    expect(previewSvg).toContain("</svg>");
+  });
+
+  it("keeps the legacy getPrintSVGWithoutAddress wrapper byte-identical", () => {
+    const { service } = createService();
+    const outSVG = service.computeLayout();
+
+    expect(getPrintSVGWithoutAddress(outSVG, 0)).toBe(service.getPreviewSvg(0, outSVG));
+  });
+});
