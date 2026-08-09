@@ -97,7 +97,7 @@ git diff --check
 
 Baseline on 7 August 2026: 22 test files and 228 tests passed. The Vite build still reports expected warnings for non-module Pako/jsPDF/property scripts; it completes successfully.
 
-The embedded browser/Playwright connection could not be used because its MCP request lacked `sandboxPolicy`. The failure occurred before navigation and was not caused by `localhost`. Earlier manual checks confirmed selection, circuit editing, numeric validation, live SVG updates and working undo/redo. Repeat end-to-end browser validation when that browser integration is available.
+Playwright end-to-end smoke tests exist in `e2e/smoke.spec.ts` (`npm run test:e2e`, config in `playwright.config.ts`, starts the Vite dev server itself). They cover: example loading into the React editor with live SVG, circuit property editing with SVG update and undo/redo, editor search reveal, secondary-board creation/breadcrumbs/deletion, status-bar zoom, and the print page through the print adapter. The first run exposed a real layout bug — the legacy top menu was hidden underneath the ribbon because the legacy absolute offsets did not account for the React shell header; fixed with `--react-shell-height` in `css/styles.css`.
 
 ## Relevant commits
 

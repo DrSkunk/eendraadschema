@@ -4,13 +4,14 @@
   --selectPadding: 2;
   --paperPadding: 10px;
 
-  --menu-height: 40px; 
-  --ribbon-height: 68px; 
-  --status-bar-height: 0px; 
+  --menu-height: 40px;
+  --ribbon-height: 68px;
+  --status-bar-height: 0px;
+  --react-shell-height: 48px; /* Height of the React editor header above the legacy menu */
 
   --sideBarWidth: 0px; /* Can be overwritte in propstyles */
 
-  --total-offset: calc(var(--menu-height) + var(--ribbon-height) + var(--status-bar-height));
+  --total-offset: calc(var(--react-shell-height) + var(--menu-height) + var(--ribbon-height) + var(--status-bar-height));
 
   --EDStekenFoutKleur: #8C5A00; /* Very dark amber */
 }
@@ -125,7 +126,7 @@ ul#minitabs a:hover {
 
 #ribbon {
   position: absolute;
-  top: var(--menu-height);
+  top: calc(var(--react-shell-height) + var(--menu-height));
   height: var(--ribbon-height);
   left: 0px;
   right: 0px;
@@ -280,7 +281,7 @@ ul#minitabs a:hover {
 
 #configsection {
   position: absolute;
-  top: var(--menu-height);
+  top: calc(var(--react-shell-height) + var(--menu-height));
   left: 0;
   right: 0;
   bottom: 0;
@@ -292,7 +293,7 @@ ul#minitabs a:hover {
 #canvas_2col {
   display: flex;
   position: absolute;
-  top: calc(var(--menu-height) + var(--ribbon-height)); 
+  top: calc(var(--react-shell-height) + var(--menu-height) + var(--ribbon-height));
   left: 0;
   right: 0;
   bottom: 0;
@@ -306,7 +307,7 @@ ul#minitabs a:hover {
 #outerdiv {
   display: flex;
   position: absolute;
-  top: calc(var(--menu-height) + var(--ribbon-height)); 
+  top: calc(var(--react-shell-height) + var(--menu-height) + var(--ribbon-height));
   left: 0;
   right: 0;
   bottom: 0;

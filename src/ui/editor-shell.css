@@ -2,10 +2,12 @@
   align-items: center;
   background: #ffffff;
   border-bottom: 1px solid #d8dee4;
+  box-sizing: border-box;
   color: #20252b;
   display: flex;
+  height: var(--react-shell-height, 3rem);
   justify-content: space-between;
-  min-height: 3rem;
+  overflow: hidden;
   padding: 0.5rem 1rem;
 }
 
