@@ -1,4 +1,4 @@
-import { inflateSync } from "node:zlib";
+import { deflateSync, inflateSync } from "node:zlib";
 import { vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 
@@ -6,6 +6,9 @@ Object.assign(globalThis, {
   pako: {
     inflate(input: Uint8Array): Uint8Array {
       return new Uint8Array(inflateSync(input));
+    },
+    deflate(input: Uint8Array): Uint8Array {
+      return new Uint8Array(deflateSync(input));
     },
   },
 });

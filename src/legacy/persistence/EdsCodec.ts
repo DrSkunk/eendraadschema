@@ -27,6 +27,7 @@ type LegacyStructure = {
 };
 
 type Inflate = (input: Uint8Array) => Uint8Array;
+type Deflate = (input: Uint8Array) => Uint8Array;
 
 function defaultInflate(input: Uint8Array): Uint8Array {
   const globalPako = (globalThis as typeof globalThis & {
@@ -34,6 +35,44 @@ function defaultInflate(input: Uint8Array): Uint8Array {
   }).pako;
   if (!globalPako) throw new Error("Pako is niet beschikbaar om het EDS-bestand te decomprimeren.");
   return globalPako.inflate(input);
+}
+
+function defaultDeflate(input: Uint8Array): Uint8Array {
+  const globalPako = (globalThis as typeof globalThis & {
+    pako?: { deflate(value: Uint8Array): Uint8Array };
+  }).pako;
+  if (!globalPako) throw new Error("Pako is niet beschikbaar om het EDS-bestand te comprimeren.");
+  return globalPako.deflate(input);
+}
+
+function uint8ArrayToBase64(uint8Array: Uint8Array): string {
+  const CHUNK_SIZE = 0x8000; // Verwerk 32KB chunks
+  let binaryString = "";
+  for (let index = 0; index < uint8Array.length; index += CHUNK_SIZE) {
+    binaryString += String.fromCharCode.apply(
+      null,
+      uint8Array.subarray(index, index + CHUNK_SIZE),
+    );
+  }
+  return btoa(binaryString);
+}
+
+/** Encode a serialized document as an EDS payload: compressed and Base64
+ *  wrapped when possible, with a fallback to the uncompressed TXT format. */
+export function encodeEds(
+  jsonText: string,
+  disableCompression = false,
+  deflate: Deflate = defaultDeflate,
+): string {
+  if (!disableCompression) {
+    try {
+      const deflated = deflate(new TextEncoder().encode(jsonText));
+      return wrapCurrentEdsPayload("EDS", uint8ArrayToBase64(deflated));
+    } catch (error) {
+      console.log("Terugvallen naar TXT-uitvoer vanwege compressiefout: " + error);
+    }
+  }
+  return wrapCurrentEdsPayload("TXT", jsonText);
 }
 
 export function upgradeVersion(structure: LegacyStructure, version: number): void {

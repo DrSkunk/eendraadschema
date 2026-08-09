@@ -1,11 +1,9 @@
 import {
     decodeEds,
     structureFromJson,
-    wrapCurrentEdsPayload,
 } from "../legacy/persistence/EdsCodec";
 import { DEFAULT_MAIN_BOARD_ID, type DistributionBoard } from "../domain/DistributionBoard";
-
-declare var pako: any;
+import { LegacyFileService } from "../application/FileService";
 
 export class importExportUsingFileAPI {
 
@@ -97,6 +95,18 @@ export class importExportUsingFileAPI {
     };
 }
 
+/** Single React-facing file adapter. The legacy file page and any future
+ *  React file UI share it; it preserves the File System Access flow, the
+ *  download fallback and manual autosave bookkeeping. */
+export const fileService = new LegacyFileService({
+    getDocument: () => globalThis.structure,
+    getFileApi: () => globalThis.fileAPIobj,
+    isFileApiAvailable: () => (window as any).showOpenFilePicker !== undefined,
+    getManualSaver: () => globalThis.autoSaver,
+    downloadFallback: (content, filename) => download_by_blob(content, filename, 'data:text/eds;charset=utf-8'),
+    afterExport: (payload) => globalThis.propUpload(payload),
+});
+
 /**
  * Callback functie voor de legacy filepicker als de file API niet beschikbaar is in de browser.
  * @param event filepicker click event
@@ -139,7 +149,7 @@ globalThis.appendjson = function(event) {
  */
 globalThis.loadClicked = async () => {
     if ((window as any).showOpenFilePicker) { // Use fileAPI
-        let data = await globalThis.fileAPIobj.readFile();
+        let data = await fileService.openDocumentText();
         EDStoStructure(data);
         if (globalThis.structure.sitplan) globalThis.structure.sitplan.activePage = 1;
     } else { // Legacy
@@ -166,60 +176,10 @@ globalThis.importToAppendClicked = async () => {
  * @param {boolean} saveAs - Indien true, wordt de gebruiker gevraagd waar het bestand moet worden opgeslagen; anders wordt het bestand opgeslagen onder de bekende bestandsnaam.
  */
 globalThis.exportjson = (saveAs: boolean = true) => { // Indien de boolean false is en de file API is geïnstalleerd, wordt een normale opslag uitgevoerd (bekende bestandsnaam)
-
-    /**
-     * Converteert een Uint8Array naar een Base64-gecodeerde string.
-     * @param {Uint8Array} uint8Array - De array die moet worden geconverteerd.
-     * @returns {string} De Base64-gecodeerde string.
-     */
-    function uint8ArrayToBase64(uint8Array: Uint8Array): string {
-        const CHUNK_SIZE = 0x8000; // Verwerk 32KB chunks
-        let binaryString = '';
-        for (let i = 0; i < uint8Array.length; i += CHUNK_SIZE) {
-            binaryString += String.fromCharCode.apply(
-                null,
-                uint8Array.subarray(i, i + CHUNK_SIZE)
-            );
-        }
-        return btoa(binaryString);
-    }
-
-    var filename: string;
-
-    /* We gebruiken de Pako-bibliotheek om de data te entropycoderen
-     * Einddata leest "EDSXXX0000" met XXX een versie en daarna een 64base-encodering van de gedecomprimeerde uitvoer van Pako
-     * filename = "eendraadschema.eds";
-     */
-    filename = globalThis.structure.properties.filename;
-
-    let origtext: string = globalThis.structure.toJsonObject(true);
-    let text: string = '';
-
-    // Comprimeer de uitvoerstructuur en bied deze aan als download aan de gebruiker. We zijn momenteel bij versie 004
-    try {
-        if (globalThis.structure.properties.disableEDSCompression == true) throw new Error("Compression is disabled");
-        let encoder = new TextEncoder();
-        let pako_inflated = new Uint8Array(encoder.encode(origtext));
-        let pako_deflated = new Uint8Array(pako.deflate(pako_inflated));
-        text = wrapCurrentEdsPayload("EDS", uint8ArrayToBase64(pako_deflated));
-    } catch (error) {
-        console.log("Terugvallen naar TXT-uitvoer vanwege compressiefout: " + error);
-        text = wrapCurrentEdsPayload("TXT", origtext);
-    } finally {
-        if ((window as any).showOpenFilePicker) { // Gebruik fileAPI    
-            if ( (globalThis.fileAPIobj.filename == null) && (saveAs == false) ) saveAs = true; // Default to SaveAs if we have no file name
-            if (saveAs) {
-                globalThis.fileAPIobj.saveAs(text).then(() => {globalThis.autoSaver.saveManually(wrapCurrentEdsPayload("TXT", origtext));})
-            } else { 
-                globalThis.fileAPIobj.save(text).then(() => {globalThis.autoSaver.saveManually(wrapCurrentEdsPayload("TXT", origtext));});
-            }          
-        } else { // legacy
-          download_by_blob(text, filename, 'data:text/eds;charset=utf-8');
-          globalThis.autoSaver.saveManually(wrapCurrentEdsPayload("TXT", origtext)); // Needs to be as TXT to be able to check with last autosave
-        }
-    }
-
-    globalThis.propUpload(text);
+    fileService.saveDocument(saveAs).catch((error) => {
+        // A dismissed file picker rejects; that is not an application error.
+        if ((error as { name?: string }).name !== "AbortError") console.error(error);
+    });
 }
 
 /** @deprecated Import from legacy/persistence/EdsCodec in UI-independent code. */
