@@ -187,7 +187,16 @@ export function structureFromJson(
   const activeRootItemIds = output.data
     .filter((item, index) => output.active[index] && item.parent === 0)
     .map((item) => item.id);
-  output.boards = parseDistributionBoards(input.boards, activeRootItemIds);
+  const activeItemIds = new Set(
+    output.data.filter((item, index) => output.active[index]).map((item) => item.id),
+  );
+  // Drop root references to items that no longer exist so a stale persisted ID
+  // degrades gracefully instead of producing validation errors on every load.
+  output.boards = parseDistributionBoards(input.boards, activeRootItemIds).map((board) =>
+    board.feeder === undefined
+      ? board
+      : { ...board, rootItemIds: board.rootItemIds.filter((itemId) => activeItemIds.has(itemId)) },
+  );
   return output;
 }
 

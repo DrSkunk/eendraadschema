@@ -46,6 +46,10 @@ React must never mutate `Hierarchical_List.data` or an item `props` bag directly
 - The React board navigator supports creation, selection, editing, deletion, feeder/cable fields and document details.
 - Existing SVG traversal renders secondary boards through their real electrical hierarchy. Board name, location and feeder metadata are added by the existing `Bord` SVG adapter.
 - GitHub Pages deployment exists at `.github/workflows/deploy-pages.yml`.
+- Append-import (`mergeAppendedBoards` in `src/importExport/importExport.ts`) merges secondary boards from the appended document, remapping item IDs, feeder references and board IDs; the appended main board's items join the target main board.
+- `structureFromJson` drops secondary-board root references to items that no longer exist instead of surfacing validation errors on load.
+- The item factory uses `ELECTRO_ITEM_CONSTRUCTORS`/`PUBLIC_ELECTRO_ITEM_TYPES` in `src/Hierarchical_List.ts` as the single type registry; the property-editor coverage test derives its type list from it.
+- React property editors subscribe through `useSchemaSnapshot`; the board settings form remounts when the stored board values change so undo/redo resets its drafts.
 
 ## Important domain invariants
 

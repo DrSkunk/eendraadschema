@@ -9,6 +9,7 @@ import { DraftTextField } from "../DraftTextField";
 import type { ItemEditorProps } from "../ItemEditorProps";
 import { CheckboxField, SelectField, type PropertyOption } from "../PropertyFields";
 import { socketNumberModeOptions } from "../socket/socketOptions";
+import { useSchemaSnapshot } from "../../useSchemaSnapshot";
 
 function options<Value extends string>(values: readonly Value[]): ReadonlyArray<PropertyOption<Value>> {
   return values.map((value) => [value, value]);
@@ -20,7 +21,7 @@ const lightCountOptions = options(LIGHT_POINT_COUNTS);
 const emergencyOptions = options(EMERGENCY_LIGHTING_TYPES);
 
 export function LightPointPropertiesEditor({ itemId, schemaStore }: ItemEditorProps) {
-  const properties = schemaStore.getSnapshot().properties.getLightPoint(itemId);
+  const properties = useSchemaSnapshot(schemaStore).properties.getLightPoint(itemId);
   if (properties === undefined) return null;
   const update = (changes: LightPointPropertyChanges) => schemaStore.commands.updateLightPoint(itemId, changes);
 

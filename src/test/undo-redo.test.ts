@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { Hierarchical_List } from "../Hierarchical_List";
 import { undoRedo } from "../undoRedo";
 
@@ -10,6 +10,11 @@ describe("undo and redo", () => {
       structure,
       toggleAppView: () => undefined,
     });
+  });
+
+  afterEach(() => {
+    delete (globalThis as { structure?: unknown }).structure;
+    delete (globalThis as { toggleAppView?: unknown }).toggleAppView;
   });
 
   it("restores additions and deletions through serialized history", () => {

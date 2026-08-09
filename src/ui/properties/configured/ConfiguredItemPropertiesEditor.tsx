@@ -10,6 +10,7 @@ import {
   configuredItemEditorConfigs,
   type ConfiguredEditorField,
 } from "./configuredItemEditorConfig";
+import { useSchemaSnapshot } from "../../useSchemaSnapshot";
 
 function optionLabel(value: string): string {
   const labels: Readonly<Record<string, string>> = {
@@ -63,7 +64,7 @@ function ConfiguredField({
 }
 
 export function ConfiguredItemPropertiesEditor({ itemId, schemaStore }: ItemEditorProps) {
-  const properties = schemaStore.getSnapshot().properties.getConfiguredItem(itemId);
+  const properties = useSchemaSnapshot(schemaStore).properties.getConfiguredItem(itemId);
   if (properties === undefined) return null;
   const config = configuredItemEditorConfigs[properties.type];
   if (config === undefined) return null;

@@ -1,11 +1,12 @@
 import type { CircuitPropertyChanges } from "../../application/SchemaPropertyReader";
 import type { ItemEditorProps } from "./ItemEditorProps";
+import { useSchemaSnapshot } from "../useSchemaSnapshot";
 import { CircuitAdvancedFields } from "./circuit/CircuitAdvancedFields";
 import { CircuitCableFields } from "./circuit/CircuitCableFields";
 import { CircuitProtectionFields } from "./circuit/CircuitProtectionFields";
 
 export function CircuitPropertiesEditor({ itemId, schemaStore }: ItemEditorProps) {
-  const properties = schemaStore.getSnapshot().properties.getCircuit(itemId);
+  const properties = useSchemaSnapshot(schemaStore).properties.getCircuit(itemId);
   if (properties === undefined) return null;
 
   function update(changes: CircuitPropertyChanges): void {

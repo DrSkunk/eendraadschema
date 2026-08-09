@@ -59,6 +59,64 @@ import { SituationPlan } from "./sitplan/SituationPlan";
 import { SituationPlanView } from "./sitplan/SituationPlanView";
 import { MarkerList } from "./print/MarkerList";
 
+/** Single source of truth mapping every electro-item type name to its class.
+ *  Used by the item factory and by tests that require complete coverage. */
+export const ELECTRO_ITEM_CONSTRUCTORS: Readonly<Record<string, new (sourcelist: Hierarchical_List) => Electro_Item>> = {
+    'Aansluiting': Aansluiting,
+    'Aansluitpunt': Aansluitpunt,
+    'Aardingsonderbreker': Aardingsonderbreker,
+    'Aftakdoos': Aftakdoos,
+    'Batterij': Batterij,
+    'Bel': Bel,
+    'Boiler': Boiler,
+    'Bord': Bord,
+    'Contactdoos': Contactdoos,
+    'Container': Container,
+    'Diepvriezer': Diepvriezer,
+    'Domotica': Domotica,
+    'Domotica module (verticaal)': Domotica_verticaal,
+    'Domotica gestuurde verbruiker': Domotica_gestuurde_verbruiker,
+    'Droogkast': Droogkast,
+    'Drukknop': Drukknop,
+    'Elektriciteitsmeter': Elektriciteitsmeter,
+    'Elektrische oven': Elektrische_oven,
+    'EV lader': EV_lader,
+    'Ketel': Ketel,
+    'Koelkast': Koelkast,
+    'Kookfornuis': Kookfornuis,
+    'Kring': Kring,
+    'Leiding': Leiding,
+    'Lichtcircuit': Lichtcircuit,
+    'Lichtpunt': Lichtpunt,
+    'Meerdere verbruikers': Meerdere_verbruikers,
+    'Media': Media,
+    'Microgolfoven': Microgolfoven,
+    'Motor': Motor,
+    'Omvormer': Omvormer,
+    'Overspanningsbeveiliging': Overspanningsbeveiliging,
+    'Schakelaars': Schakelaars,
+    'Splitsing': Splitsing,
+    'Stoomoven': Stoomoven,
+    'Transformator': Transformator,
+    'USB lader': USB_lader,
+    'Vaatwasmachine': Vaatwasmachine,
+    'Ventilator': Ventilator,
+    'Verbruiker': Verbruiker,
+    'Verlenging': Verlenging,
+    'Verwarmingstoestel': Verwarmingstoestel,
+    'Vrije ruimte': Vrije_ruimte,
+    'Vrije tekst': Vrije_tekst,
+    'Warmtepomp/airco': Warmtepomp,
+    'Wasmachine': Wasmachine,
+    'Zeldzame symbolen': Zeldzame_symbolen,
+    'Zekering/differentieel': Zekering,
+    'Zonnepaneel': Zonnepaneel,
+};
+
+/** Every user-editable type; only the internal Container is excluded. */
+export const PUBLIC_ELECTRO_ITEM_TYPES: readonly string[] =
+    Object.keys(ELECTRO_ITEM_CONSTRUCTORS).filter((type) => type !== 'Container');
+
 /*****************************************************************************
   CLASS Hierarchical_List
 
@@ -357,60 +415,11 @@ export class Hierarchical_List {
     createItem(electroType: string) : Electro_Item {
 
         // First create the object
-        let tempval;
-        switch (electroType) {
-            case 'Aansluiting': tempval = new Aansluiting(this); break; 
-            case 'Aansluitpunt': case 'Leeg': tempval = new Aansluitpunt(this); break;
-            case 'Aardingsonderbreker': tempval = new Aardingsonderbreker(this); break;
-            case 'Aftakdoos': tempval = new Aftakdoos(this); break;
-            case 'Batterij': tempval = new Batterij(this); break;
-            case 'Bel': tempval = new Bel(this); break;
-            case 'Boiler': tempval = new Boiler(this); break;
-            case 'Bord': tempval = new Bord(this); break;
-            case 'Container': tempval = new Container(this); break;
-            case 'Diepvriezer': tempval = new Diepvriezer(this); break;
-            case 'Domotica': tempval = new Domotica(this); break; 
-            case 'Domotica module (verticaal)': tempval = new Domotica_verticaal(this); break; 
-            case 'Domotica gestuurde verbruiker': tempval = new Domotica_gestuurde_verbruiker(this); break; 
-            case 'Droogkast': tempval = new Droogkast(this); break; 
-            case 'Drukknop': tempval = new Drukknop(this); break; 
-            case 'Elektriciteitsmeter': tempval = new Elektriciteitsmeter(this); break; 
-            case 'Elektrische oven': tempval = new Elektrische_oven(this); break; 
-            case 'EV lader': tempval = new EV_lader(this); break;
-            case 'Ketel': tempval = new Ketel(this); break; 
-            case 'Koelkast': tempval = new Koelkast(this); break;
-            case 'Kookfornuis': tempval = new Kookfornuis(this); break;
-            case 'Kring': tempval = new Kring(this); break;
-            case 'Leiding': tempval = new Leiding(this); break;
-            case 'Lichtcircuit': tempval = new Lichtcircuit(this); break;
-            case 'Lichtpunt': tempval = new Lichtpunt(this); break;
-            case 'Meerdere verbruikers': tempval = new Meerdere_verbruikers(this); break;
-            case 'Media': tempval = new Media(this); break;
-            case 'Microgolfoven': tempval = new Microgolfoven(this); break;
-            case 'Motor': tempval = new Motor(this); break;
-            case 'Omvormer': tempval = new Omvormer(this); break;
-            case 'Overspanningsbeveiliging': tempval = new Overspanningsbeveiliging(this); break;
-            case 'Schakelaars': tempval = new Schakelaars(this); break;
-            case 'Splitsing': tempval = new Splitsing(this); break;
-            case 'Stoomoven': tempval = new Stoomoven(this); break;
-            case 'Contactdoos': tempval = new Contactdoos(this); break;
-            case 'Transformator': tempval = new Transformator(this); break;
-            case 'USB lader': tempval = new USB_lader(this); break;
-            case 'Vaatwasmachine': tempval = new Vaatwasmachine(this); break;
-            case 'Ventilator': tempval = new Ventilator(this); break;
-            case 'Verbruiker': tempval = new Verbruiker(this); break;
-            case 'Verlenging': tempval = new Verlenging(this); break;
-            case 'Verwarmingstoestel': tempval = new Verwarmingstoestel(this); break;
-            case 'Vrije ruimte': tempval = new Vrije_ruimte(this); break;
-            case 'Vrije tekst': tempval = new Vrije_tekst(this); break;
-            case 'Warmtepomp/airco': tempval = new Warmtepomp(this); break;
-            case 'Wasmachine': tempval = new Wasmachine(this); break;
-            case 'Zeldzame symbolen': tempval = new Zeldzame_symbolen(this); break;
-            case 'Zekering/differentieel': tempval = new Zekering(this); break;
-            case 'Zonnepaneel': tempval = new Zonnepaneel(this); break;
-            default: tempval = new Electro_Item(this);
-        }
-      
+        const constructor = electroType === 'Leeg'
+            ? Aansluitpunt
+            : ELECTRO_ITEM_CONSTRUCTORS[electroType];
+        let tempval = constructor !== undefined ? new constructor(this) : new Electro_Item(this);
+
         // Then set the correct identifyer
         tempval.id = this.curid;
         tempval.parent = 0;

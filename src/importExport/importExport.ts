@@ -3,6 +3,7 @@ import {
     structureFromJson,
     wrapCurrentEdsPayload,
 } from "../legacy/persistence/EdsCodec";
+import { DEFAULT_MAIN_BOARD_ID, type DistributionBoard } from "../domain/DistributionBoard";
 
 declare var pako: any;
 
@@ -283,6 +284,54 @@ export function EDStoStructure(mystring: string, redraw = true, askUserToSave = 
 
 }
 
+/** Merge secondary boards from an appended document, remapping item IDs by `idOffset`
+ *  and board IDs/feeder references so they stay unique and point at the merged items.
+ *  Feederless (main) boards of the appended document are not copied: their root items
+ *  become top-level items of the target main board. */
+export function mergeAppendedBoards(
+    targetBoards: readonly DistributionBoard[],
+    appendedBoards: readonly DistributionBoard[],
+    idOffset: number,
+): DistributionBoard[] {
+    const targetMainBoardId = (
+        targetBoards.find((board) => board.id === DEFAULT_MAIN_BOARD_ID)
+        ?? targetBoards.find((board) => board.feeder === undefined)
+    )?.id ?? DEFAULT_MAIN_BOARD_ID;
+
+    const usedIds = new Set(targetBoards.map((board) => board.id));
+    const newIdByOldId = new Map<string, string>();
+    for (const board of appendedBoards) {
+        if (board.feeder === undefined) {
+            newIdByOldId.set(board.id, targetMainBoardId);
+            continue;
+        }
+        const preferredId = board.rootItemIds.length > 0
+            ? `board-${board.rootItemIds[0] + idOffset}`
+            : board.id;
+        let candidateId = preferredId;
+        let suffix = 2;
+        while (usedIds.has(candidateId)) candidateId = `${preferredId}-${suffix++}`;
+        usedIds.add(candidateId);
+        newIdByOldId.set(board.id, candidateId);
+    }
+
+    const mergedBoards = [...targetBoards];
+    for (const board of appendedBoards) {
+        if (board.feeder === undefined) continue;
+        mergedBoards.push({
+            ...board,
+            id: newIdByOldId.get(board.id)!,
+            rootItemIds: board.rootItemIds.map((itemId) => itemId + idOffset),
+            feeder: {
+                ...board.feeder,
+                sourceBoardId: newIdByOldId.get(board.feeder.sourceBoardId) ?? targetMainBoardId,
+                sourceCircuitId: board.feeder.sourceCircuitId + idOffset,
+            },
+        });
+    }
+    return mergedBoards;
+}
+
 function importToAppend(mystring: string, redraw = true) {
     let JSONdata = decodeEds(mystring);
     let structureToAppend = structureFromJson(JSONdata.text, null, JSONdata.version);
@@ -308,6 +357,11 @@ function importToAppend(mystring: string, redraw = true) {
     globalThis.structure.active = globalThis.structure.active.concat(structureToAppend.active);
     globalThis.structure.id = globalThis.structure.id.concat(structureToAppend.id);
     globalThis.structure.data = globalThis.structure.data.concat(structureToAppend.data);
+
+    //then merge secondary distribution boards; the appended main board's items simply
+    //become extra top-level items of the current main board
+    globalThis.structure.boards = mergeAppendedBoards(
+        globalThis.structure.boards, structureToAppend.boards, maxID);
 
     //update the sourcelist
     globalThis.structure.data.forEach((item) => {

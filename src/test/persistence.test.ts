@@ -139,4 +139,26 @@ describe("EDS compatibility", () => {
     expect(reloaded.boards[1].feeder?.sourceCircuitId).toBe(feederCircuit.id);
     expect(reloaded.getElectroItemById(garageCircuit.id)?.parent).toBe(garageBoard.id);
   });
+
+  it("drops stale secondary-board root references on load", () => {
+    const original = new Hierarchical_List();
+    const connection = original.addItem("Aansluiting");
+    const feederCircuit = original.createItem("Kring");
+    original.insertChildAfterId(feederCircuit, connection.id);
+    const garageBoard = original.createItem("Bord");
+    original.insertChildAfterId(garageBoard, feederCircuit.id);
+    original.boards = [
+      { id: "main", name: "Hoofdbord", rootItemIds: [connection.id] },
+      {
+        id: "garage-board",
+        name: "Garage",
+        rootItemIds: [garageBoard.id, 999_999],
+        feeder: { sourceBoardId: "main", sourceCircuitId: feederCircuit.id },
+      },
+    ];
+
+    const reloaded = structureFromJson(original.toJsonObject(true), null, 0);
+
+    expect(reloaded.boards[1].rootItemIds).toEqual([garageBoard.id]);
+  });
 });

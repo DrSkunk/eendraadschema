@@ -3,9 +3,10 @@ import { DraftTextField } from "../DraftTextField";
 import type { ItemEditorProps } from "../ItemEditorProps";
 import { SelectField } from "../PropertyFields";
 import { socketNumberModeOptions } from "../socket/socketOptions";
+import { useSchemaSnapshot } from "../../useSchemaSnapshot";
 
 export function BasicConsumerPropertiesEditor({ itemId, schemaStore }: ItemEditorProps) {
-  const properties = schemaStore.getSnapshot().properties.getBasicConsumer(itemId);
+  const properties = useSchemaSnapshot(schemaStore).properties.getBasicConsumer(itemId);
   if (properties === undefined) return null;
 
   function update(changes: BasicConsumerPropertyChanges): void {

@@ -7,9 +7,10 @@ import {
   socketOutletCountOptions,
   socketPhaseCountOptions,
 } from "./socketOptions";
+import { useSchemaSnapshot } from "../../useSchemaSnapshot";
 
 export function SocketPropertiesEditor({ itemId, schemaStore }: ItemEditorProps) {
-  const properties = schemaStore.getSnapshot().properties.getSocket(itemId);
+  const properties = useSchemaSnapshot(schemaStore).properties.getSocket(itemId);
   if (properties === undefined) return null;
 
   function update(changes: SocketPropertyChanges): void {
