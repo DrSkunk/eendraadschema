@@ -2,13 +2,14 @@ import { Hierarchical_List } from "../../Hierarchical_List";
 import { Electro_Item } from "../../List_Item/Electro_Item";
 import { SituationPlan } from "../../sitplan/SituationPlan";
 import { parseDistributionBoards, type DistributionBoard } from "../../domain/DistributionBoard";
+import { parseBoardLayouts, type BoardLayout } from "../../domain/BoardLayout";
 
 export interface DecodedEds {
   readonly text: string;
   readonly version: number;
 }
 
-export const CURRENT_EDS_VERSION = 5;
+export const CURRENT_EDS_VERSION = 6;
 
 export function wrapCurrentEdsPayload(format: "EDS" | "TXT", payload: string): string {
   return `${format}${String(CURRENT_EDS_VERSION).padStart(3, "0")}0000${payload}`;
@@ -24,6 +25,7 @@ type LegacyStructure = {
   print_table?: any;
   sitplanjson?: any;
   boards?: DistributionBoard[];
+  boardLayouts?: BoardLayout[];
 };
 
 type Inflate = (input: Uint8Array) => Uint8Array;
@@ -235,6 +237,11 @@ export function structureFromJson(
     board.feeder === undefined
       ? board
       : { ...board, rootItemIds: board.rootItemIds.filter((itemId) => activeItemIds.has(itemId)) },
+  );
+  output.boardLayouts = parseBoardLayouts(
+    input.boardLayouts,
+    new Set(output.boards.map(board => board.id)),
+    activeItemIds,
   );
   return output;
 }

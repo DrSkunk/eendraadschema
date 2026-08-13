@@ -3,6 +3,7 @@ import {
     structureFromJson,
 } from "../legacy/persistence/EdsCodec";
 import { DEFAULT_MAIN_BOARD_ID, type DistributionBoard } from "../domain/DistributionBoard";
+import type { BoardLayout } from "../domain/BoardLayout";
 import { LegacyFileService } from "../application/FileService";
 
 export class importExportUsingFileAPI {
@@ -253,6 +254,74 @@ export function mergeAppendedBoards(
     appendedBoards: readonly DistributionBoard[],
     idOffset: number,
 ): DistributionBoard[] {
+    const { targetMainBoardId, newIdByOldId } = createAppendedBoardIdMap(
+        targetBoards, appendedBoards, idOffset);
+    const mergedBoards = [...targetBoards];
+    for (const board of appendedBoards) {
+        if (board.feeder === undefined) continue;
+        mergedBoards.push({
+            ...board,
+            id: newIdByOldId.get(board.id)!,
+            rootItemIds: board.rootItemIds.map((itemId) => itemId + idOffset),
+            feeder: {
+                ...board.feeder,
+                sourceBoardId: newIdByOldId.get(board.feeder.sourceBoardId) ?? targetMainBoardId,
+                sourceCircuitId: board.feeder.sourceCircuitId + idOffset,
+            },
+        });
+    }
+    return mergedBoards;
+}
+
+export function mergeAppendedBoardLayouts(
+    targetLayouts: readonly BoardLayout[],
+    appendedLayouts: readonly BoardLayout[],
+    targetBoards: readonly DistributionBoard[],
+    appendedBoards: readonly DistributionBoard[],
+    idOffset: number,
+): BoardLayout[] {
+    const { newIdByOldId } = createAppendedBoardIdMap(targetBoards, appendedBoards, idOffset);
+    const mergedLayouts = targetLayouts.map(layout => ({
+        ...layout,
+        rails: [...layout.rails],
+        placements: [...layout.placements],
+    }));
+
+    for (const appendedLayout of appendedLayouts) {
+        const boardId = newIdByOldId.get(appendedLayout.boardId);
+        if (!boardId) continue;
+        const existing = mergedLayouts.find(layout => layout.boardId === boardId);
+        const usedRailIds = new Set(existing?.rails.map(rail => rail.id) ?? []);
+        const railIdMap = new Map<string, string>();
+        const rails = appendedLayout.rails.map((rail) => {
+            let id = rail.id;
+            let suffix = 2;
+            while (usedRailIds.has(id)) id = `${rail.id}-${suffix++}`;
+            usedRailIds.add(id);
+            railIdMap.set(rail.id, id);
+            return { ...rail, id };
+        });
+        const placements = appendedLayout.placements.flatMap((placement) => {
+            const railId = railIdMap.get(placement.railId);
+            return railId
+                ? [{ ...placement, itemId: placement.itemId + idOffset, railId }]
+                : [];
+        });
+        if (existing) {
+            existing.rails.push(...rails);
+            existing.placements.push(...placements);
+        } else {
+            mergedLayouts.push({ boardId, rails, placements });
+        }
+    }
+    return mergedLayouts;
+}
+
+function createAppendedBoardIdMap(
+    targetBoards: readonly DistributionBoard[],
+    appendedBoards: readonly DistributionBoard[],
+    idOffset: number,
+): Readonly<{ targetMainBoardId: string; newIdByOldId: ReadonlyMap<string, string> }> {
     const targetMainBoardId = (
         targetBoards.find((board) => board.id === DEFAULT_MAIN_BOARD_ID)
         ?? targetBoards.find((board) => board.feeder === undefined)
@@ -274,22 +343,7 @@ export function mergeAppendedBoards(
         usedIds.add(candidateId);
         newIdByOldId.set(board.id, candidateId);
     }
-
-    const mergedBoards = [...targetBoards];
-    for (const board of appendedBoards) {
-        if (board.feeder === undefined) continue;
-        mergedBoards.push({
-            ...board,
-            id: newIdByOldId.get(board.id)!,
-            rootItemIds: board.rootItemIds.map((itemId) => itemId + idOffset),
-            feeder: {
-                ...board.feeder,
-                sourceBoardId: newIdByOldId.get(board.feeder.sourceBoardId) ?? targetMainBoardId,
-                sourceCircuitId: board.feeder.sourceCircuitId + idOffset,
-            },
-        });
-    }
-    return mergedBoards;
+    return { targetMainBoardId, newIdByOldId };
 }
 
 function importToAppend(mystring: string, redraw = true) {
@@ -320,8 +374,16 @@ function importToAppend(mystring: string, redraw = true) {
 
     //then merge secondary distribution boards; the appended main board's items simply
     //become extra top-level items of the current main board
+    const targetBoards = globalThis.structure.boards;
+    globalThis.structure.boardLayouts = mergeAppendedBoardLayouts(
+        globalThis.structure.boardLayouts,
+        structureToAppend.boardLayouts,
+        targetBoards,
+        structureToAppend.boards,
+        maxID,
+    );
     globalThis.structure.boards = mergeAppendedBoards(
-        globalThis.structure.boards, structureToAppend.boards, maxID);
+        targetBoards, structureToAppend.boards, maxID);
 
     //update the sourcelist
     globalThis.structure.data.forEach((item) => {

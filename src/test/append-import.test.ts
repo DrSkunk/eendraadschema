@@ -1,8 +1,9 @@
 // @vitest-environment node
 
 import { describe, expect, it } from "vitest";
+import type { BoardLayout } from "../domain/BoardLayout";
 import type { DistributionBoard } from "../domain/DistributionBoard";
-import { mergeAppendedBoards } from "../importExport/importExport";
+import { mergeAppendedBoardLayouts, mergeAppendedBoards } from "../importExport/importExport";
 
 const targetBoards: readonly DistributionBoard[] = [
   { id: "main", name: "Hoofdbord", rootItemIds: [1, 2] },
@@ -57,6 +58,57 @@ describe("mergeAppendedBoards", () => {
         conductorSection: "5G6",
         lengthMeters: 12,
       },
+    });
+  });
+
+  describe("mergeAppendedBoardLayouts", () => {
+    it("remaps boards, item IDs and colliding rail IDs", () => {
+      const appendedBoards: readonly DistributionBoard[] = [
+        { id: "main", name: "Hoofdbord", rootItemIds: [1] },
+        {
+          id: "board-4",
+          name: "Tuinhuis",
+          rootItemIds: [4],
+          feeder: { sourceBoardId: "main", sourceCircuitId: 3 },
+        },
+      ];
+      const targetLayouts: readonly BoardLayout[] = [{
+        boardId: "main",
+        rails: [{ id: "rail-1", name: "Bestaand", moduleCapacity: 18 }],
+        placements: [{ itemId: 2, railId: "rail-1", startModule: 0, moduleWidth: 2 }],
+      }];
+      const appendedLayouts: readonly BoardLayout[] = [
+        {
+          boardId: "main",
+          rails: [{ id: "rail-1", name: "Nieuw", moduleCapacity: 12 }],
+          placements: [{ itemId: 1, railId: "rail-1", startModule: 1, moduleWidth: 1 }],
+        },
+        {
+          boardId: "board-4",
+          rails: [{ id: "rail-1", name: "Tuinhuis", moduleCapacity: 12 }],
+          placements: [{ itemId: 4, railId: "rail-1", startModule: 0, moduleWidth: 3 }],
+        },
+      ];
+
+      const merged = mergeAppendedBoardLayouts(
+        targetLayouts, appendedLayouts, targetBoards, appendedBoards, 100);
+
+      expect(merged.find(layout => layout.boardId === "main")).toEqual({
+        boardId: "main",
+        rails: [
+          { id: "rail-1", name: "Bestaand", moduleCapacity: 18 },
+          { id: "rail-1-2", name: "Nieuw", moduleCapacity: 12 },
+        ],
+        placements: [
+          { itemId: 2, railId: "rail-1", startModule: 0, moduleWidth: 2 },
+          { itemId: 101, railId: "rail-1-2", startModule: 1, moduleWidth: 1 },
+        ],
+      });
+      expect(merged.find(layout => layout.boardId === "board-104")).toEqual({
+        boardId: "board-104",
+        rails: [{ id: "rail-1", name: "Tuinhuis", moduleCapacity: 12 }],
+        placements: [{ itemId: 104, railId: "rail-1", startModule: 0, moduleWidth: 3 }],
+      });
     });
   });
 

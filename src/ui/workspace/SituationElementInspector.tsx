@@ -85,6 +85,16 @@ function MultiPlacementInspector({
     setScalePercent("");
   }
 
+  function runSelectionCommand(command: () => void) {
+    try {
+      command();
+      onMutation();
+      setError("");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "De selectie kon niet worden aangepast.");
+    }
+  }
+
   return (
     <section className="p-4" aria-label="Eigenschappen van situatiesymbolen">
       <p className="m-0 text-xs tracking-wide text-neutral-500 uppercase">Situatieschema</p>
@@ -116,6 +126,54 @@ function MultiPlacementInspector({
 
       <fieldset className="mt-4 border-0 border-t border-neutral-200 p-0 pt-4">
         <legend className="text-sm font-semibold">Gedeelde eigenschappen</legend>
+        <div className="mt-2 grid grid-cols-3 gap-2">
+          <button type="button" className={actionClass} onClick={() => runSelectionCommand(
+            () => situationPlanStore.commands.alignElements(elements.map(element => element.id), "left"),
+          )}>Links</button>
+          <button type="button" className={actionClass} onClick={() => runSelectionCommand(
+            () => situationPlanStore.commands.alignElements(elements.map(element => element.id), "horizontal-center"),
+          )}>Midden X</button>
+          <button type="button" className={actionClass} onClick={() => runSelectionCommand(
+            () => situationPlanStore.commands.alignElements(elements.map(element => element.id), "right"),
+          )}>Rechts</button>
+          <button type="button" className={actionClass} onClick={() => runSelectionCommand(
+            () => situationPlanStore.commands.alignElements(elements.map(element => element.id), "top"),
+          )}>Boven</button>
+          <button type="button" className={actionClass} onClick={() => runSelectionCommand(
+            () => situationPlanStore.commands.alignElements(elements.map(element => element.id), "vertical-center"),
+          )}>Midden Y</button>
+          <button type="button" className={actionClass} onClick={() => runSelectionCommand(
+            () => situationPlanStore.commands.alignElements(elements.map(element => element.id), "bottom"),
+          )}>Onder</button>
+        </div>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            className={actionClass}
+            disabled={elements.length < 3}
+            onClick={() => runSelectionCommand(
+              () => situationPlanStore.commands.distributeElements(
+                elements.map(element => element.id),
+                "horizontal",
+              ),
+            )}
+          >
+            Horizontaal verdelen
+          </button>
+          <button
+            type="button"
+            className={actionClass}
+            disabled={elements.length < 3}
+            onClick={() => runSelectionCommand(
+              () => situationPlanStore.commands.distributeElements(
+                elements.map(element => element.id),
+                "vertical",
+              ),
+            )}
+          >
+            Verticaal verdelen
+          </button>
+        </div>
         <label className="mt-2 grid gap-1 text-xs font-semibold text-neutral-600">
           Pagina
           <select
@@ -162,6 +220,15 @@ function MultiPlacementInspector({
             Ontgrendelen
           </button>
         </div>
+        <button
+          type="button"
+          className={`${actionClass} mt-3 w-full`}
+          onClick={() => runSelectionCommand(() => {
+            situationPlanStore.commands.duplicateElements(elements.map(element => element.id));
+          })}
+        >
+          Selectie dupliceren
+        </button>
       </fieldset>
     </section>
   );
@@ -258,18 +325,35 @@ export function SituationElementInspector({
           <h2 className="my-1 text-lg font-semibold">Plaatsing</h2>
           <p className="m-0 text-xs text-neutral-500">{element.id}</p>
         </div>
-        <label className="flex items-center gap-2 text-xs font-semibold text-neutral-700">
-          <input
-            type="checkbox"
-            checked={!draft.movable}
-            onChange={(event) => {
-              const movable = !event.target.checked;
-              setDraft(current => current ? { ...current, movable } : current);
-              commit({ movable });
+        <div className="grid justify-items-end gap-2">
+          <label className="flex items-center gap-2 text-xs font-semibold text-neutral-700">
+            <input
+              type="checkbox"
+              checked={!draft.movable}
+              onChange={(event) => {
+                const movable = !event.target.checked;
+                setDraft(current => current ? { ...current, movable } : current);
+                commit({ movable });
+              }}
+            />
+            Vergrendeld
+          </label>
+          <button
+            type="button"
+            className="rounded border border-neutral-300 px-2 py-1 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+            onClick={() => {
+              try {
+                situationPlanStore.commands.duplicateElements([element.id]);
+                onMutation();
+                setError("");
+              } catch (caught) {
+                setError(caught instanceof Error ? caught.message : "De plaatsing kon niet worden gedupliceerd.");
+              }
             }}
-          />
-          Vergrendeld
-        </label>
+          >
+            Dupliceren
+          </button>
+        </div>
       </div>
 
       {error ? <p className="rounded bg-red-50 p-2 text-sm text-red-800" role="alert">{error}</p> : null}

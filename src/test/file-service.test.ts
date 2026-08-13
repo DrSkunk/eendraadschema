@@ -46,7 +46,7 @@ describe("encodeEds", () => {
     const original = createDocument();
     const payload = encodeEds(original.toJsonObject(true));
 
-    expect(payload.startsWith("EDS0050000")).toBe(true);
+    expect(payload.startsWith("EDS0060000")).toBe(true);
     const decoded = decodeEds(payload);
     const reloaded = structureFromJson(decoded.text, null, decoded.version);
     expect(hierarchySnapshot(reloaded)).toEqual(hierarchySnapshot(original));
@@ -55,12 +55,12 @@ describe("encodeEds", () => {
   it("falls back to the TXT format when compression is disabled or fails", () => {
     const original = createDocument();
     const uncompressed = encodeEds(original.toJsonObject(true), true);
-    expect(uncompressed.startsWith("TXT0050000")).toBe(true);
+    expect(uncompressed.startsWith("TXT0060000")).toBe(true);
 
     const failing = encodeEds(original.toJsonObject(true), false, () => {
       throw new Error("boom");
     });
-    expect(failing.startsWith("TXT0050000")).toBe(true);
+    expect(failing.startsWith("TXT0060000")).toBe(true);
   });
 });
 
@@ -85,7 +85,7 @@ describe("LegacyFileService", () => {
     expect(fileApi.saveAs).toHaveBeenCalledTimes(1);
     expect(fileApi.save).not.toHaveBeenCalled();
     expect(manualSaver.saveManually).toHaveBeenCalledTimes(1);
-    expect((manualSaver.saveManually.mock.calls[0][0] as string).startsWith("TXT0050000")).toBe(true);
+    expect((manualSaver.saveManually.mock.calls[0][0] as string).startsWith("TXT0060000")).toBe(true);
     expect(afterExport).toHaveBeenCalledTimes(1);
   });
 
@@ -96,7 +96,7 @@ describe("LegacyFileService", () => {
 
     expect(fileApi.save).toHaveBeenCalledTimes(1);
     expect(fileApi.saveAs).not.toHaveBeenCalled();
-    expect((fileApi.save as ReturnType<typeof vi.fn>).mock.calls[0][0]).toMatch(/^EDS0050000/);
+    expect((fileApi.save as ReturnType<typeof vi.fn>).mock.calls[0][0]).toMatch(/^EDS0060000/);
   });
 
   it("uses the download fallback without the File System Access API", async () => {
@@ -130,7 +130,7 @@ describe("LegacyFileService", () => {
 
     await service.saveDocument(false);
 
-    expect((fileApi.save as ReturnType<typeof vi.fn>).mock.calls[0][0]).toMatch(/^TXT0050000/);
+    expect((fileApi.save as ReturnType<typeof vi.fn>).mock.calls[0][0]).toMatch(/^TXT0060000/);
     expect(service.getState().compressionDisabled).toBe(true);
   });
 });

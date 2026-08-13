@@ -18,6 +18,16 @@ export interface SituationPlanElementUpdate {
   readonly changes: SituationPlanElementChanges;
 }
 
+export type SituationPlanAlignment =
+  | "left"
+  | "horizontal-center"
+  | "right"
+  | "top"
+  | "vertical-center"
+  | "bottom";
+
+export type SituationPlanDistributionAxis = "horizontal" | "vertical";
+
 export interface SituationPlanElementSnapshot {
   readonly id: string;
   readonly page: number;
@@ -50,6 +60,13 @@ export interface SituationPlanCommands {
   updateDefaults(changes: Partial<SituationPlanDefaults>): void;
   updateElement(elementId: string, changes: SituationPlanElementChanges): void;
   updateElements(updates: readonly SituationPlanElementUpdate[]): void;
+  alignElements(elementIds: readonly string[], alignment: SituationPlanAlignment): void;
+  distributeElements(elementIds: readonly string[], axis: SituationPlanDistributionAxis): void;
+  duplicateElements(
+    elementIds: readonly string[],
+    offset?: Readonly<{ x: number; y: number }>,
+  ): readonly string[];
+  deleteElements(elementIds: readonly string[]): readonly number[];
 }
 
 export interface SituationPlanStore {
@@ -63,6 +80,7 @@ export type SituationPlanCommandErrorCode =
   | "LAST_PAGE"
   | "INVALID_DEFAULT"
   | "ELEMENT_NOT_FOUND"
+  | "INVALID_ELEMENT_SELECTION"
   | "INVALID_ELEMENT_CHANGE";
 
 export class SituationPlanCommandError extends Error {

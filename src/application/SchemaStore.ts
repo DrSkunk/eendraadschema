@@ -2,6 +2,7 @@ import type { SchemaDocumentReader } from "./SchemaDocumentReader";
 import type { SchemaPropertyReader } from "./SchemaPropertyReader";
 import type { ConfiguredItemPropertyChanges } from "./ConfiguredItemProperties";
 import type { ValidationIssue } from "./SchemaValidation";
+import type { BoardLayout } from "../domain/BoardLayout";
 import type {
   BasicConsumerPropertyChanges,
   CircuitPropertyChanges,
@@ -16,6 +17,7 @@ export interface SchemaSnapshot {
   readonly canUndo: boolean;
   readonly canRedo: boolean;
   readonly validationIssues: readonly ValidationIssue[];
+  readonly boardLayouts: readonly BoardLayout[];
 }
 
 export interface MoveItemOptions {
@@ -47,6 +49,27 @@ export interface UpdateDocumentDetailsChanges {
   readonly info?: string;
 }
 
+export interface UpdateFileSettingsChanges {
+  readonly filename?: string;
+  readonly compressionDisabled?: boolean;
+}
+
+export interface AddBoardLayoutRailProperties {
+  readonly name?: string;
+  readonly moduleCapacity?: number;
+}
+
+export interface UpdateBoardLayoutRailChanges {
+  readonly name?: string;
+  readonly moduleCapacity?: number;
+}
+
+export interface PlaceBoardLayoutItemProperties {
+  readonly railId: string;
+  readonly startModule: number;
+  readonly moduleWidth: number;
+}
+
 export interface SchemaCommands {
   addItem(parentId: number | null, type: string): number;
   addSituationOnlyItem(type: string): number;
@@ -65,6 +88,20 @@ export interface SchemaCommands {
   updateDistributionBoard(boardId: string, changes: UpdateDistributionBoardChanges): void;
   deleteDistributionBoard(boardId: string): void;
   updateDocumentDetails(changes: UpdateDocumentDetailsChanges): void;
+  updateFileSettings(changes: UpdateFileSettingsChanges): void;
+  addBoardLayoutRail(boardId: string, properties?: AddBoardLayoutRailProperties): string;
+  updateBoardLayoutRail(
+    boardId: string,
+    railId: string,
+    changes: UpdateBoardLayoutRailChanges,
+  ): void;
+  deleteBoardLayoutRail(boardId: string, railId: string): void;
+  placeBoardLayoutItem(
+    boardId: string,
+    itemId: number,
+    properties: PlaceBoardLayoutItemProperties,
+  ): void;
+  removeBoardLayoutItem(boardId: string, itemId: number): void;
   replaceDocument(serializedDocument: string, version?: number): void;
   undo(): void;
   redo(): void;
@@ -86,7 +123,9 @@ export type SchemaCommandErrorCode =
   | "INVALID_CHANGE"
   | "BOARD_NOT_FOUND"
   | "INVALID_BOARD_FEEDER"
-  | "BOARD_DEPENDENCY";
+  | "BOARD_DEPENDENCY"
+  | "BOARD_LAYOUT_NOT_FOUND"
+  | "INVALID_BOARD_LAYOUT";
 
 export class SchemaCommandError extends Error {
   constructor(

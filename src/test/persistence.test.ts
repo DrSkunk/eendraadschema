@@ -44,7 +44,7 @@ describe("EDS compatibility", () => {
     const decoded = decodeEds(wrapCurrentEdsPayload("TXT", text));
     const reloaded = structureFromJson(decoded.text, null, decoded.version);
 
-    expect(decoded.version).toBe(5);
+    expect(decoded.version).toBe(6);
     expect(hierarchySnapshot(reloaded)).toEqual(hierarchySnapshot(original));
   });
 
@@ -160,5 +160,26 @@ describe("EDS compatibility", () => {
     const reloaded = structureFromJson(original.toJsonObject(true), null, 0);
 
     expect(reloaded.boards[1].rootItemIds).toEqual([garageBoard.id]);
+  });
+
+  it("round trips optional EDS006 manual board layouts", () => {
+    const original = loadFixture("example001.eds");
+    const itemId = original.data.find((item, index) => original.active[index])?.id;
+    expect(itemId).toBeDefined();
+    if (itemId === undefined) throw new Error("Fixture bevat geen actief onderdeel.");
+    original.boardLayouts = [{
+      boardId: "main",
+      rails: [{ id: "main-rail-1", name: "Rij 1", moduleCapacity: 18 }],
+      placements: [{
+        itemId,
+        railId: "main-rail-1",
+        startModule: 2,
+        moduleWidth: 3,
+      }],
+    }];
+
+    const reloaded = structureFromJson(original.toJsonObject(true), null, 6);
+
+    expect(reloaded.boardLayouts).toEqual(original.boardLayouts);
   });
 });

@@ -166,8 +166,10 @@ test("print page renders a preview through the print adapter", async ({ page }) 
   await loadExample(page, 1);
 
   await page.locator("#minitabs").getByText("Print", { exact: true }).click();
-  await expect(page.getByRole("button", { name: "Genereer PDF" })).toBeVisible();
-  await expect(page.locator("#printsvgarea svg").first()).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Afdrukken" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "PDF genereren" })).toBeVisible();
+  await expect(page.getByLabel("Afdrukvoorbeeld").locator("svg")).toBeVisible();
+  await page.getByRole("button", { name: "Annuleren" }).click();
 
   await page.getByRole("navigation", { name: "Werkruimteweergave" })
     .getByRole("button", { name: "Eéndraadschema" }).click();

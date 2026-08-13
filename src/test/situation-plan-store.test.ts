@@ -173,4 +173,46 @@ describe("LegacySituationPlanStore", () => {
     }));
     expect(store.getSnapshot().elements[0].rotation).toBe(0);
   });
+
+  it("aligns, distributes, and duplicates selected placements", () => {
+    const { structure, store } = createStore();
+    const elements = [0, 40, 100].map((x, index) => {
+      const element = new SituationPlanElement();
+      element.posx = x;
+      element.posy = index * 20;
+      structure.sitplan.addElement(element);
+      return element;
+    });
+    store.synchronizeLegacyDocument();
+    const ids = elements.map(element => element.id);
+
+    store.commands.alignElements(ids, "top");
+    expect(store.getSnapshot().elements.map(element => element.position.y)).toEqual([0, 0, 0]);
+
+    store.commands.distributeElements(ids, "horizontal");
+    expect(store.getSnapshot().elements.map(element => element.position.x)).toEqual([0, 50, 100]);
+
+    const duplicateIds = store.commands.duplicateElements(ids, { x: 5, y: 10 });
+    expect(duplicateIds).toHaveLength(3);
+    expect(store.getSnapshot().elements.slice(3).map(element => element.position)).toEqual([
+      { x: 5, y: 10 },
+      { x: 55, y: 10 },
+      { x: 105, y: 10 },
+    ]);
+  });
+
+  it("deletes movable placements while preserving locked placements", () => {
+    const { structure, store } = createStore();
+    const movable = new SituationPlanElement();
+    const locked = new SituationPlanElement();
+    locked.movable = false;
+    structure.sitplan.addElement(movable);
+    structure.sitplan.addElement(locked);
+    store.synchronizeLegacyDocument();
+
+    store.commands.deleteElements([movable.id, locked.id]);
+
+    expect(store.getSnapshot().elements.map(element => element.id)).toEqual([locked.id]);
+    expect(store.commands.deleteElements([locked.id])).toEqual([]);
+  });
 });

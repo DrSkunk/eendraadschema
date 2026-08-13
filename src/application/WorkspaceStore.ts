@@ -1,15 +1,19 @@
-export type WorkspaceTab = "schema" | "situation";
+export type WorkspaceTab = "schema" | "situation" | "board";
+export type WorkspaceDialog = "file" | "print";
 
 export interface WorkspaceSnapshot {
   readonly activeTab: WorkspaceTab;
   readonly selectedSituationElementId: string | null;
   readonly selectedSituationElementIds: readonly string[];
+  readonly activeDialog: WorkspaceDialog | null;
 }
 
 export interface WorkspaceCommands {
   selectTab(tab: WorkspaceTab): void;
   selectSituationElement(elementId: string | null): void;
   selectSituationElements(elementIds: readonly string[], primaryElementId?: string | null): void;
+  openDialog(dialog: WorkspaceDialog): void;
+  closeDialog(): void;
 }
 
 export interface WorkspaceStore {
@@ -23,12 +27,15 @@ export class LocalWorkspaceStore implements WorkspaceStore {
   private activeTab: WorkspaceTab = "schema";
   private selectedSituationElementId: string | null = null;
   private selectedSituationElementIds: readonly string[] = Object.freeze([]);
+  private activeDialog: WorkspaceDialog | null = null;
   private snapshot = this.createSnapshot();
 
   readonly commands: WorkspaceCommands = Object.freeze({
     selectTab: this.selectTab.bind(this),
     selectSituationElement: this.selectSituationElement.bind(this),
     selectSituationElements: this.selectSituationElements.bind(this),
+    openDialog: this.openDialog.bind(this),
+    closeDialog: this.closeDialog.bind(this),
   });
 
   getSnapshot(): WorkspaceSnapshot {
@@ -70,11 +77,26 @@ export class LocalWorkspaceStore implements WorkspaceStore {
     for (const listener of this.listeners) listener();
   }
 
+  private openDialog(dialog: WorkspaceDialog): void {
+    if (dialog === this.activeDialog) return;
+    this.activeDialog = dialog;
+    this.snapshot = this.createSnapshot();
+    for (const listener of this.listeners) listener();
+  }
+
+  private closeDialog(): void {
+    if (this.activeDialog === null) return;
+    this.activeDialog = null;
+    this.snapshot = this.createSnapshot();
+    for (const listener of this.listeners) listener();
+  }
+
   private createSnapshot(): WorkspaceSnapshot {
     return Object.freeze({
       activeTab: this.activeTab,
       selectedSituationElementId: this.selectedSituationElementId,
       selectedSituationElementIds: this.selectedSituationElementIds,
+      activeDialog: this.activeDialog,
     });
   }
 }

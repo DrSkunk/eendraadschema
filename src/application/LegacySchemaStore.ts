@@ -16,6 +16,7 @@ import {
 } from "./BasicConsumerPropertyValidation";
 import { validateAndMapLightPointChanges } from "./LightPointPropertyValidation";
 import { configuredItemTypes, type ConfiguredItemPropertyChanges } from "./ConfiguredItemProperties";
+import { freezeBoardLayout, type BoardLayout } from "../domain/BoardLayout";
 import { validateAndMapConfiguredItemChanges } from "./ConfiguredItemPropertyValidation";
 import { LegacySchemaDocumentReader } from "./LegacySchemaDocumentReader";
 import { LegacySchemaPropertyReader } from "./LegacySchemaPropertyReader";
@@ -30,11 +31,15 @@ import {
   SchemaCommandError,
   type MoveItemOptions,
   type AddDistributionBoardProperties,
+  type AddBoardLayoutRailProperties,
+  type PlaceBoardLayoutItemProperties,
   type SchemaCommands,
   type SchemaSnapshot,
   type SchemaStore,
   type UpdateDistributionBoardChanges,
   type UpdateDocumentDetailsChanges,
+  type UpdateFileSettingsChanges,
+  type UpdateBoardLayoutRailChanges,
 } from "./SchemaStore";
 
 const BLOCKED_CHANGE_KEYS = new Set(["__proto__", "constructor", "prototype"]);
@@ -72,6 +77,12 @@ export class LegacySchemaStore implements SchemaStore {
       updateDistributionBoard: this.updateDistributionBoard.bind(this),
       deleteDistributionBoard: this.deleteDistributionBoard.bind(this),
       updateDocumentDetails: this.updateDocumentDetails.bind(this),
+      updateFileSettings: this.updateFileSettings.bind(this),
+      addBoardLayoutRail: this.addBoardLayoutRail.bind(this),
+      updateBoardLayoutRail: this.updateBoardLayoutRail.bind(this),
+      deleteBoardLayoutRail: this.deleteBoardLayoutRail.bind(this),
+      placeBoardLayoutItem: this.placeBoardLayoutItem.bind(this),
+      removeBoardLayoutItem: this.removeBoardLayoutItem.bind(this),
       replaceDocument: this.replaceDocument.bind(this),
       undo: this.undo.bind(this),
       redo: this.redo.bind(this),
@@ -145,7 +156,14 @@ export class LegacySchemaStore implements SchemaStore {
     const item = this.requireItem(itemId);
     this.assertUserEditable(item);
     this.assertNoBoardDependencyInSubtree(itemId);
-    this.commitTransaction(() => this.structure.deleteById(itemId));
+    const deletedItemIds = this.collectSubtreeIds(itemId);
+    this.commitTransaction(() => {
+      this.structure.boardLayouts = this.structure.boardLayouts.map(layout => ({
+        ...layout,
+        placements: layout.placements.filter(placement => !deletedItemIds.has(placement.itemId)),
+      }));
+      this.structure.deleteById(itemId);
+    });
   }
 
   private moveItem(itemId: number, options: MoveItemOptions): void {
@@ -171,6 +189,7 @@ export class LegacySchemaStore implements SchemaStore {
       item.parent = legacyTargetParentId;
       this.structure.reSort();
       this.moveToSiblingPosition(item.id, options.position);
+      this.removePlacementsOutsideTheirBoard();
     });
   }
 
@@ -398,6 +417,7 @@ export class LegacySchemaStore implements SchemaStore {
         if (this.structure.getElectroItemById(rootItemId) !== null) this.structure.deleteById(rootItemId);
       }
       this.structure.boards = this.structure.boards.filter((candidate) => candidate.id !== boardId);
+      this.structure.boardLayouts = this.structure.boardLayouts.filter(layout => layout.boardId !== boardId);
     });
   }
 
@@ -407,6 +427,7 @@ export class LegacySchemaStore implements SchemaStore {
           || typeof value !== "string") {
         throw new SchemaCommandError("INVALID_CHANGE", `Documenteigenschap '${key}' is niet geldig.`);
       }
+
     }
     if (Object.keys(changes).length === 0) return;
     this.commitTransaction(() => {
@@ -415,6 +436,151 @@ export class LegacySchemaStore implements SchemaStore {
       if (changes.control !== undefined) this.structure.properties.control = changes.control;
       if (changes.info !== undefined) this.structure.properties.info = changes.info;
     });
+  }
+
+  private updateFileSettings(changes: UpdateFileSettingsChanges): void {
+    if (changes.filename !== undefined && (typeof changes.filename !== "string" || changes.filename.trim() === "")) {
+      throw new SchemaCommandError("INVALID_CHANGE", "De bestandsnaam mag niet leeg zijn.");
+    }
+    if (changes.compressionDisabled !== undefined && typeof changes.compressionDisabled !== "boolean") {
+      throw new SchemaCommandError("INVALID_CHANGE", "De compressie-instelling is ongeldig.");
+    }
+    this.commitTransaction(() => {
+      if (changes.filename !== undefined) this.structure.properties.filename = changes.filename.trim();
+      if (changes.compressionDisabled !== undefined) {
+        this.structure.properties.disableEDSCompression = changes.compressionDisabled;
+      }
+    });
+  }
+
+  private addBoardLayoutRail(
+    boardId: string,
+    properties: AddBoardLayoutRailProperties = {},
+  ): string {
+    this.requireBoard(boardId);
+    const moduleCapacity = properties.moduleCapacity ?? 18;
+    this.assertPositiveInteger(moduleCapacity, "Het aantal modules");
+    return this.commitTransaction(() => {
+      const layout = this.getBoardLayout(boardId);
+      const usedIds = new Set(layout.rails.map(rail => rail.id));
+      let number = layout.rails.length + 1;
+      while (usedIds.has(`${boardId}-rail-${number}`)) number += 1;
+      const railId = `${boardId}-rail-${number}`;
+      this.replaceBoardLayout({
+        ...layout,
+        rails: [
+          ...layout.rails,
+          {
+            id: railId,
+            name: properties.name?.trim() || `Rij ${number}`,
+            moduleCapacity,
+          },
+        ],
+      });
+      return railId;
+    });
+  }
+
+  private updateBoardLayoutRail(
+    boardId: string,
+    railId: string,
+    changes: UpdateBoardLayoutRailChanges,
+  ): void {
+    const layout = this.requireBoardLayout(boardId);
+    const rail = layout.rails.find(candidate => candidate.id === railId);
+    if (!rail) {
+      throw new SchemaCommandError("BOARD_LAYOUT_NOT_FOUND", `Bordrij '${railId}' bestaat niet.`);
+    }
+    if (changes.name !== undefined && typeof changes.name !== "string") {
+      throw new SchemaCommandError("INVALID_BOARD_LAYOUT", "De naam van een bordrij moet tekst zijn.");
+    }
+    if (changes.moduleCapacity !== undefined) {
+      const moduleCapacity = changes.moduleCapacity;
+      this.assertPositiveInteger(moduleCapacity, "Het aantal modules");
+      const exceedsCapacity = layout.placements.some(placement => (
+        placement.railId === railId
+        && placement.startModule + placement.moduleWidth > moduleCapacity
+      ));
+      if (exceedsCapacity) {
+        throw new SchemaCommandError(
+          "INVALID_BOARD_LAYOUT",
+          "Verplaats eerst modules die buiten de nieuwe breedte zouden vallen.",
+        );
+      }
+    }
+    this.commitTransaction(() => this.replaceBoardLayout({
+      ...layout,
+      rails: layout.rails.map(candidate => candidate.id === railId
+        ? {
+            ...candidate,
+            name: changes.name?.trim() || candidate.name,
+            moduleCapacity: changes.moduleCapacity ?? candidate.moduleCapacity,
+          }
+        : candidate),
+    }));
+  }
+
+  private deleteBoardLayoutRail(boardId: string, railId: string): void {
+    const layout = this.requireBoardLayout(boardId);
+    if (!layout.rails.some(rail => rail.id === railId)) {
+      throw new SchemaCommandError("BOARD_LAYOUT_NOT_FOUND", `Bordrij '${railId}' bestaat niet.`);
+    }
+    if (layout.placements.some(placement => placement.railId === railId)) {
+      throw new SchemaCommandError(
+        "INVALID_BOARD_LAYOUT",
+        "Een bordrij met geplaatste modules kan niet worden verwijderd.",
+      );
+    }
+    this.commitTransaction(() => this.replaceBoardLayout({
+      ...layout,
+      rails: layout.rails.filter(rail => rail.id !== railId),
+    }));
+  }
+
+  private placeBoardLayoutItem(
+    boardId: string,
+    itemId: number,
+    properties: PlaceBoardLayoutItemProperties,
+  ): void {
+    this.requireItem(itemId);
+    const layout = this.requireBoardLayout(boardId);
+    const rail = layout.rails.find(candidate => candidate.id === properties.railId);
+    if (!rail) {
+      throw new SchemaCommandError("BOARD_LAYOUT_NOT_FOUND", `Bordrij '${properties.railId}' bestaat niet.`);
+    }
+    this.assertNonNegativeInteger(properties.startModule, "De startmodule");
+    this.assertPositiveInteger(properties.moduleWidth, "De modulebreedte");
+    if (properties.startModule + properties.moduleWidth > rail.moduleCapacity) {
+      throw new SchemaCommandError("INVALID_BOARD_LAYOUT", "De module past niet binnen deze bordrij.");
+    }
+    if (this.findItemBoardId(itemId) !== boardId) {
+      throw new SchemaCommandError("INVALID_BOARD_LAYOUT", "Het onderdeel hoort niet bij dit verdeelbord.");
+    }
+    const overlaps = layout.placements.some(placement => (
+      placement.itemId !== itemId
+      && placement.railId === properties.railId
+      && placement.startModule < properties.startModule + properties.moduleWidth
+      && properties.startModule < placement.startModule + placement.moduleWidth
+    ));
+    if (overlaps) {
+      throw new SchemaCommandError("INVALID_BOARD_LAYOUT", "Deze positie overlapt een andere module.");
+    }
+    this.commitTransaction(() => this.replaceBoardLayout({
+      ...layout,
+      placements: [
+        ...layout.placements.filter(placement => placement.itemId !== itemId),
+        { itemId, ...properties },
+      ],
+    }));
+  }
+
+  private removeBoardLayoutItem(boardId: string, itemId: number): void {
+    const layout = this.requireBoardLayout(boardId);
+    if (!layout.placements.some(placement => placement.itemId === itemId)) return;
+    this.commitTransaction(() => this.replaceBoardLayout({
+      ...layout,
+      placements: layout.placements.filter(placement => placement.itemId !== itemId),
+    }));
   }
 
   private replaceDocument(serializedDocument: string, version: number = 0): void {
@@ -459,6 +625,60 @@ export class LegacySchemaStore implements SchemaStore {
     const board = this.structure.boards.find((candidate) => candidate.id === boardId);
     if (!board) throw new SchemaCommandError("BOARD_NOT_FOUND", `Verdeelbord '${boardId}' bestaat niet.`);
     return board;
+  }
+
+  private getBoardLayout(boardId: string): BoardLayout {
+    return this.structure.boardLayouts.find(layout => layout.boardId === boardId)
+      ?? { boardId, rails: [], placements: [] };
+  }
+
+  private requireBoardLayout(boardId: string): BoardLayout {
+    this.requireBoard(boardId);
+    const layout = this.structure.boardLayouts.find(candidate => candidate.boardId === boardId);
+    if (!layout) {
+      throw new SchemaCommandError(
+        "BOARD_LAYOUT_NOT_FOUND",
+        `Verdeelbord '${boardId}' heeft nog geen fysieke indeling.`,
+      );
+    }
+    return layout;
+  }
+
+  private replaceBoardLayout(layout: BoardLayout): void {
+    this.structure.boardLayouts = [
+      ...this.structure.boardLayouts.filter(candidate => candidate.boardId !== layout.boardId),
+      layout,
+    ];
+  }
+
+  private findItemBoardId(itemId: number): string | undefined {
+    return findBoardIdForItem(
+      this.structure.boards,
+      itemId,
+      (id) => {
+        const item = this.structure.getElectroItemById(id);
+        return item === null || item.parent === 0 ? null : item.parent;
+      },
+    );
+  }
+
+  private removePlacementsOutsideTheirBoard(): void {
+    this.structure.boardLayouts = this.structure.boardLayouts.map(layout => ({
+      ...layout,
+      placements: layout.placements.filter(placement => this.findItemBoardId(placement.itemId) === layout.boardId),
+    }));
+  }
+
+  private assertPositiveInteger(value: number, label: string): void {
+    if (!Number.isInteger(value) || value <= 0) {
+      throw new SchemaCommandError("INVALID_BOARD_LAYOUT", `${label} moet een positief geheel getal zijn.`);
+    }
+  }
+
+  private assertNonNegativeInteger(value: number, label: string): void {
+    if (!Number.isInteger(value) || value < 0) {
+      throw new SchemaCommandError("INVALID_BOARD_LAYOUT", `${label} moet een positief geheel getal of nul zijn.`);
+    }
   }
 
   private requireAvailableFeeder(
@@ -533,6 +753,17 @@ export class LegacySchemaStore implements SchemaStore {
   }
 
   private assertNoBoardDependencyInSubtree(itemId: number): void {
+    const subtreeIds = this.collectSubtreeIds(itemId);
+    const affected = this.structure.boards.find((board) => (
+      board.rootItemIds.some((rootId) => subtreeIds.has(rootId))
+      || (board.feeder !== undefined && subtreeIds.has(board.feeder.sourceCircuitId))
+    ));
+    if (affected) {
+      throw new SchemaCommandError("BOARD_DEPENDENCY", `Deze actie zou verdeelbord '${affected.name}' loskoppelen.`);
+    }
+  }
+
+  private collectSubtreeIds(itemId: number): Set<number> {
     const subtreeIds = new Set<number>([itemId]);
     let changed = true;
     while (changed) {
@@ -544,13 +775,7 @@ export class LegacySchemaStore implements SchemaStore {
         }
       }
     }
-    const affected = this.structure.boards.find((board) => (
-      board.rootItemIds.some((rootId) => subtreeIds.has(rootId))
-      || (board.feeder !== undefined && subtreeIds.has(board.feeder.sourceCircuitId))
-    ));
-    if (affected) {
-      throw new SchemaCommandError("BOARD_DEPENDENCY", `Deze actie zou verdeelbord '${affected.name}' loskoppelen.`);
-    }
+    return subtreeIds;
   }
 
   private assertChildAllowed(parent: Electro_Item | null, type: string): void {
@@ -651,6 +876,7 @@ export class LegacySchemaStore implements SchemaStore {
       canUndo: this.history.canUndo(),
       canRedo: this.history.canRedo(),
       validationIssues: validateSchemaDocument(document),
+      boardLayouts: Object.freeze(this.structure.boardLayouts.map(freezeBoardLayout)),
     });
   }
 

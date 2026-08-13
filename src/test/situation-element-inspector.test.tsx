@@ -102,6 +102,7 @@ describe("SituationElementInspector", () => {
     expect(screen.getByRole("heading", { name: "2 plaatsingen geselecteerd" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Selectie naar rechts" }));
     fireEvent.click(screen.getByRole("button", { name: "+90° draaien" }));
+    fireEvent.click(screen.getByRole("button", { name: "Links" }));
 
     const elements = situationPlanStore.getSnapshot().elements;
     expect(elements.find(element => element.id === first.id)).toMatchObject({
@@ -109,9 +110,9 @@ describe("SituationElementInspector", () => {
       rotation: 90,
     });
     expect(elements.find(element => element.id === second.id)).toMatchObject({
-      position: { x: 70, y: 0 },
+      position: { x: 30, y: 0 },
       rotation: 90,
     });
-    expect(onMutation).toHaveBeenCalledTimes(2);
+    expect(onMutation).toHaveBeenCalledTimes(3);
   });
 });

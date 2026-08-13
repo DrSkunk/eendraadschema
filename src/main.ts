@@ -1,11 +1,11 @@
 import { TopMenu } from "./TopMenu";
 import type { MenuItem } from "./TopMenu";
 import { Hierarchical_List } from "./Hierarchical_List";
-import { fileService, showFilePage } from "./importExport/importExport";
+import { download_by_blob, fileService } from "./importExport/importExport";
 import { EDStoStructure } from "./importExport/importExport";
 import { AutoSaver } from "./importExport/AutoSaver";
 import { showSituationPlanPage } from "./sitplan/SituationPlanView";
-import { printsvg } from "./print/print";
+import { printService } from "./print/print";
 import { PROP_edit_menu } from "../prop/prop_scripts";
 import { CookieBanner } from "../prop/CookieBanner";
 import { flattenSVGfromString, trimString } from "./general";
@@ -345,8 +345,10 @@ globalThis.toggleAppView = (type: '2col' | 'config' | 'draw') => {
     const workspaceSidebar = document.getElementById("react-workspace-sidebar");
     const workspaceInspector = document.getElementById("properties_col");
     const workspaceCommandBar = document.getElementById("react-workspace-commandbar-root");
+    const boardLayout = document.getElementById("react-board-layout-root");
     const left_col_inner = document.getElementById("left_col_inner");
     const EDSSVG = document.getElementById("EDSSVG");
+    boardLayout?.classList.add("hidden");
 
     if (type === '2col') {
         if (configsection == null) return;
@@ -480,6 +482,7 @@ container.innerHTML = `
 <aside id="react-workspace-sidebar" class="fixed top-[var(--total-offset)] bottom-0 left-0 z-10 hidden w-80 overflow-auto border-r border-neutral-300 bg-white">
     <div id="react-hierarchy-root"></div>
 </aside>
+<main id="react-board-layout-root" class="fixed top-[var(--total-offset)] right-80 bottom-0 left-80 z-0 hidden overflow-hidden"></main>
 <div id="canvas_2col" class="!right-80 !left-80" style="display:none;"> <!-- Eendraadschema-->
     <div id="left_col">
     <div id="left_col_inner"></div>
@@ -536,10 +539,10 @@ let menuItems: MenuItem[]
 
 menuItems = [
     { name: 'Nieuw', callback: restart_all },
-    { name: 'Bestand', callback: showFilePage },
+    { name: 'Bestand', callback: () => workspaceStore?.commands.openDialog("file") },
     { name: 'Eéndraadschema', callback: globalThis.HLRedrawTree },
     { name: 'Situatieschema', callback: showSituationPlanPage },
-    { name: 'Print', callback: printsvg },
+    { name: 'Print', callback: () => workspaceStore?.commands.openDialog("print") },
     { name: 'Documentatie', callback: showDocumentationPage },
     { name: 'Info/Contact', callback: openContactForm }
 ];
@@ -561,6 +564,7 @@ const reactPropertiesColumn = document.getElementById("properties_col");
 const reactStatusBarRoot = document.getElementById("react-statusbar-root");
 const reactEditorCanvas = document.getElementById("canvas_2col");
 const reactCommandBarRoot = document.getElementById("react-workspace-commandbar-root");
+const reactBoardLayoutRoot = document.getElementById("react-board-layout-root");
 const situationPaperElement = document.getElementById("paper");
 const legacyHierarchyRoot = document.getElementById("left_col_inner");
 const legacyHierarchyColumn = document.getElementById("left_col");
@@ -620,15 +624,12 @@ if (reactEditorRoot !== null) {
                 globalThis.structure.sitplanview?.contextMenu?.hide();
                 globalThis.structure.sitplanview?.zoomToFit();
             },
-            onSituationPlanDelete: () => {
-                const view = globalThis.structure.sitplanview;
-                if (!view || view.getSelectedBoxesOrdinals().length === 0) return;
-                view.contextMenu?.hide();
-                view.deleteSelectedBoxes();
-                globalThis.undostruct.store();
-                workspaceStore?.commands.selectSituationElement(null);
-                globalThis.situationPlanStore.synchronizeLegacyDocument(globalThis.structure);
-                situationHistoryStore.refresh();
+            onSituationPlanItemsDeleted: (itemIds) => {
+                if (itemIds.length === 0) return;
+                schemaStore?.synchronizeLegacyDocument(globalThis.structure);
+                editorStore?.commands.reconcileItemIds(new Set(
+                    schemaStore?.getSnapshot().document.getAllItems().map(item => item.id) ?? [],
+                ));
             },
             onSituationPlanSelectAll: () => {
                 const view = globalThis.structure.sitplanview;
@@ -654,7 +655,13 @@ if (reactEditorRoot !== null) {
             workspaceStore,
             onSelectWorkspaceTab: (tab) => {
                 if (tab === "schema") globalThis.HLRedrawTree();
-                else showSituationPlanPage();
+                else if (tab === "situation") showSituationPlanPage();
+                else {
+                    globalThis.toggleAppView("2col");
+                    workspaceStore?.commands.selectTab("board");
+                    reactEditorCanvas?.style.setProperty("display", "none");
+                    reactBoardLayoutRoot?.classList.remove("hidden");
+                }
             },
             canCreateSituationOccurrence: (itemId) => {
                 const item = globalThis.structure.getElectroItemById(itemId);
@@ -690,6 +697,7 @@ if (reactEditorRoot !== null) {
             },
             situationPaperElement,
             commandBarMountElement: reactCommandBarRoot,
+            boardLayoutMountElement: reactBoardLayoutRoot,
             situationHistoryStore,
             onSituationUndo: () => {
                 globalThis.undoClicked();
@@ -704,8 +712,15 @@ if (reactEditorRoot !== null) {
                     if ((error as { name?: string }).name !== "AbortError") console.error(error);
                 });
             },
-            onOpenFile: showFilePage,
+            onOpenFile: () => workspaceStore?.commands.openDialog("file"),
             situationPlanAssetService,
+            fileService,
+            printService,
+            onOpenDocument: () => globalThis.loadClicked(),
+            onAppendDocument: () => globalThis.importToAppendClicked(),
+            onDownloadPrintSvg: (svg, filename) => {
+                download_by_blob(svg, filename, "data:image/svg+xml;charset=utf-8");
+            },
         },
     );
 }

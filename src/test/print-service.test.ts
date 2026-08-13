@@ -70,4 +70,26 @@ describe("LegacyPrintService", () => {
 
     expect(getPrintSVGWithoutAddress(outSVG, 0)).toBe(service.getPreviewSvg(0, outSVG));
   });
+
+  it("manages manual page boundaries and metadata safely", () => {
+    const { service } = createService();
+    service.computeLayout();
+    service.updateSettings({ enableAutopage: false });
+
+    expect(() => service.deleteManualPage(0)).toThrow(RangeError);
+    expect(() => service.updateManualPage(4, { info: "Onbereikbaar" })).toThrow(RangeError);
+
+    service.addManualPage();
+    const before = service.getPreviewState();
+    const boundary = Math.max(before.pages[0].start, before.pages[0].stop - 1);
+    service.updateManualPage(0, { stop: boundary, info: "Verdeler" });
+
+    const updated = service.getPreviewState();
+    expect(updated.pages).toHaveLength(2);
+    expect(updated.pages[0]).toMatchObject({ stop: boundary, info: "Verdeler" });
+    expect(updated.pages[1].start).toBe(boundary);
+
+    service.deleteManualPage(1);
+    expect(service.getPreviewState().pages).toHaveLength(1);
+  });
 });

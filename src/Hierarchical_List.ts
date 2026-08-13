@@ -9,6 +9,7 @@ import { Boiler } from "./List_Item/Boiler";
 import { Bord } from "./List_Item/Bord";
 import { Contactdoos } from "./List_Item/Contactdoos";
 import { Container } from "./List_Item/Container";
+import type { BoardLayout } from "./domain/BoardLayout";
 import { Diepvriezer } from "./List_Item/Diepvriezer";
 import { Domotica } from "./List_Item/Domotica";
 import { Domotica_gestuurde_verbruiker } from "./List_Item/Domotica_gestuurde_verbruiker";
@@ -204,6 +205,7 @@ export class Hierarchical_List {
     sitplanjson: any; //this is where we store the situation plan in plan object exporting to json
     sitplanview: SituationPlanView;
     boards: DistributionBoard[];
+    boardLayouts: BoardLayout[];
     currentView: string = ""; // Here we store '2col' | 'config' | 'draw'
     
     // -- Hash table for efficient ID to ordinal lookups --
@@ -222,6 +224,7 @@ export class Hierarchical_List {
         this.mode = "edit";
         this.sitplan = new SituationPlan();
         this.boards = [createDefaultMainBoard([])];
+        this.boardLayouts = [];
       };
 
     /** dispose

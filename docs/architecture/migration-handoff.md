@@ -42,6 +42,7 @@ React must never mutate `Hierarchical_List.data` or an item `props` bag directly
 - React is the only interactive one-line editor route. The old feature flags and hierarchy DOM change listener are gone.
 - All item `toHTML()` implementations and shared HTML form helpers were removed. Do not reintroduce them.
 - EDS005 persists first-class distribution boards; EDS001–EDS004 receive one default `Hoofdbord` when loaded.
+- EDS006 adds optional manual board layouts. EDS001–EDS005 load with no physical layout, and invalid references in persisted layouts are discarded during parsing.
 - A secondary board is represented by metadata plus a real `Bord` item beneath its feeder `Kring`.
 - Board commands cover add, update, feeder changes and delete, and reject duplicate feeders, missing feeders, cycles and silent orphaning.
 - Structural validation is independent from React and returns issues with `boardId`/`itemId` navigation targets.
@@ -56,9 +57,12 @@ React must never mutate `Hierarchical_List.data` or an item `props` bag directly
 - `LegacySituationPlanStore` exposes immutable, DOM-independent situation-plan snapshots and validated page/default commands. The legacy view receives this store, its page/default controls use commands, and legacy document replacement refreshes the adapter.
 - React owns the shared Tailwind workspace command bar. It presents tab-aware undo/redo, save/file actions, situation-plan page management, selection actions and zoom in one consistent surface; superseded standalone situation controls were removed.
 - Situation-plan command-bar actions use the existing public canvas boundary while the legacy implementation remains unchanged. React now owns the image file input and Tailwind custom-symbol dialog; `LegacySituationPlanAssetService` imports backgrounds and places situation-only symbols without hidden legacy button clicks.
-- The editor now has one unified workspace shell: a permanent electrical hierarchy on the left, a permanent contextual property inspector on the right, and tabbed `Eéndraadschema`/`Situatieschema` canvases in the center. `Bordindeling` is reserved as a disabled future workspace tab for physical panel layout.
+- The editor now has one unified workspace shell: a permanent electrical hierarchy on the left, a permanent contextual property inspector on the right, and tabbed `Eéndraadschema`/`Situatieschema`/`Bordindeling` workspaces in the center.
+- `Bordindeling` is a fully manual DIN-rail editor. Rail capacity and every module's rail, start position and width are explicit; commands reject overlap, overflow, cross-board placement and deletion of occupied rails.
 - Cross-editor linking is bidirectional. Selecting an electrical hierarchy item shows all linked situation-plan placements and can create or reveal one; selecting a linked situation-plan symbol selects its electrical item in the permanent hierarchy.
-- The permanent right inspector is contextual: electrical properties in the one-line tab and placement properties in the situation tab. Situation placements can be edited without a modal for page, coordinates, scale, rotation, label size, address mode/location and lock state.
+- The permanent right inspector is contextual: electrical properties in the one-line tab, placement properties in the situation tab and module placement in the board tab. Situation placements can be edited without a modal for page, coordinates, scale, rotation, label size, address mode/location and lock state.
+- React owns situation movement, rotation, locking, deletion, duplication, alignment and distribution commands, including keyboard handling. The legacy canvas remains the authoritative renderer and selection source but its edit popup and context menu are suppressed.
+- React-owned file and print dialogs replace the imperative pages. They use the existing file/print application services and renderers, including save-as/open/append, compression settings, print settings, preview, SVG/PDF export and automatic or manual pagination.
 - Situation multi-selection is mirrored from the canvas into `WorkspaceStore`, preserving a primary placement for cross-editor linking. Shift-selected symbols receive a batch inspector for relative movement, rotation, page, scale and lock state; batch changes validate before one atomic store publication and one undo checkpoint. The command bar exposes select-all, clear-selection and a live selection count.
 
 ## Important domain invariants
@@ -74,7 +78,7 @@ React must never mutate `Hierarchical_List.data` or an item `props` bag directly
 - Board names need not be unique.
 - UI selection, active board and expanded nodes are editor state and must not be written to EDS.
 - Existing EDS property keys remain a compatibility contract even when React uses semantic property names.
-- SVG and print remain legacy renderers until replaced independently with equivalent regression coverage.
+- SVG, PDF and print layout remain authoritative legacy renderers behind typed application services; their interactive UI is React-owned.
 
 ## Key files
 
@@ -88,11 +92,15 @@ React must never mutate `Hierarchical_List.data` or an item `props` bag directly
 - `src/application/HistoryStatusStore.ts`: reactive history availability adapter used by the situation-plan command bar.
 - `src/application/SituationPlanAssetService.ts`: React-facing contracts for background import and situation-only symbols.
 - `src/application/LegacySituationPlanAssetService.ts`: transitional implementation over the public situation canvas and authoritative stores.
+- `src/application/PrintService.ts`: React-facing print settings, pagination, preview and export boundary.
 - `src/domain/DistributionBoard.ts`: persisted board and feeder model plus membership/cycle helpers.
+- `src/domain/BoardLayout.ts`: persisted manual DIN-rail and module placement model.
 - `src/legacy/persistence/EdsCodec.ts`: EDS decoding and old-document migration.
 - `src/ui/hierarchy/HierarchyTree.tsx`: active-board-filtered React hierarchy.
 - `src/ui/boards/BoardNavigator.tsx`: board navigation and feeder editing.
+- `src/ui/boards/BoardLayoutWorkspace.tsx`: central manual physical board editor.
 - `src/ui/workspace/WorkspaceCommandBar.tsx`: shared tab-aware editing commands.
+- `src/ui/workspace/FileDialog.tsx` and `src/ui/workspace/PrintDialog.tsx`: React-owned document workflows.
 - `src/ui/document/DocumentDetailsEditor.tsx`: owner, installer, inspection and document info.
 - `src/ui/properties/propertyEditors.ts`: registry for React property editors.
 - `src/List_Item/Bord.ts`: existing SVG adapter for board export metadata.
@@ -109,9 +117,9 @@ npm run build
 git diff --check
 ```
 
-Baseline on 13 August 2026: 36 test files and 284 tests passed. The Vite build still reports expected warnings for non-module Pako/jsPDF/property scripts; it completes successfully.
+Baseline on 13 August 2026: 38 test files and 295 tests passed. The Vite build still reports expected warnings for non-module Pako/jsPDF/property scripts; it completes successfully.
 
-Playwright end-to-end smoke tests exist in `e2e/smoke.spec.ts` (`npm run test:e2e`, config in `playwright.config.ts`, starts the Vite dev server itself). They cover: example loading into the React editor with live SVG, circuit property editing with SVG update and undo/redo, editor search reveal, secondary-board creation/breadcrumbs/deletion, status-bar zoom, situation-plan page management plus background/custom-symbol creation, and the print page through the print adapter. The first run exposed a real layout bug — the legacy top menu was hidden underneath the ribbon because the legacy absolute offsets did not account for the React shell header; fixed with `--react-shell-height` in `css/styles.css`.
+Playwright end-to-end smoke tests exist in `e2e/smoke.spec.ts` (`npm run test:e2e`, config in `playwright.config.ts`, starts the Vite dev server itself). Keep this suite small; migration coverage should primarily use focused application/component tests. The smoke tests cover example loading into the React editor with live SVG, circuit property editing with SVG update and undo/redo, editor search reveal, secondary-board creation/breadcrumbs/deletion, status-bar zoom, situation-plan page management plus background/custom-symbol creation, and the React print dialog. The first run exposed a real layout bug — the legacy top menu was hidden underneath the ribbon because the legacy absolute offsets did not account for the React shell header; fixed with `--react-shell-height` in `css/styles.css`.
 
 ## Relevant commits
 
@@ -131,11 +139,11 @@ Earlier React/property-editor commits immediately precede these in branch histor
 ## Recommended next sequence
 
 1. Done: editor search (`HierarchySearch` reveals results across boards via `EditorCommands.revealItem`), board breadcrumbs (`BoardBreadcrumbs` renders the feeder chain), save status and zoom (React `StatusBar` at the bottom of the one-line editor; `LegacySaveStatusStore` adapts `AutoSaver` state and is refreshed from schema commands, the autosave callback and a coarse timer; zoom is editor-only state applied as CSS `zoom` on the legacy SVG container). `src/main.ts` is now fully LF with trailing whitespace stripped — keep it that way.
-2. Done: `LegacyPrintService` (`src/application/PrintService.ts`) is the React-facing print adapter — layout computation, preview state, display-page clamping, per-page preview SVG (EDS crop or situation-plan page) and PDF generation with explicit parameters. The imperative print page (`src/print/print.ts`) now routes its logic through it while emitting identical DOM; a future React print UI should consume the same `printService` instance exported there. `Print_Table.canPrint()` still reads `globalThis.structure` internally. SVG, pagination and jsPDF generation are unchanged.
-3. Done: `LegacyFileService` (`src/application/FileService.ts`) is the React-facing open/save adapter — file state, File System Access open, save/save-as with forced picker when no handle exists, download fallback, manual-autosave bookkeeping, and the deployment upload hook. EDS encoding moved into `encodeEds` in `EdsCodec` (compression with TXT fallback). `exportjson`/`loadClicked` delegate to the shared `fileService` instance; a dismissed file picker no longer logs an error and no longer triggers the export upload hook. The imperative file page (`showFilePage`) still renders its own HTML.
-4. In progress: evolve the unified workspace as a complete editing experience rather than migrating isolated buttons. Shared tabs, bidirectional and multi-selection, contextual single/batch placement inspectors, shared command bar, background import and custom-symbol creation are done. Next replace remaining situation edit/context popups with contextual React commands and add alignment/distribution tools. Keep `WorkspaceTab` extensible for the future physical `Bordindeling` editor.
-5. Remove remaining inline handlers only after their React or DOM-listener replacements are tested. Remaining imperative HTML belongs mainly to file/configuration, print and situation-plan screens.
-6. Perform manual browser smoke tests with current and old EDS fixtures, a main/garage board document, save/reload, undo/redo, SVG download and PDF print.
+2. Done: `LegacyPrintService` (`src/application/PrintService.ts`) is the React-facing print adapter for settings, automatic/manual pagination, preview, SVG download and PDF generation. The React `PrintDialog` owns the workflow; renderer internals remain unchanged.
+3. Done: `LegacyFileService` (`src/application/FileService.ts`) is the React-facing open/save adapter. The React `FileDialog` owns open, save, save-as, append and persisted file settings while retaining established browser/file-system fallbacks.
+4. Done: the unified workspace owns situation contextual commands and the fully manual `Bordindeling` editor. Board layouts are persisted in EDS006 and all mutations pass through schema commands.
+5. Retain old imperative file/print entry points only as compatibility adapters while external/global callbacks still reference them. Do not extend those pages with new UI.
+6. Perform a small manual browser smoke pass with current and old EDS fixtures, a main/garage board document, board placement save/reload, undo/redo, SVG download and PDF print.
 
 ## Common pitfalls
 

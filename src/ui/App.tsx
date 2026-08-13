@@ -5,6 +5,8 @@ import type { HistoryStatusStore } from "../application/HistoryStatusStore";
 import type { SchemaStore } from "../application/SchemaStore";
 import type { SituationPlanStore } from "../application/SituationPlanStore";
 import type { SituationPlanAssetService } from "../application/SituationPlanAssetService";
+import type { LegacyFileService } from "../application/FileService";
+import type { LegacyPrintService } from "../application/PrintService";
 import {
   LocalWorkspaceStore,
   type WorkspaceStore,
@@ -19,6 +21,10 @@ import { SituationSelectionBridge } from "./workspace/SituationSelectionBridge";
 import { SituationElementInspector } from "./workspace/SituationElementInspector";
 import { useWorkspaceSnapshot } from "./useWorkspaceSnapshot";
 import { WorkspaceCommandBar } from "./workspace/WorkspaceCommandBar";
+import { BoardLayoutWorkspace } from "./boards/BoardLayoutWorkspace";
+import { BoardLayoutInspector } from "./boards/BoardLayoutInspector";
+import { FileDialog } from "./workspace/FileDialog";
+import { PrintDialog } from "./workspace/PrintDialog";
 import "./editor-shell.css";
 import "./hierarchy/hierarchy.css";
 import "./properties/properties.css";
@@ -36,7 +42,7 @@ export interface EditorAppProps {
   readonly onSituationPlanZoomIn?: () => void;
   readonly onSituationPlanZoomOut?: () => void;
   readonly onSituationPlanZoomToFit?: () => void;
-  readonly onSituationPlanDelete?: () => void;
+  readonly onSituationPlanItemsDeleted?: (itemIds: readonly number[]) => void;
   readonly onSituationPlanSelectAll?: () => void;
   readonly onSituationPlanClearSelection?: () => void;
   readonly onSituationPlanSendBackward?: () => void;
@@ -48,12 +54,18 @@ export interface EditorAppProps {
   readonly onRevealSituationOccurrence?: (occurrenceId: string) => void;
   readonly situationPaperElement?: HTMLElement | null;
   readonly commandBarMountElement?: HTMLElement | null;
+  readonly boardLayoutMountElement?: HTMLElement | null;
   readonly situationHistoryStore?: HistoryStatusStore | null;
   readonly onSituationUndo?: () => void;
   readonly onSituationRedo?: () => void;
   readonly onSave?: () => void;
   readonly onOpenFile?: () => void;
   readonly situationPlanAssetService?: SituationPlanAssetService | null;
+  readonly fileService?: LegacyFileService | null;
+  readonly printService?: LegacyPrintService | null;
+  readonly onOpenDocument?: () => void;
+  readonly onAppendDocument?: () => void;
+  readonly onDownloadPrintSvg?: (svg: string, filename: string) => void;
 }
 
 export function EditorApp({
@@ -69,7 +81,7 @@ export function EditorApp({
   onSituationPlanZoomIn = () => {},
   onSituationPlanZoomOut = () => {},
   onSituationPlanZoomToFit = () => {},
-  onSituationPlanDelete = () => {},
+  onSituationPlanItemsDeleted = () => {},
   onSituationPlanSelectAll = () => {},
   onSituationPlanClearSelection = () => {},
   onSituationPlanSendBackward = () => {},
@@ -81,18 +93,34 @@ export function EditorApp({
   onRevealSituationOccurrence = () => {},
   situationPaperElement = null,
   commandBarMountElement = null,
+  boardLayoutMountElement = null,
   situationHistoryStore = null,
   onSituationUndo = () => {},
   onSituationRedo = () => {},
   onSave = () => {},
   onOpenFile = () => {},
   situationPlanAssetService = null,
+  fileService = null,
+  printService = null,
+  onOpenDocument = () => {},
+  onAppendDocument = () => {},
+  onDownloadPrintSvg = () => {},
 }: EditorAppProps) {
   const snapshot = useSchemaSnapshot(schemaStore);
   const workspace = useWorkspaceSnapshot(workspaceStore);
   const itemCount = snapshot.document
     .getAllItems()
     .filter((item) => item.role === "item").length;
+
+  function deleteSituationSelection() {
+    if (!situationPlanStore) return;
+    const elementIds = workspaceStore.getSnapshot().selectedSituationElementIds;
+    if (elementIds.length === 0) return;
+    const deletedItemIds = situationPlanStore.commands.deleteElements(elementIds);
+    workspaceStore.commands.selectSituationElement(null);
+    onSituationPlanMutation();
+    onSituationPlanItemsDeleted(deletedItemIds);
+  }
 
   return (
     <>
@@ -116,7 +144,9 @@ export function EditorApp({
         : null}
       {propertiesMountElement
         ? createPortal(
-            workspace.activeTab === "situation" && situationPlanStore
+            workspace.activeTab === "board"
+              ? <BoardLayoutInspector schemaStore={schemaStore} editorStore={editorStore} />
+              : workspace.activeTab === "situation" && situationPlanStore
               ? (
                   <SituationElementInspector
                     situationPlanStore={situationPlanStore}
@@ -126,6 +156,12 @@ export function EditorApp({
                 )
               : <ItemPropertiesPanel schemaStore={schemaStore} editorStore={editorStore} />,
             propertiesMountElement,
+          )
+        : null}
+      {boardLayoutMountElement && workspace.activeTab === "board"
+        ? createPortal(
+            <BoardLayoutWorkspace schemaStore={schemaStore} editorStore={editorStore} />,
+            boardLayoutMountElement,
           )
         : null}
       {statusBarMountElement && saveStatusStore
@@ -158,7 +194,7 @@ export function EditorApp({
               onSave={onSave}
               onOpenFile={onOpenFile}
               situationAssetService={situationPlanAssetService}
-              onDeleteSelection={onSituationPlanDelete}
+              onDeleteSelection={deleteSituationSelection}
               onSelectAll={onSituationPlanSelectAll}
               onClearSelection={onSituationPlanClearSelection}
               onSendBackward={onSituationPlanSendBackward}
@@ -174,7 +210,27 @@ export function EditorApp({
         paperElement={situationPaperElement}
         editorStore={editorStore}
         workspaceStore={workspaceStore}
+        situationPlanStore={situationPlanStore}
+        onMutation={() => onSituationPlanMutation()}
+        onDeleteSelection={deleteSituationSelection}
+        onClearSelection={onSituationPlanClearSelection}
       />
+      {workspace.activeDialog === "file" && fileService ? (
+        <FileDialog
+          fileService={fileService}
+          schemaStore={schemaStore}
+          onOpen={onOpenDocument}
+          onAppend={onAppendDocument}
+          onClose={() => workspaceStore.commands.closeDialog()}
+        />
+      ) : null}
+      {workspace.activeDialog === "print" && printService ? (
+        <PrintDialog
+          printService={printService}
+          onDownloadSvg={onDownloadPrintSvg}
+          onClose={() => workspaceStore.commands.closeDialog()}
+        />
+      ) : null}
     </>
   );
 }

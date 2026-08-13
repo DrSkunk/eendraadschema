@@ -67,6 +67,44 @@ describe("LegacySchemaStore", () => {
     );
   });
 
+  it("manages validated manual module placement on board rails", () => {
+    const { store, boardId } = createStore();
+    const circuitId = store.commands.addItem(boardId, "Kring");
+    const secondCircuitId = store.commands.addItem(boardId, "Kring");
+    const railId = store.commands.addBoardLayoutRail("main", {
+      name: "Bovenste rij",
+      moduleCapacity: 18,
+    });
+
+    store.commands.placeBoardLayoutItem("main", circuitId, {
+      railId,
+      startModule: 0,
+      moduleWidth: 2,
+    });
+
+    expect(store.getSnapshot().boardLayouts).toEqual([{
+      boardId: "main",
+      rails: [{ id: railId, name: "Bovenste rij", moduleCapacity: 18 }],
+      placements: [{ itemId: circuitId, railId, startModule: 0, moduleWidth: 2 }],
+    }]);
+    expect(() => store.commands.placeBoardLayoutItem("main", secondCircuitId, {
+      railId,
+      startModule: 1,
+      moduleWidth: 1,
+    })).toThrowError(expect.objectContaining({ code: "INVALID_BOARD_LAYOUT" }));
+
+    store.commands.placeBoardLayoutItem("main", secondCircuitId, {
+      railId,
+      startModule: 2,
+      moduleWidth: 1,
+    });
+    expect(() => store.commands.deleteBoardLayoutRail("main", railId)).toThrowError(
+      expect.objectContaining({ code: "INVALID_BOARD_LAYOUT" }),
+    );
+    store.commands.removeBoardLayoutItem("main", secondCircuitId);
+    expect(store.getSnapshot().boardLayouts[0].placements).toHaveLength(1);
+  });
+
   it("updates properties and changes type through the legacy domain factory", () => {
     const { store, boardId } = createStore();
     const circuitId = store.commands.addItem(boardId, "Kring");

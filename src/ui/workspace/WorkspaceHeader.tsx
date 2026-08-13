@@ -75,9 +75,9 @@ export function WorkspaceHeader({ itemCount, store, onSelectTab }: WorkspaceHead
           </button>
           <button
             type="button"
-            className="h-full cursor-not-allowed border-b-2 border-transparent px-4 text-sm font-semibold text-neutral-400"
-            disabled
-            title="Voorbereid voor een toekomstige visualisatie van de fysieke bordindeling"
+            className={tabClass("board")}
+            aria-current={activeTab === "board" ? "page" : undefined}
+            onClick={() => onSelectTab("board")}
           >
             Bordindeling
           </button>

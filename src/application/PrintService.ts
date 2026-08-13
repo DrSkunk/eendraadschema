@@ -12,12 +12,25 @@ export interface PrintPreviewState {
   readonly enableAutopage: boolean;
   readonly paperSize: string;
   readonly dpi: number;
+  readonly verticalMode: string;
+  readonly startY: number;
+  readonly stopY: number;
+  readonly pages: readonly Readonly<{ start: number; stop: number; info: string }>[];
 }
 
 export interface GeneratePdfOptions {
   readonly filename: string;
   readonly pageRange?: string;
   readonly statusElement: { innerHTML: string };
+}
+
+export interface PrintSettingsChanges {
+  readonly paperSize?: "A4" | "A3";
+  readonly dpi?: number;
+  readonly enableAutopage?: boolean;
+  readonly verticalMode?: string;
+  readonly startY?: number;
+  readonly stopY?: number;
 }
 
 /** React-facing adapter over the legacy print pipeline. It owns no state of
@@ -33,6 +46,7 @@ export class LegacyPrintService {
     const outSVG = document.toSVG(0, "horizontal");
     document.print_table.setHeight(outSVG.yup + outSVG.ydown);
     document.print_table.setMaxWidth(outSVG.xleft + outSVG.xright + 10);
+    if (document.print_table.enableAutopage) document.print_table.autopage();
     this.clampDisplayPage();
     return outSVG;
   }
@@ -50,12 +64,56 @@ export class LegacyPrintService {
       enableAutopage: document.print_table.enableAutopage,
       paperSize: document.print_table.getPaperSize(),
       dpi: this.getDpi(),
+      verticalMode: document.print_table.getModeVertical(),
+      startY: document.print_table.getstarty(),
+      stopY: document.print_table.getstopy(),
+      pages: Object.freeze(document.print_table.pages.map(page => Object.freeze({
+        start: page.start,
+        stop: page.stop,
+        info: page.info,
+      }))),
     };
   }
 
   setDisplayPageIndex(pageIndex: number): void {
     this.getDocument().print_table.displaypage = pageIndex;
     this.clampDisplayPage();
+  }
+
+  updateSettings(changes: PrintSettingsChanges): void {
+    const document = this.getDocument();
+    if (changes.paperSize !== undefined) document.print_table.setPaperSize(changes.paperSize);
+    if (changes.dpi !== undefined) document.properties.dpi = changes.dpi;
+    if (changes.enableAutopage !== undefined) {
+      document.print_table.enableAutopage = changes.enableAutopage;
+    }
+    if (changes.verticalMode !== undefined) document.print_table.setModeVertical(changes.verticalMode);
+    if (changes.startY !== undefined) document.print_table.setstarty(changes.startY);
+    if (changes.stopY !== undefined) document.print_table.setstopy(changes.stopY);
+    this.computeLayout();
+  }
+
+  addManualPage(): void {
+    this.getDocument().print_table.addPage();
+    this.computeLayout();
+  }
+
+  deleteManualPage(pageIndex: number): void {
+    const table = this.getDocument().print_table;
+    this.assertManualPageIndex(pageIndex);
+    if (table.pages.length === 1) {
+      throw new RangeError("De laatste afdrukpagina kan niet worden verwijderd.");
+    }
+    table.deletePage(pageIndex);
+    this.computeLayout();
+  }
+
+  updateManualPage(pageIndex: number, changes: Readonly<{ stop?: number; info?: string }>): void {
+    const table = this.getDocument().print_table;
+    this.assertManualPageIndex(pageIndex);
+    if (changes.stop !== undefined) table.setStop(pageIndex, changes.stop);
+    if (changes.info !== undefined) table.pages[pageIndex].info = changes.info;
+    this.computeLayout();
   }
 
   /** SVG markup of one preview page: an EDS page cut from the full one-line
@@ -116,6 +174,13 @@ export class LegacyPrintService {
 
   private getDpi(): number {
     return this.getDocument().properties.dpi ?? 300;
+  }
+
+  private assertManualPageIndex(pageIndex: number): void {
+    const pages = this.getDocument().print_table.pages;
+    if (!Number.isInteger(pageIndex) || pageIndex < 0 || pageIndex >= pages.length) {
+      throw new RangeError(`Ongeldige afdrukpagina: ${pageIndex}.`);
+    }
   }
 
   private clampDisplayPage(): void {
