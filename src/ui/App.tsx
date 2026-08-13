@@ -2,11 +2,13 @@ import { createPortal } from "react-dom";
 import type { EditorStore } from "../application/EditorStore";
 import type { SaveStatusStore } from "../application/SaveStatusStore";
 import type { SchemaStore } from "../application/SchemaStore";
+import type { SituationPlanStore } from "../application/SituationPlanStore";
 import { HierarchyTree } from "./hierarchy/HierarchyTree";
 import { EditorShell } from "./layout/EditorShell";
 import { StatusBar } from "./layout/StatusBar";
 import { ItemPropertiesPanel } from "./properties/ItemPropertiesPanel";
 import { useSchemaSnapshot } from "./useSchemaSnapshot";
+import { SituationPlanPageControls } from "./situation/SituationPlanPageControls";
 import "./editor-shell.css";
 import "./hierarchy/hierarchy.css";
 import "./properties/properties.css";
@@ -19,6 +21,9 @@ export interface EditorAppProps {
   readonly saveStatusStore?: SaveStatusStore | null;
   readonly statusBarMountElement?: HTMLElement | null;
   readonly zoomTargetElement?: HTMLElement | null;
+  readonly situationPlanStore?: SituationPlanStore | null;
+  readonly situationPlanControlsMountElement?: HTMLElement | null;
+  readonly onSituationPlanMutation?: (historyKey?: string) => void;
 }
 
 export function EditorApp({
@@ -29,6 +34,9 @@ export function EditorApp({
   saveStatusStore = null,
   statusBarMountElement = null,
   zoomTargetElement = null,
+  situationPlanStore = null,
+  situationPlanControlsMountElement = null,
+  onSituationPlanMutation = () => {},
 }: EditorAppProps) {
   const snapshot = useSchemaSnapshot(schemaStore);
   const itemCount = snapshot.document
@@ -59,6 +67,15 @@ export function EditorApp({
               zoomTargetElement={zoomTargetElement}
             />,
             statusBarMountElement,
+          )
+        : null}
+      {situationPlanControlsMountElement && situationPlanStore
+        ? createPortal(
+            <SituationPlanPageControls
+              store={situationPlanStore}
+              onMutation={onSituationPlanMutation}
+            />,
+            situationPlanControlsMountElement,
           )
         : null}
     </>

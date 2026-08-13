@@ -84,6 +84,30 @@ test("status bar zoom controls scale the SVG preview", async ({ page }) => {
   await expect(statusbar.getByRole("button", { name: "Zoom terugzetten naar 100 procent" })).toHaveText("100%");
 });
 
+test("situation plan React controls manage pages", async ({ page }) => {
+  await loadExample(page, 0);
+  await page.locator("#minitabs").getByText("Situatieschema", { exact: true }).click();
+  const helpDialogOk = page.getByRole("button", { name: "OK" });
+  if (await helpDialogOk.isVisible()) await helpDialogOk.click();
+
+  const controls = page.getByRole("region", { name: "Situatieplan pagina's" });
+  const pageSelect = controls.getByLabel("Pagina", { exact: true });
+  await expect(pageSelect).toHaveValue("1");
+
+  await controls.getByRole("button", { name: "Nieuw" }).click();
+  await expect(pageSelect).toHaveValue("2");
+  await expect(pageSelect.locator("option")).toHaveCount(2);
+
+  await pageSelect.selectOption("1");
+  await expect(controls.getByRole("button", { name: "Nieuw" })).toBeDisabled();
+
+  await pageSelect.selectOption("2");
+  page.once("dialog", (dialog) => dialog.accept());
+  await controls.getByRole("button", { name: "Pagina 2 verwijderen" }).click();
+  await expect(pageSelect).toHaveValue("1");
+  await expect(pageSelect.locator("option")).toHaveCount(1);
+});
+
 test("print page renders a preview through the print adapter", async ({ page }) => {
   await loadExample(page, 1);
 

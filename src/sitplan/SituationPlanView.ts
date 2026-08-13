@@ -969,7 +969,6 @@ export class SituationPlanView {
      */
     selectPage(page: number) {
         this.sitplanStore.commands.selectPage(page);
-        this.redraw();
     }
 
     /**
@@ -1586,27 +1585,6 @@ export class SituationPlanView {
                 </div>`
         }
 
-        // -- Visuals om pagina te selecteren --
-
-        outputleft += `
-            <span style="display: inline-block; width: 50px;"></span>
-            <div>
-                <center>
-                    <span style="display: inline-block; white-space: nowrap;">Pagina
-                        <select id="id_sitplanpage">`;
-        for (let i = 1; i <= this.sitplan.getPageCount(); i++) {
-            outputleft += '<option value="' + i + '"' + (i == this.sitplan.getActivePage() ? ' selected' : '') + '>' + i + '</option>';
-        }
-
-        outputleft += `
-                        </select>
-                    </span><br><span style="display: inline-block; white-space: nowrap;">
-                        <button id="btn_sitplan_addpage" ${(this.sitplan.getActivePage() != this.sitplan.getPageCount() ? ' disabled' : '')}>Nieuw</button>
-                        <button id="btn_sitplan_delpage" style="background-color:red;" ${(this.sitplan.getPageCount() <= 1 ? ' disabled' : '')}>&#9851;</button>
-                    </span>
-                </center>
-            </div>`;
-
         // -- Visuals om pagina te zoomen --
 
         outputright += `
@@ -1629,39 +1607,6 @@ export class SituationPlanView {
         // -- Put everything in the ribbon --
 
         document.getElementById("ribbon").innerHTML = `<div id="left-icons">${outputleft}</div><div id="right-icons">${outputright}</div>`;
-
-        // -- Actions om pagina te selecteren --
-
-        document.getElementById('id_sitplanpage')!.onchange = (event: Event) => {
-            this.contextMenu.hide();
-            const target = event.target as HTMLSelectElement;
-            this.selectPage(Number(target.value));
-            globalThis.undostruct.store("changePage");
-        };
-
-        document.getElementById('btn_sitplan_addpage')!.onclick = () => {
-            this.contextMenu.hide();
-            const page = this.sitplanStore.commands.addPage();
-            this.selectPage(page);
-            globalThis.undostruct.store();
-        };
-
-        document.getElementById('btn_sitplan_delpage')!.onclick = () => {
-            this.contextMenu.hide();
-            const dialog = new Dialog('Pagina verwijderen', `Pagina ${this.sitplan.getActivePage()} volledig verwijderen?`,
-                [
-                    {
-                        text: 'OK', callback: (() => {
-                            this.sitplanStore.commands.deletePage(this.sitplan.getActivePage());
-                            this.selectPage(this.sitplan.getActivePage());
-                            globalThis.undostruct.store();
-                        }).bind(this)
-                    },
-                    { text: 'Annuleren', callback: () => { } }
-
-                ]);
-            dialog.show();
-        };
 
         // -- Actions om elementen toe te voegen of verwijderen --
 
@@ -1695,6 +1640,7 @@ export function showSituationPlanPage() {
     globalThis.toggleAppView('draw');
 
     if (!(globalThis.structure.sitplan)) { globalThis.structure.sitplan = new SituationPlan() };
+    globalThis.situationPlanStore.synchronizeLegacyDocument(globalThis.structure);
 
     if (!(globalThis.structure.sitplanview)) {
         //Verwijder eerst alle elementen op de DOM met id beginnend met "SP_" om eventuele wezen

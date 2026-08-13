@@ -472,6 +472,7 @@ container.innerHTML = `
     <div id="react-statusbar-root"></div>
 </div>
 <div id="outerdiv" style="display:none;"> <!-- Situatieschets -->
+    <div id="react-situation-controls-root"></div>
     <div id="sidebar"></div>
     <div id="canvas">
     <div id="paper"></div>
@@ -538,6 +539,7 @@ const reactPropertiesRoot = document.getElementById("react-properties-root");
 const reactPropertiesColumn = document.getElementById("properties_col");
 const reactStatusBarRoot = document.getElementById("react-statusbar-root");
 const reactEditorCanvas = document.getElementById("canvas_2col");
+const reactSituationControlsRoot = document.getElementById("react-situation-controls-root");
 const legacyHierarchyRoot = document.getElementById("left_col_inner");
 const svgPreviewElement = document.getElementById("right_col_inner");
 const reactHierarchyIsEnabled = reactHierarchyRoot !== null;
@@ -565,6 +567,9 @@ if (reactEditorRoot !== null) {
             saveStatusStore,
             statusBarMountElement: reactStatusBarRoot,
             zoomTargetElement: svgPreviewElement,
+            situationPlanStore: globalThis.situationPlanStore,
+            situationPlanControlsMountElement: reactSituationControlsRoot,
+            onSituationPlanMutation: (historyKey) => globalThis.undostruct.store(historyKey),
         },
     );
 }
@@ -576,6 +581,11 @@ if (reactHierarchyIsEnabled) {
         saveStatusStore.refresh();
     });
 }
+globalThis.situationPlanStore.subscribe(() => {
+    if (globalThis.structure.properties.currentView === 'draw') {
+        globalThis.structure.sitplanview?.redraw();
+    }
+});
 // Filename edits and legacy-view mutations bypass the schema store; a coarse
 // timer keeps the React save status in sync with them.
 window.setInterval(() => saveStatusStore.refresh(), 2000);
@@ -633,5 +643,3 @@ let lastSavedInfo:any = null;
     }
     globalThis.autoSaver.start();
 });
-
-
