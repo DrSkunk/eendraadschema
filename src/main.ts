@@ -1,7 +1,7 @@
 import { TopMenu } from "./TopMenu";
 import type { MenuItem } from "./TopMenu";
 import { Hierarchical_List } from "./Hierarchical_List";
-import { showFilePage } from "./importExport/importExport";
+import { fileService, showFilePage } from "./importExport/importExport";
 import { EDStoStructure } from "./importExport/importExport";
 import { AutoSaver } from "./importExport/AutoSaver";
 import { showSituationPlanPage } from "./sitplan/SituationPlanView";
@@ -25,6 +25,7 @@ import { LegacySchemaStore } from "./application/LegacySchemaStore";
 import { LegacySaveStatusStore } from "./application/SaveStatusStore";
 import { LegacySituationPlanStore } from "./application/LegacySituationPlanStore";
 import { LocalWorkspaceStore } from "./application/WorkspaceStore";
+import { LegacyHistoryStatusStore } from "./application/HistoryStatusStore";
 import { mountEditorApp } from "./ui/mountEditorApp";
 
 import "../css/all.css";
@@ -342,6 +343,7 @@ globalThis.toggleAppView = (type: '2col' | 'config' | 'draw') => {
     const canvas_2col = document.getElementById("canvas_2col");
     const workspaceSidebar = document.getElementById("react-workspace-sidebar");
     const workspaceInspector = document.getElementById("properties_col");
+    const workspaceCommandBar = document.getElementById("react-workspace-commandbar-root");
     const left_col_inner = document.getElementById("left_col_inner");
     const EDSSVG = document.getElementById("EDSSVG");
 
@@ -356,6 +358,7 @@ globalThis.toggleAppView = (type: '2col' | 'config' | 'draw') => {
             canvas_2col.style.display = 'flex';
             workspaceSidebar?.classList.remove("hidden");
             workspaceInspector?.classList.remove("hidden");
+            workspaceCommandBar?.classList.remove("hidden");
             configsection.style.display = 'none';
             outerdiv.style.display = 'none';
 
@@ -377,6 +380,7 @@ globalThis.toggleAppView = (type: '2col' | 'config' | 'draw') => {
             ribbon.style.display = 'none';
             workspaceSidebar?.classList.add("hidden");
             workspaceInspector?.classList.add("hidden");
+            workspaceCommandBar?.classList.add("hidden");
 
             ribbon.innerHTML = ''; // Voor performance redenen
         }
@@ -400,6 +404,7 @@ globalThis.toggleAppView = (type: '2col' | 'config' | 'draw') => {
             canvas_2col.style.display = 'none';
             workspaceSidebar?.classList.remove("hidden");
             workspaceInspector?.classList.remove("hidden");
+            workspaceCommandBar?.classList.remove("hidden");
 
             configsection.innerHTML = "";
             left_col_inner.innerHTML = ''; // Voor performance redenen
@@ -470,6 +475,7 @@ container.innerHTML = `
     <div id="left-icons" class="left-icons"></div>
     <div id="right-icons" class="right-icons"></div>
 </div> <!-- Ribbon -->
+<div id="react-workspace-commandbar-root" class="fixed top-[calc(var(--react-shell-height)+var(--menu-height))] right-0 left-0 z-30 hidden h-[var(--ribbon-height)]"></div>
 <aside id="react-workspace-sidebar" class="fixed top-[var(--total-offset)] bottom-0 left-0 z-10 hidden w-80 overflow-auto border-r border-neutral-300 bg-white">
     <div id="react-hierarchy-root"></div>
 </aside>
@@ -483,9 +489,6 @@ container.innerHTML = `
     <div id="react-statusbar-root"></div>
 </div>
 <div id="outerdiv" class="!right-80 !left-80" style="display:none;"> <!-- Situatieschets -->
-    <div id="react-situation-controls-root"></div>
-    <div id="react-situation-zoom-root"></div>
-    <div id="react-situation-actions-root"></div>
     <div id="sidebar"></div>
     <div id="canvas">
     <div id="paper"></div>
@@ -556,9 +559,7 @@ const reactPropertiesRoot = document.getElementById("react-properties-root");
 const reactPropertiesColumn = document.getElementById("properties_col");
 const reactStatusBarRoot = document.getElementById("react-statusbar-root");
 const reactEditorCanvas = document.getElementById("canvas_2col");
-const reactSituationControlsRoot = document.getElementById("react-situation-controls-root");
-const reactSituationZoomRoot = document.getElementById("react-situation-zoom-root");
-const reactSituationActionsRoot = document.getElementById("react-situation-actions-root");
+const reactCommandBarRoot = document.getElementById("react-workspace-commandbar-root");
 const situationPaperElement = document.getElementById("paper");
 const legacyHierarchyRoot = document.getElementById("left_col_inner");
 const legacyHierarchyColumn = document.getElementById("left_col");
@@ -570,6 +571,10 @@ const saveStatusStore = new LegacySaveStatusStore(() => ({
     hasUnsavedChanges: globalThis.autoSaver !== undefined
         && globalThis.autoSaver.hasChangesSinceLastManualSave(),
     filename: globalThis.structure.properties.filename,
+}));
+const situationHistoryStore = new LegacyHistoryStatusStore(() => ({
+    canUndo: globalThis.undostruct.undoStackSize() > 0,
+    canRedo: globalThis.undostruct.redoStackSize() > 0,
 }));
 
 if (legacyHierarchyRoot !== null) legacyHierarchyRoot.hidden = true;
@@ -590,9 +595,10 @@ if (reactEditorRoot !== null) {
             statusBarMountElement: reactStatusBarRoot,
             zoomTargetElement: svgPreviewElement,
             situationPlanStore: globalThis.situationPlanStore,
-            situationPlanControlsMountElement: reactSituationControlsRoot,
-            onSituationPlanMutation: (historyKey) => globalThis.undostruct.store(historyKey),
-            situationPlanZoomMountElement: reactSituationZoomRoot,
+            onSituationPlanMutation: (historyKey) => {
+                globalThis.undostruct.store(historyKey);
+                situationHistoryStore.refresh();
+            },
             onSituationPlanZoomIn: () => {
                 globalThis.structure.sitplanview?.contextMenu?.hide();
                 globalThis.structure.sitplanview?.zoomIncrement(0.1);
@@ -605,13 +611,15 @@ if (reactEditorRoot !== null) {
                 globalThis.structure.sitplanview?.contextMenu?.hide();
                 globalThis.structure.sitplanview?.zoomToFit();
             },
-            situationPlanActionsMountElement: reactSituationActionsRoot,
             onSituationPlanDelete: () => {
                 const view = globalThis.structure.sitplanview;
                 if (!view || view.getSelectedBoxesOrdinals().length === 0) return;
                 view.contextMenu?.hide();
                 view.deleteSelectedBoxes();
                 globalThis.undostruct.store();
+                workspaceStore?.commands.selectSituationElement(null);
+                globalThis.situationPlanStore.synchronizeLegacyDocument(globalThis.structure);
+                situationHistoryStore.refresh();
             },
             onSituationPlanSendBackward: () => {
                 globalThis.structure.sitplanview?.contextMenu?.hide();
@@ -659,6 +667,24 @@ if (reactEditorRoot !== null) {
                 globalThis.structure.sitplanview?.selectOneBox(element.boxref);
             },
             situationPaperElement,
+            commandBarMountElement: reactCommandBarRoot,
+            situationHistoryStore,
+            onSituationUndo: () => {
+                globalThis.undoClicked();
+                situationHistoryStore.refresh();
+            },
+            onSituationRedo: () => {
+                globalThis.redoClicked();
+                situationHistoryStore.refresh();
+            },
+            onSave: () => {
+                fileService.saveDocument(false).catch((error) => {
+                    if ((error as { name?: string }).name !== "AbortError") console.error(error);
+                });
+            },
+            onOpenFile: showFilePage,
+            onImportSituationBackground: () => document.getElementById("button_Add")?.click(),
+            onAddCustomSituationSymbol: () => document.getElementById("button_Add_customItem")?.click(),
         },
     );
 }
@@ -677,7 +703,10 @@ globalThis.situationPlanStore.subscribe(() => {
 });
 // Filename edits and legacy-view mutations bypass the schema store; a coarse
 // timer keeps the React save status in sync with them.
-window.setInterval(() => saveStatusStore.refresh(), 2000);
+window.setInterval(() => {
+    saveStatusStore.refresh();
+    situationHistoryStore.refresh();
+}, 2000);
 
 // Create the autoSaver
 // - the constructor takes a function that points it to the latest globalThis.structure whenever it asks for it

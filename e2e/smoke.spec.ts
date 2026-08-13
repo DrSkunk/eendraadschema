@@ -124,29 +124,23 @@ test("situation plan React controls manage pages", async ({ page }) => {
   const helpDialogOk = page.getByRole("button", { name: "OK" });
   if (await helpDialogOk.isVisible()) await helpDialogOk.click();
 
-  const controls = page.getByRole("region", { name: "Situatieplan pagina's" });
-  const pageSelect = controls.getByLabel("Pagina", { exact: true });
+  const controls = page.getByRole("toolbar", { name: "Werkruimtecommando's" });
+  const pageSelect = controls.getByRole("combobox", { name: "Pagina" });
   await expect(pageSelect).toHaveValue("1");
 
-  const actionControls = page.getByRole("region", { name: "Situatieplan acties" });
-  await expect(actionControls.getByRole("button")).toHaveCount(3);
-  await expect(page.locator("#button_Delete:visible, #button_edit:visible, #sendBack:visible, #bringFront:visible")).toHaveCount(0);
-
-  const zoomControls = page.getByRole("region", { name: "Situatieplan zoom" });
-  await expect(page.locator("#button_zoomin:visible, #button_zoomout:visible, #button_zoomToFit:visible")).toHaveCount(0);
   const paper = page.locator("#paper");
   const fittedTransform = await paper.evaluate((element) => element.style.transform);
-  await zoomControls.getByRole("button", { name: "Inzoomen" }).click();
+  await controls.getByRole("button", { name: "Situatieschema inzoomen" }).click();
   await expect.poll(() => paper.evaluate((element) => element.style.transform)).not.toBe(fittedTransform);
-  await zoomControls.getByRole("button", { name: "Schermvullend" }).click();
+  await controls.getByRole("button", { name: "Passend" }).click();
   await expect.poll(() => paper.evaluate((element) => element.style.transform)).toBe(fittedTransform);
 
-  await controls.getByRole("button", { name: "Nieuw" }).click();
+  await controls.getByRole("button", { name: /^Pagina$/ }).click();
   await expect(pageSelect).toHaveValue("2");
   await expect(pageSelect.locator("option")).toHaveCount(2);
 
   await pageSelect.selectOption("1");
-  await expect(controls.getByRole("button", { name: "Nieuw" })).toBeDisabled();
+  await expect(controls.getByRole("button", { name: /^Pagina$/ })).toBeDisabled();
 
   await pageSelect.selectOption("2");
   page.once("dialog", (dialog) => dialog.accept());

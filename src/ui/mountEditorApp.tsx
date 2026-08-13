@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { EditorStore } from "../application/EditorStore";
 import type { SaveStatusStore } from "../application/SaveStatusStore";
+import type { HistoryStatusStore } from "../application/HistoryStatusStore";
 import type { SchemaStore } from "../application/SchemaStore";
 import type { SituationPlanStore } from "../application/SituationPlanStore";
 import type { WorkspaceStore, WorkspaceTab } from "../application/WorkspaceStore";
@@ -13,13 +14,10 @@ export interface EditorAppMountOptions {
   readonly statusBarMountElement?: HTMLElement | null;
   readonly zoomTargetElement?: HTMLElement | null;
   readonly situationPlanStore?: SituationPlanStore | null;
-  readonly situationPlanControlsMountElement?: HTMLElement | null;
   readonly onSituationPlanMutation?: (historyKey?: string) => void;
-  readonly situationPlanZoomMountElement?: HTMLElement | null;
   readonly onSituationPlanZoomIn?: () => void;
   readonly onSituationPlanZoomOut?: () => void;
   readonly onSituationPlanZoomToFit?: () => void;
-  readonly situationPlanActionsMountElement?: HTMLElement | null;
   readonly onSituationPlanDelete?: () => void;
   readonly onSituationPlanSendBackward?: () => void;
   readonly onSituationPlanBringForward?: () => void;
@@ -29,6 +27,14 @@ export interface EditorAppMountOptions {
   readonly onCreateSituationOccurrence?: (itemId: number) => void;
   readonly onRevealSituationOccurrence?: (occurrenceId: string) => void;
   readonly situationPaperElement?: HTMLElement | null;
+  readonly commandBarMountElement?: HTMLElement | null;
+  readonly situationHistoryStore?: HistoryStatusStore | null;
+  readonly onSituationUndo?: () => void;
+  readonly onSituationRedo?: () => void;
+  readonly onSave?: () => void;
+  readonly onOpenFile?: () => void;
+  readonly onImportSituationBackground?: () => void;
+  readonly onAddCustomSituationSymbol?: () => void;
 }
 
 export function mountEditorApp(
@@ -50,13 +56,10 @@ export function mountEditorApp(
         statusBarMountElement={options.statusBarMountElement ?? null}
         zoomTargetElement={options.zoomTargetElement ?? null}
         situationPlanStore={options.situationPlanStore ?? null}
-        situationPlanControlsMountElement={options.situationPlanControlsMountElement ?? null}
         onSituationPlanMutation={options.onSituationPlanMutation}
-        situationPlanZoomMountElement={options.situationPlanZoomMountElement ?? null}
         onSituationPlanZoomIn={options.onSituationPlanZoomIn}
         onSituationPlanZoomOut={options.onSituationPlanZoomOut}
         onSituationPlanZoomToFit={options.onSituationPlanZoomToFit}
-        situationPlanActionsMountElement={options.situationPlanActionsMountElement ?? null}
         onSituationPlanDelete={options.onSituationPlanDelete}
         onSituationPlanSendBackward={options.onSituationPlanSendBackward}
         onSituationPlanBringForward={options.onSituationPlanBringForward}
@@ -66,6 +69,14 @@ export function mountEditorApp(
         onCreateSituationOccurrence={options.onCreateSituationOccurrence}
         onRevealSituationOccurrence={options.onRevealSituationOccurrence}
         situationPaperElement={options.situationPaperElement ?? null}
+        commandBarMountElement={options.commandBarMountElement ?? null}
+        situationHistoryStore={options.situationHistoryStore ?? null}
+        onSituationUndo={options.onSituationUndo}
+        onSituationRedo={options.onSituationRedo}
+        onSave={options.onSave}
+        onOpenFile={options.onOpenFile}
+        onImportSituationBackground={options.onImportSituationBackground}
+        onAddCustomSituationSymbol={options.onAddCustomSituationSymbol}
       />
     </StrictMode>,
   );

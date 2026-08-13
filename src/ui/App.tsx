@@ -1,6 +1,7 @@
 import { createPortal } from "react-dom";
 import type { EditorStore } from "../application/EditorStore";
 import type { SaveStatusStore } from "../application/SaveStatusStore";
+import type { HistoryStatusStore } from "../application/HistoryStatusStore";
 import type { SchemaStore } from "../application/SchemaStore";
 import type { SituationPlanStore } from "../application/SituationPlanStore";
 import {
@@ -12,13 +13,11 @@ import { HierarchyTree } from "./hierarchy/HierarchyTree";
 import { StatusBar } from "./layout/StatusBar";
 import { ItemPropertiesPanel } from "./properties/ItemPropertiesPanel";
 import { useSchemaSnapshot } from "./useSchemaSnapshot";
-import { SituationPlanPageControls } from "./situation/SituationPlanPageControls";
-import { SituationPlanZoomControls } from "./situation/SituationPlanZoomControls";
-import { SituationPlanActionControls } from "./situation/SituationPlanActionControls";
 import { WorkspaceHeader } from "./workspace/WorkspaceHeader";
 import { SituationSelectionBridge } from "./workspace/SituationSelectionBridge";
 import { SituationElementInspector } from "./workspace/SituationElementInspector";
 import { useWorkspaceSnapshot } from "./useWorkspaceSnapshot";
+import { WorkspaceCommandBar } from "./workspace/WorkspaceCommandBar";
 import "./editor-shell.css";
 import "./hierarchy/hierarchy.css";
 import "./properties/properties.css";
@@ -32,13 +31,10 @@ export interface EditorAppProps {
   readonly statusBarMountElement?: HTMLElement | null;
   readonly zoomTargetElement?: HTMLElement | null;
   readonly situationPlanStore?: SituationPlanStore | null;
-  readonly situationPlanControlsMountElement?: HTMLElement | null;
   readonly onSituationPlanMutation?: (historyKey?: string) => void;
-  readonly situationPlanZoomMountElement?: HTMLElement | null;
   readonly onSituationPlanZoomIn?: () => void;
   readonly onSituationPlanZoomOut?: () => void;
   readonly onSituationPlanZoomToFit?: () => void;
-  readonly situationPlanActionsMountElement?: HTMLElement | null;
   readonly onSituationPlanDelete?: () => void;
   readonly onSituationPlanSendBackward?: () => void;
   readonly onSituationPlanBringForward?: () => void;
@@ -48,6 +44,14 @@ export interface EditorAppProps {
   readonly onCreateSituationOccurrence?: (itemId: number) => void;
   readonly onRevealSituationOccurrence?: (occurrenceId: string) => void;
   readonly situationPaperElement?: HTMLElement | null;
+  readonly commandBarMountElement?: HTMLElement | null;
+  readonly situationHistoryStore?: HistoryStatusStore | null;
+  readonly onSituationUndo?: () => void;
+  readonly onSituationRedo?: () => void;
+  readonly onSave?: () => void;
+  readonly onOpenFile?: () => void;
+  readonly onImportSituationBackground?: () => void;
+  readonly onAddCustomSituationSymbol?: () => void;
 }
 
 export function EditorApp({
@@ -59,13 +63,10 @@ export function EditorApp({
   statusBarMountElement = null,
   zoomTargetElement = null,
   situationPlanStore = null,
-  situationPlanControlsMountElement = null,
   onSituationPlanMutation = () => {},
-  situationPlanZoomMountElement = null,
   onSituationPlanZoomIn = () => {},
   onSituationPlanZoomOut = () => {},
   onSituationPlanZoomToFit = () => {},
-  situationPlanActionsMountElement = null,
   onSituationPlanDelete = () => {},
   onSituationPlanSendBackward = () => {},
   onSituationPlanBringForward = () => {},
@@ -75,6 +76,14 @@ export function EditorApp({
   onCreateSituationOccurrence = () => {},
   onRevealSituationOccurrence = () => {},
   situationPaperElement = null,
+  commandBarMountElement = null,
+  situationHistoryStore = null,
+  onSituationUndo = () => {},
+  onSituationRedo = () => {},
+  onSave = () => {},
+  onOpenFile = () => {},
+  onImportSituationBackground = () => {},
+  onAddCustomSituationSymbol = () => {},
 }: EditorAppProps) {
   const snapshot = useSchemaSnapshot(schemaStore);
   const workspace = useWorkspaceSnapshot(workspaceStore);
@@ -127,33 +136,30 @@ export function EditorApp({
             statusBarMountElement,
           )
         : null}
-      {situationPlanControlsMountElement && situationPlanStore
+      {commandBarMountElement && situationPlanStore && saveStatusStore && situationHistoryStore
         ? createPortal(
-            <SituationPlanPageControls
-              store={situationPlanStore}
-              onMutation={onSituationPlanMutation}
-            />,
-            situationPlanControlsMountElement,
-          )
-        : null}
-      {situationPlanZoomMountElement
-        ? createPortal(
-            <SituationPlanZoomControls
+            <WorkspaceCommandBar
+              schemaStore={schemaStore}
+              editorStore={editorStore}
+              situationPlanStore={situationPlanStore}
+              workspaceStore={workspaceStore}
+              saveStatusStore={saveStatusStore}
+              situationHistoryStore={situationHistoryStore}
+              onSituationMutation={onSituationPlanMutation}
+              onSituationUndo={onSituationUndo}
+              onSituationRedo={onSituationRedo}
+              onSave={onSave}
+              onOpenFile={onOpenFile}
+              onImportBackground={onImportSituationBackground}
+              onAddCustomSymbol={onAddCustomSituationSymbol}
+              onDeleteSelection={onSituationPlanDelete}
+              onSendBackward={onSituationPlanSendBackward}
+              onBringForward={onSituationPlanBringForward}
               onZoomIn={onSituationPlanZoomIn}
               onZoomOut={onSituationPlanZoomOut}
               onZoomToFit={onSituationPlanZoomToFit}
             />,
-            situationPlanZoomMountElement,
-          )
-        : null}
-      {situationPlanActionsMountElement
-        ? createPortal(
-            <SituationPlanActionControls
-              onDelete={onSituationPlanDelete}
-              onSendBackward={onSituationPlanSendBackward}
-              onBringForward={onSituationPlanBringForward}
-            />,
-            situationPlanActionsMountElement,
+            commandBarMountElement,
           )
         : null}
       <SituationSelectionBridge
