@@ -9,6 +9,7 @@ import { StatusBar } from "./layout/StatusBar";
 import { ItemPropertiesPanel } from "./properties/ItemPropertiesPanel";
 import { useSchemaSnapshot } from "./useSchemaSnapshot";
 import { SituationPlanPageControls } from "./situation/SituationPlanPageControls";
+import { SituationPlanZoomControls } from "./situation/SituationPlanZoomControls";
 import "./editor-shell.css";
 import "./hierarchy/hierarchy.css";
 import "./properties/properties.css";
@@ -24,6 +25,10 @@ export interface EditorAppProps {
   readonly situationPlanStore?: SituationPlanStore | null;
   readonly situationPlanControlsMountElement?: HTMLElement | null;
   readonly onSituationPlanMutation?: (historyKey?: string) => void;
+  readonly situationPlanZoomMountElement?: HTMLElement | null;
+  readonly onSituationPlanZoomIn?: () => void;
+  readonly onSituationPlanZoomOut?: () => void;
+  readonly onSituationPlanZoomToFit?: () => void;
 }
 
 export function EditorApp({
@@ -37,6 +42,10 @@ export function EditorApp({
   situationPlanStore = null,
   situationPlanControlsMountElement = null,
   onSituationPlanMutation = () => {},
+  situationPlanZoomMountElement = null,
+  onSituationPlanZoomIn = () => {},
+  onSituationPlanZoomOut = () => {},
+  onSituationPlanZoomToFit = () => {},
 }: EditorAppProps) {
   const snapshot = useSchemaSnapshot(schemaStore);
   const itemCount = snapshot.document
@@ -76,6 +85,16 @@ export function EditorApp({
               onMutation={onSituationPlanMutation}
             />,
             situationPlanControlsMountElement,
+          )
+        : null}
+      {situationPlanZoomMountElement
+        ? createPortal(
+            <SituationPlanZoomControls
+              onZoomIn={onSituationPlanZoomIn}
+              onZoomOut={onSituationPlanZoomOut}
+              onZoomToFit={onSituationPlanZoomToFit}
+            />,
+            situationPlanZoomMountElement,
           )
         : null}
     </>

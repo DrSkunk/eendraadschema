@@ -94,6 +94,15 @@ test("situation plan React controls manage pages", async ({ page }) => {
   const pageSelect = controls.getByLabel("Pagina", { exact: true });
   await expect(pageSelect).toHaveValue("1");
 
+  const zoomControls = page.getByRole("region", { name: "Situatieplan zoom" });
+  await expect(page.locator("#button_zoomin:visible, #button_zoomout:visible, #button_zoomToFit:visible")).toHaveCount(0);
+  const paper = page.locator("#paper");
+  const fittedTransform = await paper.evaluate((element) => element.style.transform);
+  await zoomControls.getByRole("button", { name: "Inzoomen" }).click();
+  await expect.poll(() => paper.evaluate((element) => element.style.transform)).not.toBe(fittedTransform);
+  await zoomControls.getByRole("button", { name: "Schermvullend" }).click();
+  await expect.poll(() => paper.evaluate((element) => element.style.transform)).toBe(fittedTransform);
+
   await controls.getByRole("button", { name: "Nieuw" }).click();
   await expect(pageSelect).toHaveValue("2");
   await expect(pageSelect.locator("option")).toHaveCount(2);

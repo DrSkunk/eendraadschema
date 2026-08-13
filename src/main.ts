@@ -473,6 +473,7 @@ container.innerHTML = `
 </div>
 <div id="outerdiv" style="display:none;"> <!-- Situatieschets -->
     <div id="react-situation-controls-root"></div>
+    <div id="react-situation-zoom-root"></div>
     <div id="sidebar"></div>
     <div id="canvas">
     <div id="paper"></div>
@@ -540,6 +541,7 @@ const reactPropertiesColumn = document.getElementById("properties_col");
 const reactStatusBarRoot = document.getElementById("react-statusbar-root");
 const reactEditorCanvas = document.getElementById("canvas_2col");
 const reactSituationControlsRoot = document.getElementById("react-situation-controls-root");
+const reactSituationZoomRoot = document.getElementById("react-situation-zoom-root");
 const legacyHierarchyRoot = document.getElementById("left_col_inner");
 const svgPreviewElement = document.getElementById("right_col_inner");
 const reactHierarchyIsEnabled = reactHierarchyRoot !== null;
@@ -570,6 +572,19 @@ if (reactEditorRoot !== null) {
             situationPlanStore: globalThis.situationPlanStore,
             situationPlanControlsMountElement: reactSituationControlsRoot,
             onSituationPlanMutation: (historyKey) => globalThis.undostruct.store(historyKey),
+            situationPlanZoomMountElement: reactSituationZoomRoot,
+            onSituationPlanZoomIn: () => {
+                globalThis.structure.sitplanview?.contextMenu?.hide();
+                globalThis.structure.sitplanview?.zoomIncrement(0.1);
+            },
+            onSituationPlanZoomOut: () => {
+                globalThis.structure.sitplanview?.contextMenu?.hide();
+                globalThis.structure.sitplanview?.zoomIncrement(-0.1);
+            },
+            onSituationPlanZoomToFit: () => {
+                globalThis.structure.sitplanview?.contextMenu?.hide();
+                globalThis.structure.sitplanview?.zoomToFit();
+            },
         },
     );
 }
