@@ -1,10 +1,11 @@
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LegacyHistoryStatusStore } from "../application/HistoryStatusStore";
 import { LocalEditorStore } from "../application/EditorStore";
 import { LegacySaveStatusStore } from "../application/SaveStatusStore";
 import { LegacySchemaStore } from "../application/LegacySchemaStore";
 import { LegacySituationPlanStore } from "../application/LegacySituationPlanStore";
+import type { SituationPlanAssetService } from "../application/SituationPlanAssetService";
 import { LocalWorkspaceStore } from "../application/WorkspaceStore";
 import { WorkspaceCommandBar } from "../ui/workspace/WorkspaceCommandBar";
 import { loadFixture } from "./helpers";
@@ -26,6 +27,19 @@ function renderCommandBar() {
   const workspaceStore = new LocalWorkspaceStore();
   const onSave = vi.fn();
   const onOpenFile = vi.fn();
+  const importBackground = vi.fn(async () => ({
+    elementId: "SP_background",
+    scaledToFit: false,
+    largeFile: false,
+  }));
+  const addSituationOnlySymbol = vi.fn(() => ({
+    elementId: "SP_symbol",
+    itemId: 42,
+  }));
+  const situationAssetService: SituationPlanAssetService = {
+    importBackground,
+    addSituationOnlySymbol,
+  };
   render(
     <WorkspaceCommandBar
       schemaStore={schemaStore}
@@ -45,8 +59,7 @@ function renderCommandBar() {
       onSituationRedo={() => {}}
       onSave={onSave}
       onOpenFile={onOpenFile}
-      onImportBackground={() => {}}
-      onAddCustomSymbol={() => {}}
+      situationAssetService={situationAssetService}
       onDeleteSelection={() => {}}
       onSendBackward={() => {}}
       onBringForward={() => {}}
@@ -55,7 +68,14 @@ function renderCommandBar() {
       onZoomToFit={() => {}}
     />,
   );
-  return { onOpenFile, onSave, situationPlanStore, workspaceStore };
+  return {
+    addSituationOnlySymbol,
+    importBackground,
+    onOpenFile,
+    onSave,
+    situationPlanStore,
+    workspaceStore,
+  };
 }
 
 describe("WorkspaceCommandBar", () => {
@@ -85,5 +105,39 @@ describe("WorkspaceCommandBar", () => {
     expect(screen.getByRole("button", { name: "Verwijder" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Naar achter" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Naar voor" })).toBeEnabled();
+  });
+
+  it("owns background selection and custom-symbol configuration in React", async () => {
+    const {
+      addSituationOnlySymbol,
+      importBackground,
+      workspaceStore,
+    } = renderCommandBar();
+    act(() => workspaceStore.commands.selectTab("situation"));
+
+    const file = new File(["image"], "plan.png", { type: "image/png" });
+    fireEvent.change(screen.getByLabelText("Kies een plattegrondbestand"), {
+      target: { files: [file] },
+    });
+    await waitFor(() => expect(importBackground).toHaveBeenCalledWith(file));
+    expect(workspaceStore.getSnapshot().selectedSituationElementId).toBe("SP_background");
+
+    fireEvent.click(screen.getByRole("button", { name: "Los symbool" }));
+    expect(screen.getByRole("dialog", { name: "Los symbool toevoegen" })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Schaal (%)"), { target: { value: "125" } });
+    fireEvent.change(screen.getByLabelText("Rotatie (°)"), { target: { value: "90" } });
+    fireEvent.click(screen.getByRole("checkbox"));
+    const dialog = screen.getByRole("dialog", { name: "Los symbool toevoegen" });
+    const form = dialog.querySelector("form");
+    if (!form) throw new Error("Custom-symbol form ontbreekt.");
+    fireEvent.submit(form);
+
+    await waitFor(() => expect(addSituationOnlySymbol).toHaveBeenCalledWith({
+        type: "Aardingsonderbreker",
+        scale: 1.25,
+        rotation: 90,
+        useScaleAsDefault: true,
+      }));
+    expect(workspaceStore.getSnapshot().selectedSituationElementId).toBe("SP_symbol");
   });
 });

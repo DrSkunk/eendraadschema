@@ -49,6 +49,7 @@ export interface UpdateDocumentDetailsChanges {
 
 export interface SchemaCommands {
   addItem(parentId: number | null, type: string): number;
+  addSituationOnlyItem(type: string): number;
   deleteItem(itemId: number): void;
   moveItem(itemId: number, options: MoveItemOptions): void;
   changeItemType(itemId: number, type: string): void;

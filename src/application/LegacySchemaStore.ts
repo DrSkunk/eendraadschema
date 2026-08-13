@@ -1,4 +1,4 @@
-import { Hierarchical_List } from "../Hierarchical_List";
+import { Hierarchical_List, PUBLIC_ELECTRO_ITEM_TYPES } from "../Hierarchical_List";
 import { Electro_Item } from "../List_Item/Electro_Item";
 import {
   boardConnectionCreatesCycle,
@@ -56,6 +56,7 @@ export class LegacySchemaStore implements SchemaStore {
     this.snapshot = this.createSnapshot();
     this.commands = Object.freeze({
       addItem: this.addItem.bind(this),
+      addSituationOnlyItem: this.addSituationOnlyItem.bind(this),
       deleteItem: this.deleteItem.bind(this),
       moveItem: this.moveItem.bind(this),
       changeItemType: this.changeItemType.bind(this),
@@ -122,6 +123,20 @@ export class LegacySchemaStore implements SchemaStore {
         this.structure.adjustTypeById(placeholder.id, type);
         item = this.requireItem(placeholder.id);
       }
+
+      return item.id;
+    });
+  }
+
+  private addSituationOnlyItem(type: string): number {
+    if (!PUBLIC_ELECTRO_ITEM_TYPES.includes(type)) {
+      throw new SchemaCommandError("INVALID_CHILD_TYPE", `Onbekend situatiesymbool '${type}'.`);
+    }
+
+    return this.commitTransaction(() => {
+      const container = this.structure.createContainerIfNotExists();
+      const item = this.structure.createItem(type);
+      this.structure.insertChildAfterId(item, container.id);
       return item.id;
     });
   }

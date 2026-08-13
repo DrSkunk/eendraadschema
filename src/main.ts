@@ -26,6 +26,7 @@ import { LegacySaveStatusStore } from "./application/SaveStatusStore";
 import { LegacySituationPlanStore } from "./application/LegacySituationPlanStore";
 import { LocalWorkspaceStore } from "./application/WorkspaceStore";
 import { LegacyHistoryStatusStore } from "./application/HistoryStatusStore";
+import { LegacySituationPlanAssetService } from "./application/LegacySituationPlanAssetService";
 import { mountEditorApp } from "./ui/mountEditorApp";
 
 import "../css/all.css";
@@ -576,6 +577,14 @@ const situationHistoryStore = new LegacyHistoryStatusStore(() => ({
     canUndo: globalThis.undostruct.undoStackSize() > 0,
     canRedo: globalThis.undostruct.redoStackSize() > 0,
 }));
+const situationPlanAssetService = situationPaperElement === null
+    ? null
+    : new LegacySituationPlanAssetService(
+        schemaStore,
+        globalThis.situationPlanStore,
+        situationPaperElement,
+        () => situationHistoryStore.refresh(),
+    );
 
 if (legacyHierarchyRoot !== null) legacyHierarchyRoot.hidden = true;
 if (legacyHierarchyColumn !== null) legacyHierarchyColumn.hidden = true;
@@ -683,8 +692,7 @@ if (reactEditorRoot !== null) {
                 });
             },
             onOpenFile: showFilePage,
-            onImportSituationBackground: () => document.getElementById("button_Add")?.click(),
-            onAddCustomSituationSymbol: () => document.getElementById("button_Add_customItem")?.click(),
+            situationPlanAssetService,
         },
     );
 }

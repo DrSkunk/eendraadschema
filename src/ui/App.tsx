@@ -4,6 +4,7 @@ import type { SaveStatusStore } from "../application/SaveStatusStore";
 import type { HistoryStatusStore } from "../application/HistoryStatusStore";
 import type { SchemaStore } from "../application/SchemaStore";
 import type { SituationPlanStore } from "../application/SituationPlanStore";
+import type { SituationPlanAssetService } from "../application/SituationPlanAssetService";
 import {
   LocalWorkspaceStore,
   type WorkspaceStore,
@@ -50,8 +51,7 @@ export interface EditorAppProps {
   readonly onSituationRedo?: () => void;
   readonly onSave?: () => void;
   readonly onOpenFile?: () => void;
-  readonly onImportSituationBackground?: () => void;
-  readonly onAddCustomSituationSymbol?: () => void;
+  readonly situationPlanAssetService?: SituationPlanAssetService | null;
 }
 
 export function EditorApp({
@@ -82,8 +82,7 @@ export function EditorApp({
   onSituationRedo = () => {},
   onSave = () => {},
   onOpenFile = () => {},
-  onImportSituationBackground = () => {},
-  onAddCustomSituationSymbol = () => {},
+  situationPlanAssetService = null,
 }: EditorAppProps) {
   const snapshot = useSchemaSnapshot(schemaStore);
   const workspace = useWorkspaceSnapshot(workspaceStore);
@@ -136,7 +135,11 @@ export function EditorApp({
             statusBarMountElement,
           )
         : null}
-      {commandBarMountElement && situationPlanStore && saveStatusStore && situationHistoryStore
+      {commandBarMountElement
+        && situationPlanStore
+        && situationPlanAssetService
+        && saveStatusStore
+        && situationHistoryStore
         ? createPortal(
             <WorkspaceCommandBar
               schemaStore={schemaStore}
@@ -150,8 +153,7 @@ export function EditorApp({
               onSituationRedo={onSituationRedo}
               onSave={onSave}
               onOpenFile={onOpenFile}
-              onImportBackground={onImportSituationBackground}
-              onAddCustomSymbol={onAddCustomSituationSymbol}
+              situationAssetService={situationPlanAssetService}
               onDeleteSelection={onSituationPlanDelete}
               onSendBackward={onSituationPlanSendBackward}
               onBringForward={onSituationPlanBringForward}

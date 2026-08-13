@@ -129,6 +129,19 @@ test("situation plan React controls manage pages", async ({ page }) => {
   await expect(pageSelect).toHaveValue("1");
 
   const paper = page.locator("#paper");
+  const initialElementCount = await paper.locator(".box").count();
+  await controls.getByLabel("Kies een plattegrondbestand").setInputFiles("css/bg.jpg");
+  await expect(paper.locator(".box")).toHaveCount(initialElementCount + 1);
+  await expect(controls.getByRole("status")).toContainText("plattegrond is toegevoegd");
+
+  await controls.getByRole("button", { name: "Los symbool" }).click();
+  const symbolDialog = page.getByRole("dialog", { name: "Los symbool toevoegen" });
+  await symbolDialog.getByLabel("Schaal (%)").fill("125");
+  await symbolDialog.getByLabel("Rotatie (°)").fill("90");
+  await symbolDialog.getByRole("button", { name: "Toevoegen" }).click();
+  await expect(symbolDialog).toBeHidden();
+  await expect(paper.locator(".box")).toHaveCount(initialElementCount + 2);
+
   const fittedTransform = await paper.evaluate((element) => element.style.transform);
   await controls.getByRole("button", { name: "Situatieschema inzoomen" }).click();
   await expect.poll(() => paper.evaluate((element) => element.style.transform)).not.toBe(fittedTransform);

@@ -5,6 +5,7 @@ import type { SaveStatusStore } from "../application/SaveStatusStore";
 import type { HistoryStatusStore } from "../application/HistoryStatusStore";
 import type { SchemaStore } from "../application/SchemaStore";
 import type { SituationPlanStore } from "../application/SituationPlanStore";
+import type { SituationPlanAssetService } from "../application/SituationPlanAssetService";
 import type { WorkspaceStore, WorkspaceTab } from "../application/WorkspaceStore";
 import { EditorApp } from "./App";
 
@@ -33,8 +34,7 @@ export interface EditorAppMountOptions {
   readonly onSituationRedo?: () => void;
   readonly onSave?: () => void;
   readonly onOpenFile?: () => void;
-  readonly onImportSituationBackground?: () => void;
-  readonly onAddCustomSituationSymbol?: () => void;
+  readonly situationPlanAssetService?: SituationPlanAssetService | null;
 }
 
 export function mountEditorApp(
@@ -75,8 +75,7 @@ export function mountEditorApp(
         onSituationRedo={options.onSituationRedo}
         onSave={options.onSave}
         onOpenFile={options.onOpenFile}
-        onImportSituationBackground={options.onImportSituationBackground}
-        onAddCustomSituationSymbol={options.onAddCustomSituationSymbol}
+        situationPlanAssetService={options.situationPlanAssetService ?? null}
       />
     </StrictMode>,
   );

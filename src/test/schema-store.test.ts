@@ -52,6 +52,21 @@ describe("LegacySchemaStore", () => {
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
+  it("adds situation-only symbols beneath the hidden document container", () => {
+    const { store } = createStore();
+
+    const symbolId = store.commands.addSituationOnlyItem("Aardingsonderbreker");
+    const symbol = store.getLegacyDocument().getElectroItemById(symbolId);
+    const container = store.getLegacyDocument().getElectroItemById(symbol?.parent ?? -1);
+
+    expect(symbol?.getType()).toBe("Aardingsonderbreker");
+    expect(container?.getType()).toBe("Container");
+    expect(store.getSnapshot().canUndo).toBe(true);
+    expect(() => store.commands.addSituationOnlyItem("Onbekend")).toThrowError(
+      expect.objectContaining({ code: "INVALID_CHILD_TYPE" }),
+    );
+  });
+
   it("updates properties and changes type through the legacy domain factory", () => {
     const { store, boardId } = createStore();
     const circuitId = store.commands.addItem(boardId, "Kring");

@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { useRef, useState, useSyncExternalStore, type ChangeEvent } from "react";
 import type { EditorStore } from "../../application/EditorStore";
 import type {
   HistoryStatusSnapshot,
@@ -10,10 +10,15 @@ import type {
 } from "../../application/SaveStatusStore";
 import type { SchemaStore } from "../../application/SchemaStore";
 import type { SituationPlanStore } from "../../application/SituationPlanStore";
+import type {
+  AddSituationSymbolOptions,
+  SituationPlanAssetService,
+} from "../../application/SituationPlanAssetService";
 import type { WorkspaceStore } from "../../application/WorkspaceStore";
 import { useSchemaSnapshot } from "../useSchemaSnapshot";
 import { useSituationPlanSnapshot } from "../useSituationPlanSnapshot";
 import { useWorkspaceSnapshot } from "../useWorkspaceSnapshot";
+import { CustomSituationSymbolDialog } from "./CustomSituationSymbolDialog";
 
 interface WorkspaceCommandBarProps {
   readonly schemaStore: SchemaStore;
@@ -27,8 +32,7 @@ interface WorkspaceCommandBarProps {
   readonly onSituationRedo: () => void;
   readonly onSave: () => void;
   readonly onOpenFile: () => void;
-  readonly onImportBackground: () => void;
-  readonly onAddCustomSymbol: () => void;
+  readonly situationAssetService: SituationPlanAssetService;
   readonly onDeleteSelection: () => void;
   readonly onSendBackward: () => void;
   readonly onBringForward: () => void;
@@ -49,8 +53,7 @@ export function WorkspaceCommandBar({
   onSituationRedo,
   onSave,
   onOpenFile,
-  onImportBackground,
-  onAddCustomSymbol,
+  situationAssetService,
   onDeleteSelection,
   onSendBackward,
   onBringForward,
@@ -58,6 +61,11 @@ export function WorkspaceCommandBar({
   onZoomOut,
   onZoomToFit,
 }: WorkspaceCommandBarProps) {
+  const backgroundInput = useRef<HTMLInputElement>(null);
+  const [showCustomSymbolDialog, setShowCustomSymbolDialog] = useState(false);
+  const [assetMessage, setAssetMessage] = useState("");
+  const [assetError, setAssetError] = useState("");
+  const [importingBackground, setImportingBackground] = useState(false);
   const schema = useSchemaSnapshot(schemaStore);
   const situation = useSituationPlanSnapshot(situationPlanStore);
   const workspace = useWorkspaceSnapshot(workspaceStore);
@@ -119,6 +127,42 @@ export function WorkspaceCommandBar({
     onSituationMutation();
   }
 
+  async function importBackground(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setImportingBackground(true);
+    setAssetError("");
+    setAssetMessage("");
+    try {
+      const result = await situationAssetService.importBackground(file);
+      workspaceStore.commands.selectSituationElement(result.elementId);
+      setAssetMessage(result.largeFile
+        ? "De plattegrond is toegevoegd. Het grote bestand kan opslaan en afdrukken vertragen."
+        : result.scaledToFit
+          ? "De plattegrond is toegevoegd en passend verkleind."
+          : "De plattegrond is toegevoegd.");
+    } catch (error) {
+      setAssetError(error instanceof Error ? error.message : "De plattegrond kon niet worden toegevoegd.");
+    } finally {
+      setImportingBackground(false);
+    }
+  }
+
+  function addCustomSymbol(options: AddSituationSymbolOptions) {
+    setAssetError("");
+    setAssetMessage("");
+    try {
+      const result = situationAssetService.addSituationOnlySymbol(options);
+      editorStore.commands.selectItem(result.itemId);
+      workspaceStore.commands.selectSituationElement(result.elementId);
+      setShowCustomSymbolDialog(false);
+      setAssetMessage("Het losse symbool is toegevoegd.");
+    } catch (error) {
+      setAssetError(error instanceof Error ? error.message : "Het symbool kon niet worden toegevoegd.");
+    }
+  }
+
   const buttonClass = [
     "flex min-w-16 flex-col items-center justify-center gap-0.5 rounded px-2 py-1 text-xs font-semibold",
     "text-neutral-700 hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-40",
@@ -150,11 +194,31 @@ export function WorkspaceCommandBar({
         {inSituation ? (
           <>
             <span className={separatorClass} />
-            <button type="button" className={buttonClass} onClick={onImportBackground}>
+            <input
+              ref={backgroundInput}
+              className="sr-only"
+              type="file"
+              accept="image/*"
+              aria-label="Kies een plattegrondbestand"
+              onChange={importBackground}
+            />
+            <button
+              type="button"
+              className={buttonClass}
+              disabled={importingBackground}
+              onClick={() => backgroundInput.current?.click()}
+            >
               <span className="text-xl leading-none" aria-hidden="true">🖼</span>
-              Plattegrond
+              {importingBackground ? "Laden…" : "Plattegrond"}
             </button>
-            <button type="button" className={buttonClass} onClick={onAddCustomSymbol}>
+            <button
+              type="button"
+              className={buttonClass}
+              onClick={() => {
+                setAssetError("");
+                setShowCustomSymbolDialog(true);
+              }}
+            >
               <span className="text-xl leading-none" aria-hidden="true">＋</span>
               Los symbool
             </button>
@@ -236,6 +300,20 @@ export function WorkspaceCommandBar({
             In
           </button>
         </div>
+      ) : null}
+      {assetMessage ? (
+        <p className="sr-only" role="status">{assetMessage}</p>
+      ) : null}
+      {assetError ? (
+        <p className="sr-only" role="alert">{assetError}</p>
+      ) : null}
+      {showCustomSymbolDialog ? (
+        <CustomSituationSymbolDialog
+          defaultScale={situation.defaults.scale}
+          errorMessage={assetError}
+          onCancel={() => setShowCustomSymbolDialog(false)}
+          onSubmit={addCustomSymbol}
+        />
       ) : null}
     </div>
   );
