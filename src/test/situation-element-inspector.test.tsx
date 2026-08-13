@@ -29,6 +29,22 @@ function createInspectorState() {
   return { element, situationPlanStore, workspaceStore };
 }
 
+function createMultiInspectorState() {
+  const structure = loadFixture("example001.eds");
+  globalThis.structure = structure;
+  const first = new SituationPlanElement();
+  const second = new SituationPlanElement();
+  first.posx = 20;
+  second.posx = 60;
+  structure.sitplan.addElement(first);
+  structure.sitplan.addElement(second);
+  const situationPlanStore = new LegacySituationPlanStore(structure);
+  const workspaceStore = new LocalWorkspaceStore();
+  workspaceStore.commands.selectTab("situation");
+  workspaceStore.commands.selectSituationElements([first.id, second.id], second.id);
+  return { first, second, situationPlanStore, workspaceStore };
+}
+
 describe("SituationElementInspector", () => {
   it("edits placement geometry and lock state through store commands", () => {
     const { element, situationPlanStore, workspaceStore } = createInspectorState();
@@ -65,5 +81,37 @@ describe("SituationElementInspector", () => {
     );
 
     expect(screen.getByText(/Selecteer een symbool/)).toBeInTheDocument();
+  });
+
+  it("batch-edits a multi-selection with one recorded mutation", () => {
+    const {
+      first,
+      second,
+      situationPlanStore,
+      workspaceStore,
+    } = createMultiInspectorState();
+    const onMutation = vi.fn();
+    render(
+      <SituationElementInspector
+        situationPlanStore={situationPlanStore}
+        workspaceStore={workspaceStore}
+        onMutation={onMutation}
+      />,
+    );
+
+    expect(screen.getByRole("heading", { name: "2 plaatsingen geselecteerd" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Selectie naar rechts" }));
+    fireEvent.click(screen.getByRole("button", { name: "+90° draaien" }));
+
+    const elements = situationPlanStore.getSnapshot().elements;
+    expect(elements.find(element => element.id === first.id)).toMatchObject({
+      position: { x: 30, y: 0 },
+      rotation: 90,
+    });
+    expect(elements.find(element => element.id === second.id)).toMatchObject({
+      position: { x: 70, y: 0 },
+      rotation: 90,
+    });
+    expect(onMutation).toHaveBeenCalledTimes(2);
   });
 });

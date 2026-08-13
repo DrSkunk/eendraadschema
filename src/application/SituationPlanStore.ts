@@ -13,6 +13,11 @@ export interface SituationPlanElementChanges {
   readonly movable?: boolean;
 }
 
+export interface SituationPlanElementUpdate {
+  readonly elementId: string;
+  readonly changes: SituationPlanElementChanges;
+}
+
 export interface SituationPlanElementSnapshot {
   readonly id: string;
   readonly page: number;
@@ -44,6 +49,7 @@ export interface SituationPlanCommands {
   deletePage(page: number): void;
   updateDefaults(changes: Partial<SituationPlanDefaults>): void;
   updateElement(elementId: string, changes: SituationPlanElementChanges): void;
+  updateElements(updates: readonly SituationPlanElementUpdate[]): void;
 }
 
 export interface SituationPlanStore {

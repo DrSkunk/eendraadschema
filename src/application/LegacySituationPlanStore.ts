@@ -5,6 +5,7 @@ import {
   SituationPlanCommandError,
   type SituationPlanCommands,
   type SituationPlanElementChanges,
+  type SituationPlanElementUpdate,
   type SituationPlanElementSnapshot,
   type SituationPlanSnapshot,
   type SituationPlanStore,
@@ -34,6 +35,7 @@ export class LegacySituationPlanStore implements SituationPlanStore {
       deletePage: this.deletePage.bind(this),
       updateDefaults: this.updateDefaults.bind(this),
       updateElement: this.updateElement.bind(this),
+      updateElements: this.updateElements.bind(this),
     });
   }
 
@@ -101,6 +103,31 @@ export class LegacySituationPlanStore implements SituationPlanStore {
   }
 
   private updateElement(elementId: string, changes: SituationPlanElementChanges): void {
+    this.updateElements([{ elementId, changes }]);
+  }
+
+  private updateElements(updates: readonly SituationPlanElementUpdate[]): void {
+    const elementIds = new Set<string>();
+    const prepared = updates.map(({ elementId, changes }) => {
+      if (elementIds.has(elementId)) {
+        throw new SituationPlanCommandError(
+          "INVALID_ELEMENT_CHANGE",
+          `Plaatsing '${elementId}' komt meer dan eenmaal voor in dezelfde wijziging.`,
+        );
+      }
+      elementIds.add(elementId);
+      return this.prepareElementUpdate(elementId, changes);
+    }).filter(update => update.changed);
+    if (prepared.length === 0) return;
+
+    this.commit(() => {
+      for (const update of prepared) {
+        this.applyElementChanges(update.element, update.serialized, update.changes);
+      }
+    });
+  }
+
+  private prepareElementUpdate(elementId: string, changes: SituationPlanElementChanges) {
     const element = this.plan.getElements().find(candidate => candidate.id === elementId);
     if (!element) {
       throw new SituationPlanCommandError(
@@ -140,40 +167,44 @@ export class LegacySituationPlanStore implements SituationPlanStore {
       || (changes.scale !== undefined && changes.scale !== serialized.scale)
       || (changes.movable !== undefined && changes.movable !== serialized.movable)
     );
-    if (!changed) return;
+    return { changed, changes, element, serialized };
+  }
 
-    this.commit(() => {
-      if (changes.page !== undefined) element.page = changes.page;
-      if (changes.position !== undefined) {
-        element.posx = changes.position.x;
-        element.posy = changes.position.y;
-      }
-      if (changes.labelFontSize !== undefined) element.labelfontsize = changes.labelFontSize;
-      if (
-        changes.addressType !== undefined
-        || changes.address !== undefined
-        || changes.addressLocation !== undefined
-      ) {
-        const addressType = changes.addressType ?? (serialized.adrestype === "manueel" ? "manueel" : "auto");
-        const addressLocation = changes.addressLocation ?? (
-          serialized.adreslocation === "links"
-            ? "links"
-            : serialized.adreslocation === "boven"
-              ? "boven"
-              : serialized.adreslocation === "onder"
-                ? "onder"
-                : "rechts"
-        );
-        element.setAdres(
-          addressType,
-          changes.address ?? serialized.adres ?? "",
-          addressLocation,
-        );
-      }
-      if (changes.rotation !== undefined) element.rotate = changes.rotation;
-      if (changes.scale !== undefined) element.setscale(changes.scale);
-      if (changes.movable !== undefined) element.movable = changes.movable;
-    });
+  private applyElementChanges(
+    element: SituationPlanElement,
+    serialized: ReturnType<SituationPlanElement["toJsonObject"]>,
+    changes: SituationPlanElementChanges,
+  ): void {
+    if (changes.page !== undefined) element.page = changes.page;
+    if (changes.position !== undefined) {
+      element.posx = changes.position.x;
+      element.posy = changes.position.y;
+    }
+    if (changes.labelFontSize !== undefined) element.labelfontsize = changes.labelFontSize;
+    if (
+      changes.addressType !== undefined
+      || changes.address !== undefined
+      || changes.addressLocation !== undefined
+    ) {
+      const addressType = changes.addressType ?? (serialized.adrestype === "manueel" ? "manueel" : "auto");
+      const addressLocation = changes.addressLocation ?? (
+        serialized.adreslocation === "links"
+          ? "links"
+          : serialized.adreslocation === "boven"
+            ? "boven"
+            : serialized.adreslocation === "onder"
+              ? "onder"
+              : "rechts"
+      );
+      element.setAdres(
+        addressType,
+        changes.address ?? serialized.adres ?? "",
+        addressLocation,
+      );
+    }
+    if (changes.rotation !== undefined) element.rotate = changes.rotation;
+    if (changes.scale !== undefined) element.setscale(changes.scale);
+    if (changes.movable !== undefined) element.movable = changes.movable;
   }
 
   private assertPage(page: number): void {

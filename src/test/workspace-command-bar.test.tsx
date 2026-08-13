@@ -27,6 +27,8 @@ function renderCommandBar() {
   const workspaceStore = new LocalWorkspaceStore();
   const onSave = vi.fn();
   const onOpenFile = vi.fn();
+  const onSelectAll = vi.fn();
+  const onClearSelection = vi.fn();
   const importBackground = vi.fn(async () => ({
     elementId: "SP_background",
     scaledToFit: false,
@@ -61,6 +63,8 @@ function renderCommandBar() {
       onOpenFile={onOpenFile}
       situationAssetService={situationAssetService}
       onDeleteSelection={() => {}}
+      onSelectAll={onSelectAll}
+      onClearSelection={onClearSelection}
       onSendBackward={() => {}}
       onBringForward={() => {}}
       onZoomIn={() => {}}
@@ -72,6 +76,8 @@ function renderCommandBar() {
     addSituationOnlySymbol,
     importBackground,
     onOpenFile,
+    onSelectAll,
+    onClearSelection,
     onSave,
     situationPlanStore,
     workspaceStore,
@@ -96,7 +102,7 @@ describe("WorkspaceCommandBar", () => {
   });
 
   it("enables placement actions when the workspace has a selection", () => {
-    const { workspaceStore } = renderCommandBar();
+    const { onClearSelection, onSelectAll, workspaceStore } = renderCommandBar();
     act(() => {
       workspaceStore.commands.selectTab("situation");
       workspaceStore.commands.selectSituationElement("SP_selected");
@@ -105,6 +111,11 @@ describe("WorkspaceCommandBar", () => {
     expect(screen.getByRole("button", { name: "Verwijder" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Naar achter" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Naar voor" })).toBeEnabled();
+    expect(screen.getByRole("status")).toHaveTextContent("1 geselecteerd");
+    fireEvent.click(screen.getByRole("button", { name: "Alle symbolen op pagina selecteren" }));
+    fireEvent.click(screen.getByRole("button", { name: "Selectie wissen" }));
+    expect(onSelectAll).toHaveBeenCalledOnce();
+    expect(onClearSelection).toHaveBeenCalledOnce();
   });
 
   it("owns background selection and custom-symbol configuration in React", async () => {

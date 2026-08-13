@@ -3,11 +3,13 @@ export type WorkspaceTab = "schema" | "situation";
 export interface WorkspaceSnapshot {
   readonly activeTab: WorkspaceTab;
   readonly selectedSituationElementId: string | null;
+  readonly selectedSituationElementIds: readonly string[];
 }
 
 export interface WorkspaceCommands {
   selectTab(tab: WorkspaceTab): void;
   selectSituationElement(elementId: string | null): void;
+  selectSituationElements(elementIds: readonly string[], primaryElementId?: string | null): void;
 }
 
 export interface WorkspaceStore {
@@ -20,11 +22,13 @@ export class LocalWorkspaceStore implements WorkspaceStore {
   private readonly listeners = new Set<() => void>();
   private activeTab: WorkspaceTab = "schema";
   private selectedSituationElementId: string | null = null;
+  private selectedSituationElementIds: readonly string[] = Object.freeze([]);
   private snapshot = this.createSnapshot();
 
   readonly commands: WorkspaceCommands = Object.freeze({
     selectTab: this.selectTab.bind(this),
     selectSituationElement: this.selectSituationElement.bind(this),
+    selectSituationElements: this.selectSituationElements.bind(this),
   });
 
   getSnapshot(): WorkspaceSnapshot {
@@ -44,8 +48,24 @@ export class LocalWorkspaceStore implements WorkspaceStore {
   }
 
   private selectSituationElement(elementId: string | null): void {
-    if (elementId === this.selectedSituationElementId) return;
-    this.selectedSituationElementId = elementId;
+    this.selectSituationElements(elementId === null ? [] : [elementId], elementId);
+  }
+
+  private selectSituationElements(
+    elementIds: readonly string[],
+    primaryElementId: string | null = null,
+  ): void {
+    const uniqueIds = [...new Set(elementIds.filter(id => id.length > 0))];
+    const primary = primaryElementId !== null && uniqueIds.includes(primaryElementId)
+      ? primaryElementId
+      : uniqueIds[uniqueIds.length - 1] ?? null;
+    if (
+      primary === this.selectedSituationElementId
+      && uniqueIds.length === this.selectedSituationElementIds.length
+      && uniqueIds.every((id, index) => id === this.selectedSituationElementIds[index])
+    ) return;
+    this.selectedSituationElementId = primary;
+    this.selectedSituationElementIds = Object.freeze(uniqueIds);
     this.snapshot = this.createSnapshot();
     for (const listener of this.listeners) listener();
   }
@@ -54,6 +74,7 @@ export class LocalWorkspaceStore implements WorkspaceStore {
     return Object.freeze({
       activeTab: this.activeTab,
       selectedSituationElementId: this.selectedSituationElementId,
+      selectedSituationElementIds: this.selectedSituationElementIds,
     });
   }
 }

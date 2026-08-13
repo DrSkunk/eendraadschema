@@ -630,6 +630,19 @@ if (reactEditorRoot !== null) {
                 globalThis.situationPlanStore.synchronizeLegacyDocument(globalThis.structure);
                 situationHistoryStore.refresh();
             },
+            onSituationPlanSelectAll: () => {
+                const view = globalThis.structure.sitplanview;
+                if (!view) return;
+                view.clearSelection();
+                const activePage = globalThis.structure.sitplan.getActivePage();
+                for (const element of globalThis.structure.sitplan.getElements()) {
+                    if (element.page === activePage) view.selectBox(element.boxref);
+                }
+            },
+            onSituationPlanClearSelection: () => {
+                globalThis.structure.sitplanview?.clearSelection();
+                workspaceStore?.commands.selectSituationElement(null);
+            },
             onSituationPlanSendBackward: () => {
                 globalThis.structure.sitplanview?.contextMenu?.hide();
                 globalThis.structure.sitplanview?.sendToBack();

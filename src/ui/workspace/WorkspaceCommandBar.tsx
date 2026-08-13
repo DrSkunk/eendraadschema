@@ -34,6 +34,8 @@ interface WorkspaceCommandBarProps {
   readonly onOpenFile: () => void;
   readonly situationAssetService: SituationPlanAssetService;
   readonly onDeleteSelection: () => void;
+  readonly onSelectAll: () => void;
+  readonly onClearSelection: () => void;
   readonly onSendBackward: () => void;
   readonly onBringForward: () => void;
   readonly onZoomIn: () => void;
@@ -55,6 +57,8 @@ export function WorkspaceCommandBar({
   onOpenFile,
   situationAssetService,
   onDeleteSelection,
+  onSelectAll,
+  onClearSelection,
   onSendBackward,
   onBringForward,
   onZoomIn,
@@ -82,7 +86,7 @@ export function WorkspaceCommandBar({
   const inSituation = workspace.activeTab === "situation";
   const canUndo = inSituation ? situationHistory.canUndo : schema.canUndo;
   const canRedo = inSituation ? situationHistory.canRedo : schema.canRedo;
-  const hasSituationSelection = workspace.selectedSituationElementId !== null;
+  const hasSituationSelection = workspace.selectedSituationElementIds.length > 0;
 
   function undo() {
     if (inSituation) onSituationUndo();
@@ -109,6 +113,7 @@ export function WorkspaceCommandBar({
   function selectPage(page: number) {
     if (page === situation.activePage) return;
     situationPlanStore.commands.selectPage(page);
+    workspaceStore.commands.selectSituationElement(null);
     onSituationMutation("changePage");
   }
 
@@ -225,6 +230,25 @@ export function WorkspaceCommandBar({
             <button
               type="button"
               className={buttonClass}
+              onClick={onSelectAll}
+              aria-label="Alle symbolen op pagina selecteren"
+            >
+              <span className="text-xl leading-none" aria-hidden="true">▣</span>
+              Alles
+            </button>
+            <button
+              type="button"
+              className={buttonClass}
+              disabled={!hasSituationSelection}
+              onClick={onClearSelection}
+              aria-label="Selectie wissen"
+            >
+              <span className="text-xl leading-none" aria-hidden="true">□</span>
+              Wis
+            </button>
+            <button
+              type="button"
+              className={buttonClass}
               disabled={!hasSituationSelection}
               onClick={onDeleteSelection}
             >
@@ -250,6 +274,11 @@ export function WorkspaceCommandBar({
               Naar voor
             </button>
           </>
+        ) : null}
+        {inSituation && hasSituationSelection ? (
+          <span className="self-center rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-800" role="status">
+            {workspace.selectedSituationElementIds.length} geselecteerd
+          </span>
         ) : null}
       </div>
 

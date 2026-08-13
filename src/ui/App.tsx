@@ -37,6 +37,8 @@ export interface EditorAppProps {
   readonly onSituationPlanZoomOut?: () => void;
   readonly onSituationPlanZoomToFit?: () => void;
   readonly onSituationPlanDelete?: () => void;
+  readonly onSituationPlanSelectAll?: () => void;
+  readonly onSituationPlanClearSelection?: () => void;
   readonly onSituationPlanSendBackward?: () => void;
   readonly onSituationPlanBringForward?: () => void;
   readonly workspaceStore?: WorkspaceStore;
@@ -68,6 +70,8 @@ export function EditorApp({
   onSituationPlanZoomOut = () => {},
   onSituationPlanZoomToFit = () => {},
   onSituationPlanDelete = () => {},
+  onSituationPlanSelectAll = () => {},
+  onSituationPlanClearSelection = () => {},
   onSituationPlanSendBackward = () => {},
   onSituationPlanBringForward = () => {},
   workspaceStore = defaultWorkspaceStore,
@@ -155,6 +159,8 @@ export function EditorApp({
               onOpenFile={onOpenFile}
               situationAssetService={situationPlanAssetService}
               onDeleteSelection={onSituationPlanDelete}
+              onSelectAll={onSituationPlanSelectAll}
+              onClearSelection={onSituationPlanClearSelection}
               onSendBackward={onSituationPlanSendBackward}
               onBringForward={onSituationPlanBringForward}
               onZoomIn={onSituationPlanZoomIn}

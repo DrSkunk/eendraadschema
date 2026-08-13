@@ -26,7 +26,7 @@ describe("SituationSelectionBridge", () => {
     const child = document.createElement("span");
     const element = new SituationPlanElement();
     element.setElectroItemId(42);
-    box.className = "box";
+    box.className = "box selected";
     box.sitPlanElementRef = element;
     box.append(child);
     paper.append(box);
@@ -44,5 +44,42 @@ describe("SituationSelectionBridge", () => {
     fireEvent.mouseDown(child);
     expect(editorStore.getSnapshot().selectedItemId).toBe(42);
     expect(workspaceStore.getSnapshot().selectedSituationElementId).toBe(element.id);
+  });
+
+  it("mirrors all selected canvas boxes while retaining the clicked box as primary", () => {
+    const paper = document.createElement("div");
+    const firstElement = new SituationPlanElement();
+    firstElement.setElectroItemId(41);
+    const secondElement = new SituationPlanElement();
+    secondElement.setElectroItemId(42);
+    const firstBox = document.createElement("div") as HTMLDivElement & {
+      sitPlanElementRef?: SituationPlanElement;
+    };
+    const secondBox = document.createElement("div") as HTMLDivElement & {
+      sitPlanElementRef?: SituationPlanElement;
+    };
+    firstBox.className = "box selected";
+    secondBox.className = "box selected";
+    firstBox.sitPlanElementRef = firstElement;
+    secondBox.sitPlanElementRef = secondElement;
+    paper.append(firstBox, secondBox);
+
+    const editorStore = new LocalEditorStore();
+    const workspaceStore = new LocalWorkspaceStore();
+    render(
+      <SituationSelectionBridge
+        paperElement={paper}
+        editorStore={editorStore}
+        workspaceStore={workspaceStore}
+      />,
+    );
+
+    fireEvent.mouseDown(secondBox, { shiftKey: true });
+
+    expect(workspaceStore.getSnapshot()).toMatchObject({
+      selectedSituationElementId: secondElement.id,
+      selectedSituationElementIds: [firstElement.id, secondElement.id],
+    });
+    expect(editorStore.getSnapshot().selectedItemId).toBe(42);
   });
 });

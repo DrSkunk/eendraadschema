@@ -145,4 +145,32 @@ describe("LegacySituationPlanStore", () => {
     );
     expect(store.getSnapshot().revision).toBe(revision);
   });
+
+  it("validates and publishes multi-placement changes atomically", () => {
+    const { structure, mutationCommitted, store } = createStore();
+    const first = new SituationPlanElement();
+    const second = new SituationPlanElement();
+    first.posx = 10;
+    second.posx = 20;
+    structure.sitplan.addElement(first);
+    structure.sitplan.addElement(second);
+    store.synchronizeLegacyDocument();
+    mutationCommitted.mockClear();
+
+    store.commands.updateElements([
+      { elementId: first.id, changes: { position: { x: 15, y: 0 } } },
+      { elementId: second.id, changes: { position: { x: 25, y: 0 } } },
+    ]);
+
+    expect(store.getSnapshot().elements.map(element => element.position.x)).toEqual([15, 25]);
+    expect(mutationCommitted).toHaveBeenCalledOnce();
+
+    expect(() => store.commands.updateElements([
+      { elementId: first.id, changes: { rotation: 90 } },
+      { elementId: second.id, changes: { scale: 0 } },
+    ])).toThrowError(expect.objectContaining<Partial<SituationPlanCommandError>>({
+      code: "INVALID_ELEMENT_CHANGE",
+    }));
+    expect(store.getSnapshot().elements[0].rotation).toBe(0);
+  });
 });

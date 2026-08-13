@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type {
   SituationPlanElementChanges,
   SituationPlanElementSnapshot,
+  SituationPlanElementUpdate,
   SituationPlanStore,
 } from "../../application/SituationPlanStore";
 import type { WorkspaceStore } from "../../application/WorkspaceStore";
@@ -42,6 +43,130 @@ function createDraft(element: SituationPlanElementSnapshot): PlacementDraft {
   };
 }
 
+interface MultiPlacementInspectorProps {
+  readonly elements: readonly SituationPlanElementSnapshot[];
+  readonly pageCount: number;
+  readonly situationPlanStore: SituationPlanStore;
+  readonly onMutation: () => void;
+}
+
+function MultiPlacementInspector({
+  elements,
+  pageCount,
+  situationPlanStore,
+  onMutation,
+}: MultiPlacementInspectorProps) {
+  const [error, setError] = useState("");
+  const [scalePercent, setScalePercent] = useState("");
+  const inputClass = "w-full rounded border border-neutral-300 bg-white px-2 py-1.5 text-sm focus:border-blue-700 focus:outline-none";
+  const actionClass = "rounded border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50";
+
+  function updateAll(changesFor: (element: SituationPlanElementSnapshot) => SituationPlanElementChanges) {
+    const updates: SituationPlanElementUpdate[] = elements.map(element => ({
+      elementId: element.id,
+      changes: changesFor(element),
+    }));
+    try {
+      situationPlanStore.commands.updateElements(updates);
+      onMutation();
+      setError("");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "De plaatsingen konden niet worden aangepast.");
+    }
+  }
+
+  function applyScale() {
+    const value = Number(scalePercent);
+    if (!Number.isFinite(value) || value <= 0) {
+      setError("Vul een positieve schaal in.");
+      return;
+    }
+    updateAll(() => ({ scale: value / 100 }));
+    setScalePercent("");
+  }
+
+  return (
+    <section className="p-4" aria-label="Eigenschappen van situatiesymbolen">
+      <p className="m-0 text-xs tracking-wide text-neutral-500 uppercase">Situatieschema</p>
+      <h2 className="my-1 text-lg font-semibold">{elements.length} plaatsingen geselecteerd</h2>
+      <p className="mt-1 text-sm text-neutral-600">
+        Gebruik Shift-klik op het canvas om symbolen aan de selectie toe te voegen of eruit te verwijderen.
+      </p>
+      {error ? <p className="rounded bg-red-50 p-2 text-sm text-red-800" role="alert">{error}</p> : null}
+
+      <fieldset className="mt-4 border-0 border-t border-neutral-200 p-0 pt-4">
+        <legend className="text-sm font-semibold">Verplaatsen</legend>
+        <div className="mt-2 grid grid-cols-3 gap-2">
+          <span />
+          <button type="button" className={actionClass} aria-label="Selectie omhoog" onClick={() => updateAll(element => ({
+            position: { x: element.position.x, y: element.position.y - 10 },
+          }))}>↑</button>
+          <span />
+          <button type="button" className={actionClass} aria-label="Selectie naar links" onClick={() => updateAll(element => ({
+            position: { x: element.position.x - 10, y: element.position.y },
+          }))}>←</button>
+          <button type="button" className={actionClass} aria-label="Selectie omlaag" onClick={() => updateAll(element => ({
+            position: { x: element.position.x, y: element.position.y + 10 },
+          }))}>↓</button>
+          <button type="button" className={actionClass} aria-label="Selectie naar rechts" onClick={() => updateAll(element => ({
+            position: { x: element.position.x + 10, y: element.position.y },
+          }))}>→</button>
+        </div>
+      </fieldset>
+
+      <fieldset className="mt-4 border-0 border-t border-neutral-200 p-0 pt-4">
+        <legend className="text-sm font-semibold">Gedeelde eigenschappen</legend>
+        <label className="mt-2 grid gap-1 text-xs font-semibold text-neutral-600">
+          Pagina
+          <select
+            className={inputClass}
+            defaultValue=""
+            onChange={(event) => {
+              if (event.target.value) updateAll(() => ({ page: Number(event.target.value) }));
+              event.target.value = "";
+            }}
+          >
+            <option value="">Ongewijzigd</option>
+            {Array.from({ length: pageCount }, (_, index) => index + 1).map(page => (
+              <option key={page} value={page}>{page}</option>
+            ))}
+          </select>
+        </label>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <button type="button" className={actionClass} onClick={() => updateAll(element => ({
+            rotation: element.rotation - 90,
+          }))}>−90° draaien</button>
+          <button type="button" className={actionClass} onClick={() => updateAll(element => ({
+            rotation: element.rotation + 90,
+          }))}>+90° draaien</button>
+        </div>
+        <div className="mt-3 flex items-end gap-2">
+          <label className="grid flex-1 gap-1 text-xs font-semibold text-neutral-600">
+            Schaal (%)
+            <input
+              className={inputClass}
+              type="number"
+              min="1"
+              value={scalePercent}
+              placeholder="Ongewijzigd"
+              onChange={event => setScalePercent(event.target.value)}
+            />
+          </label>
+          <button type="button" className={actionClass} onClick={applyScale}>Toepassen</button>
+        </div>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <button type="button" className={actionClass} onClick={() => updateAll(() => ({ movable: false }))}>
+            Vergrendelen
+          </button>
+          <button type="button" className={actionClass} onClick={() => updateAll(() => ({ movable: true }))}>
+            Ontgrendelen
+          </button>
+        </div>
+      </fieldset>
+    </section>
+  );
+}
+
 export function SituationElementInspector({
   situationPlanStore,
   workspaceStore,
@@ -49,6 +174,8 @@ export function SituationElementInspector({
 }: SituationElementInspectorProps) {
   const situation = useSituationPlanSnapshot(situationPlanStore);
   const workspace = useWorkspaceSnapshot(workspaceStore);
+  const selectedElementIds = new Set(workspace.selectedSituationElementIds);
+  const selectedElements = situation.elements.filter(candidate => selectedElementIds.has(candidate.id));
   const element = situation.elements.find(
     candidate => candidate.id === workspace.selectedSituationElementId,
   );
@@ -61,6 +188,17 @@ export function SituationElementInspector({
     setDraft(element ? createDraft(element) : null);
     setError("");
   }, [element]);
+
+  if (selectedElements.length > 1) {
+    return (
+      <MultiPlacementInspector
+        elements={selectedElements}
+        pageCount={situation.pageCount}
+        situationPlanStore={situationPlanStore}
+        onMutation={onMutation}
+      />
+    );
+  }
 
   if (!element || !draft) {
     return (

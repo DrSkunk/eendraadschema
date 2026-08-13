@@ -21,18 +21,46 @@ export function SituationSelectionBridge({
   useEffect(() => {
     if (!paperElement) return;
 
+    const syncSelection = (preferredBox: SituationBoxElement | null = null) => {
+      const selectedBoxes = Array.from(
+        paperElement.querySelectorAll<SituationBoxElement>(".box.selected"),
+      );
+      if (selectedBoxes.length === 0 && preferredBox?.sitPlanElementRef) {
+        selectedBoxes.push(preferredBox);
+      }
+      const elementIds = selectedBoxes
+        .map(box => box.sitPlanElementRef?.id)
+        .filter((id): id is string => id !== undefined);
+      const currentPrimary = workspaceStore.getSnapshot().selectedSituationElementId;
+      const primaryElementId = preferredBox?.sitPlanElementRef?.id
+        ?? (currentPrimary !== null && elementIds.includes(currentPrimary) ? currentPrimary : null);
+      workspaceStore.commands.selectSituationElements(elementIds, primaryElementId);
+
+      const primary = selectedBoxes.find(box => box.sitPlanElementRef?.id
+        === workspaceStore.getSnapshot().selectedSituationElementId);
+      const itemId = primary?.sitPlanElementRef?.getElectroItemId() ?? null;
+      if (itemId !== null) editorStore.commands.selectItem(itemId);
+    };
+
     const selectLinkedElectricalItem = (event: Event) => {
       const target = event.target;
       if (!(target instanceof Element)) return;
       const box = target.closest(".box") as SituationBoxElement | null;
-      const itemId = box?.sitPlanElementRef?.getElectroItemId() ?? null;
-      workspaceStore.commands.selectSituationElement(box?.sitPlanElementRef?.id ?? null);
-      if (itemId !== null) editorStore.commands.selectItem(itemId);
+      syncSelection(box);
+      queueMicrotask(() => syncSelection());
     };
+    const observer = new MutationObserver(() => syncSelection());
+    observer.observe(paperElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+      childList: true,
+      subtree: true,
+    });
     paperElement.addEventListener("mousedown", selectLinkedElectricalItem);
     paperElement.addEventListener("touchstart", selectLinkedElectricalItem);
 
     return () => {
+      observer.disconnect();
       paperElement.removeEventListener("mousedown", selectLinkedElectricalItem);
       paperElement.removeEventListener("touchstart", selectLinkedElectricalItem);
     };
