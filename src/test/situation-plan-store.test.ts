@@ -1,0 +1,107 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { LegacySituationPlanStore } from "../application/LegacySituationPlanStore";
+import { SituationPlanCommandError } from "../application/SituationPlanStore";
+import { SituationPlanElement } from "../sitplan/SituationPlanElement";
+import { loadFixture } from "./helpers";
+
+beforeEach(() => {
+  globalThis.SITPLANVIEW_DEFAULT_SCALE = 1;
+});
+
+function createStore() {
+  const structure = loadFixture("example001.eds");
+  globalThis.structure = structure;
+  const mutationCommitted = vi.fn();
+  return {
+    structure,
+    mutationCommitted,
+    store: new LegacySituationPlanStore(structure, mutationCommitted),
+  };
+}
+
+describe("LegacySituationPlanStore", () => {
+  it("exposes an immutable, DOM-independent snapshot", () => {
+    const { structure, store } = createStore();
+    const element = new SituationPlanElement();
+    element.page = 1;
+    element.posx = 25;
+    element.posy = 40;
+    element.boxref = document.createElement("div");
+    element.boxlabelref = document.createElement("div");
+    structure.sitplan.addElement(element);
+    store.synchronizeLegacyDocument();
+
+    const snapshot = store.getSnapshot();
+    expect(snapshot.elements[0]).toMatchObject({
+      id: element.id,
+      page: 1,
+      position: { x: 25, y: 40 },
+    });
+    expect(snapshot.elements[0]).not.toHaveProperty("boxref");
+    expect(snapshot.elements[0]).not.toHaveProperty("boxlabelref");
+    expect(Object.isFrozen(snapshot)).toBe(true);
+    expect(Object.isFrozen(snapshot.elements)).toBe(true);
+    expect(Object.isFrozen(snapshot.elements[0].position)).toBe(true);
+  });
+
+  it("only publishes legacy synchronization when document state changed", () => {
+    const { structure, store } = createStore();
+    const listener = vi.fn();
+    store.subscribe(listener);
+
+    store.synchronizeLegacyDocument();
+    structure.sitplan.addPage();
+    store.synchronizeLegacyDocument();
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(store.getSnapshot()).toMatchObject({ revision: 1, pageCount: 2 });
+  });
+
+  it("publishes validated page commands and records mutations", () => {
+    const { mutationCommitted, store } = createStore();
+    const listener = vi.fn();
+    store.subscribe(listener);
+
+    expect(store.commands.addPage()).toBe(2);
+    expect(store.getSnapshot()).toMatchObject({ revision: 1, pageCount: 2, activePage: 2 });
+
+    store.commands.selectPage(1);
+    store.commands.deletePage(2);
+
+    expect(store.getSnapshot()).toMatchObject({ revision: 3, pageCount: 1, activePage: 1 });
+    expect(listener).toHaveBeenCalledTimes(3);
+    expect(mutationCommitted).toHaveBeenCalledTimes(3);
+  });
+
+  it("rejects invalid pages and defaults without publishing", () => {
+    const { mutationCommitted, store } = createStore();
+    const listener = vi.fn();
+    store.subscribe(listener);
+
+    expect(() => store.commands.selectPage(2)).toThrowError(
+      expect.objectContaining<Partial<SituationPlanCommandError>>({ code: "INVALID_PAGE" }),
+    );
+    expect(() => store.commands.deletePage(1)).toThrowError(
+      expect.objectContaining<Partial<SituationPlanCommandError>>({ code: "LAST_PAGE" }),
+    );
+    expect(() => store.commands.updateDefaults({ scale: 0 })).toThrowError(
+      expect.objectContaining<Partial<SituationPlanCommandError>>({ code: "INVALID_DEFAULT" }),
+    );
+
+    expect(store.getSnapshot().revision).toBe(0);
+    expect(listener).not.toHaveBeenCalled();
+    expect(mutationCommitted).not.toHaveBeenCalled();
+  });
+
+  it("updates defaults and ignores no-op commands", () => {
+    const { mutationCommitted, store } = createStore();
+
+    store.commands.updateDefaults({ fontsize: 14, scale: 0.8 });
+    store.commands.updateDefaults({ fontsize: 14 });
+    store.commands.selectPage(1);
+
+    expect(store.getSnapshot().defaults).toEqual({ fontsize: 14, scale: 0.8, rotate: 0 });
+    expect(store.getSnapshot().revision).toBe(1);
+    expect(mutationCommitted).toHaveBeenCalledTimes(1);
+  });
+});

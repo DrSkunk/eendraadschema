@@ -23,6 +23,7 @@ import { changelog } from "./changelog";
 import { LocalEditorStore } from "./application/EditorStore";
 import { LegacySchemaStore } from "./application/LegacySchemaStore";
 import { LegacySaveStatusStore } from "./application/SaveStatusStore";
+import { LegacySituationPlanStore } from "./application/LegacySituationPlanStore";
 import { mountEditorApp } from "./ui/mountEditorApp";
 
 import "../css/all.css";
@@ -57,6 +58,7 @@ globalThis.historyCanRedo = () => schemaCommandHistoryIsActive()
 
 function synchronizeSchemaStoreWithLegacyDocument(): void {
     schemaStore?.synchronizeLegacyDocument(globalThis.structure);
+    globalThis.situationPlanStore?.synchronizeLegacyDocument(globalThis.structure);
     if (schemaStore !== null && editorStore !== null) {
         editorStore.commands.reconcileItemIds(new Set(
             schemaStore.getSnapshot().document.getAllItems().map((item) => item.id),
@@ -528,6 +530,7 @@ globalThis.topMenu = new TopMenu('minitabs', 'menu-item', menuItems);
 EDStoStructure(globalThis.EXAMPLE_DEFAULT,false); //Just in case the user doesn't select a scheme and goes to drawing immediately, there should be something there
 
 schemaStore = new LegacySchemaStore(globalThis.structure);
+globalThis.situationPlanStore = new LegacySituationPlanStore(globalThis.structure);
 editorStore = new LocalEditorStore();
 const reactEditorRoot = document.getElementById("react-editor-root");
 const reactHierarchyRoot = document.getElementById("react-hierarchy-root");
@@ -630,6 +633,5 @@ let lastSavedInfo:any = null;
     }
     globalThis.autoSaver.start();
 });
-
 
 

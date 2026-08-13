@@ -129,7 +129,7 @@ export class SituationPlanView_ChooseCustomElementPopup {
             if (!(isNumeric(rotationInput.value))) rotationInput.value = String(0);
             
             if (setDefaultCheckbox.checked) {
-                globalThis.structure.sitplan.updateDefaults({ scale: Number(scaleInput.value)/100 });
+                globalThis.situationPlanStore.commands.updateDefaults({ scale: Number(scaleInput.value)/100 });
             }
             const selectedType = itemTypeSelect.value;
             closePopup();

@@ -4,6 +4,7 @@ import { importExportUsingFileAPI } from "./importExport/importExport";
 import { Hierarchical_List } from "./Hierarchical_List";
 import { TopMenu } from "./TopMenu";
 import { AutoSaver } from "./importExport/AutoSaver";
+import { LegacySituationPlanStore } from "./application/LegacySituationPlanStore";
 
 declare global {
     
@@ -14,6 +15,7 @@ declare global {
         structure: Hierarchical_List;
         topMenu: TopMenu;
         autoSaver: AutoSaver;
+        situationPlanStore: LegacySituationPlanStore;
         CONFIGPAGE_LEFT: string;
         CONFIGPAGE_RIGHT: string;
         SITPLANVIEW_SELECT_PADDING: number;

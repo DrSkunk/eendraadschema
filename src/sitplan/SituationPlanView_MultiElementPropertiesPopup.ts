@@ -166,8 +166,8 @@ export function SituationPlanView_MultiElementPropertiesPopup(sitplanElements: S
         if (isNumeric(rotationInput.value)) rotation = Number(rotationInput.value);
         
         if (setDefaultCheckbox.checked) {
-            if (fontSize != null) globalThis.structure.sitplan.updateDefaults({ fontsize: Number(fontSizeInput.value) });
-            if (scale != null) globalThis.structure.sitplan.updateDefaults({ scale: Number(scaleInput.value)/100 });
+            if (fontSize != null) globalThis.situationPlanStore.commands.updateDefaults({ fontsize: Number(fontSizeInput.value) });
+            if (scale != null) globalThis.situationPlanStore.commands.updateDefaults({ scale: Number(scaleInput.value)/100 });
         }
 
         closePopup(); // We close the popup first to avoid that an error somewhere leaves it open

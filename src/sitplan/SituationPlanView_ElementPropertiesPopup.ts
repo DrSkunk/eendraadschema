@@ -481,8 +481,8 @@ export function SituationPlanView_ElementPropertiesPopup(sitplanElement: Situati
         
         if (setDefaultCheckbox.checked) {
             if ( (sitplanElement == null) || ( (sitplanElement != null) && (sitplanElement.getElectroItemId() != null) ) )
-                globalThis.structure.sitplan.updateDefaults({ fontsize: Number(fontSizeInput.value) });
-            globalThis.structure.sitplan.updateDefaults({ scale: Number(scaleInput.value)/100 });
+                globalThis.situationPlanStore.commands.updateDefaults({ fontsize: Number(fontSizeInput.value) });
+            globalThis.situationPlanStore.commands.updateDefaults({ scale: Number(scaleInput.value)/100 });
         }
         closePopup(); // We close the popup first to avoid that an error somewhere leaves it open
         callbackOK(returnId, selectAdresType.value, adresInput.value, selectAdresLocation.value, Number(fontSizeInput.value), Number(scaleInput.value)/100, Number(rotationInput.value));

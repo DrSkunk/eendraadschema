@@ -51,6 +51,7 @@ React must never mutate `Hierarchical_List.data` or an item `props` bag directly
 - The item factory uses `ELECTRO_ITEM_CONSTRUCTORS`/`PUBLIC_ELECTRO_ITEM_TYPES` in `src/Hierarchical_List.ts` as the single type registry; the property-editor coverage test derives its type list from it.
 - React property editors subscribe through `useSchemaSnapshot`; the board settings form remounts when the stored board values change so undo/redo resets its drafts.
 - Situation-plan page state and defaults are encapsulated by `SituationPlan`; the legacy view now uses typed document operations instead of directly mutating its element array, page count or defaults.
+- `LegacySituationPlanStore` exposes immutable, DOM-independent situation-plan snapshots and validated page/default commands. The legacy view receives this store, its page/default controls use commands, and legacy document replacement refreshes the adapter.
 
 ## Important domain invariants
 
@@ -96,7 +97,7 @@ npm run build
 git diff --check
 ```
 
-Baseline on 13 August 2026: 29 test files and 261 tests passed. The Vite build still reports expected warnings for non-module Pako/jsPDF/property scripts; it completes successfully.
+Baseline on 13 August 2026: 30 test files and 266 tests passed. The Vite build still reports expected warnings for non-module Pako/jsPDF/property scripts; it completes successfully.
 
 Playwright end-to-end smoke tests exist in `e2e/smoke.spec.ts` (`npm run test:e2e`, config in `playwright.config.ts`, starts the Vite dev server itself). They cover: example loading into the React editor with live SVG, circuit property editing with SVG update and undo/redo, editor search reveal, secondary-board creation/breadcrumbs/deletion, status-bar zoom, and the print page through the print adapter. The first run exposed a real layout bug — the legacy top menu was hidden underneath the ribbon because the legacy absolute offsets did not account for the React shell header; fixed with `--react-shell-height` in `css/styles.css`.
 
@@ -120,7 +121,7 @@ Earlier React/property-editor commits immediately precede these in branch histor
 1. Done: editor search (`HierarchySearch` reveals results across boards via `EditorCommands.revealItem`), board breadcrumbs (`BoardBreadcrumbs` renders the feeder chain), save status and zoom (React `StatusBar` at the bottom of the one-line editor; `LegacySaveStatusStore` adapts `AutoSaver` state and is refreshed from schema commands, the autosave callback and a coarse timer; zoom is editor-only state applied as CSS `zoom` on the legacy SVG container). `src/main.ts` is now fully LF with trailing whitespace stripped — keep it that way.
 2. Done: `LegacyPrintService` (`src/application/PrintService.ts`) is the React-facing print adapter — layout computation, preview state, display-page clamping, per-page preview SVG (EDS crop or situation-plan page) and PDF generation with explicit parameters. The imperative print page (`src/print/print.ts`) now routes its logic through it while emitting identical DOM; a future React print UI should consume the same `printService` instance exported there. `Print_Table.canPrint()` still reads `globalThis.structure` internally. SVG, pagination and jsPDF generation are unchanged.
 3. Done: `LegacyFileService` (`src/application/FileService.ts`) is the React-facing open/save adapter — file state, File System Access open, save/save-as with forced picker when no handle exists, download fallback, manual-autosave bookkeeping, and the deployment upload hook. EDS encoding moved into `encodeEds` in `EdsCodec` (compression with TXT fallback). `exportjson`/`loadClicked` delegate to the shared `fileService` instance; a dismissed file picker no longer logs an error and no longer triggers the export upload hook. The imperative file page (`showFilePage`) still renders its own HTML.
-4. In progress: situation-plan document state is split from `SituationPlanView`. Next introduce a React-facing situation-plan store/command boundary, then migrate the ribbon and page controls before the canvas interactions.
+4. In progress: situation-plan document state and its React-facing store/command boundary are split from `SituationPlanView`. Next migrate the ribbon and page controls to React before the canvas interactions.
 5. Remove remaining inline handlers only after their React or DOM-listener replacements are tested. Remaining imperative HTML belongs mainly to file/configuration, print and situation-plan screens.
 6. Perform manual browser smoke tests with current and old EDS fixtures, a main/garage board document, save/reload, undo/redo, SVG download and PDF print.
 

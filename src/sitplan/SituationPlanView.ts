@@ -14,6 +14,7 @@ import { Dialog } from "../documentation/Dialog";
 import { SituationPlanView_ElementPropertiesPopup } from "./SituationPlanView_ElementPropertiesPopup";
 import { SituationPlanView_MultiElementPropertiesPopup } from "./SituationPlanView_MultiElementPropertiesPopup";
 import { AskLegacySchakelaar } from "../importExport/AskLegacySchakelaar";
+import type { LegacySituationPlanStore } from "../application/LegacySituationPlanStore";
 
 enum MovableType { Movable, NotMovable, Mixed, Undefined };
 
@@ -47,15 +48,17 @@ export class SituationPlanView {
     private mousedrag: MouseDrag; /** behandelt het verslepen van een box */
 
     private sitplan: SituationPlan;
+    private sitplanStore: LegacySituationPlanStore;
 
     private event_manager;
 
-    constructor(canvas: HTMLElement, paper: HTMLElement, sitplan: SituationPlan) {
+    constructor(canvas: HTMLElement, paper: HTMLElement, sitplanStore: LegacySituationPlanStore) {
         this.canvas = canvas;
         this.paper = paper;
         this.contextMenu = new ContextMenu();
 
-        this.sitplan = sitplan;
+        this.sitplanStore = sitplanStore;
+        this.sitplan = sitplanStore.getLegacyDocument().sitplan;
         this.paper.style.transformOrigin = 'top left'; // Keep the origin point consistent when scaling
 
         this.mousedrag = new MouseDrag();
@@ -965,7 +968,7 @@ export class SituationPlanView {
      * @param page - Het nummer van de pagina die getoond moet worden.
      */
     selectPage(page: number) {
-        this.sitplan.setActivePage(page);
+        this.sitplanStore.commands.selectPage(page);
         this.redraw();
     }
 
@@ -1638,7 +1641,8 @@ export class SituationPlanView {
 
         document.getElementById('btn_sitplan_addpage')!.onclick = () => {
             this.contextMenu.hide();
-            this.selectPage(this.sitplan.addPage());
+            const page = this.sitplanStore.commands.addPage();
+            this.selectPage(page);
             globalThis.undostruct.store();
         };
 
@@ -1648,7 +1652,7 @@ export class SituationPlanView {
                 [
                     {
                         text: 'OK', callback: (() => {
-                            this.sitplan.deletePage(this.sitplan.getActivePage());
+                            this.sitplanStore.commands.deletePage(this.sitplan.getActivePage());
                             this.selectPage(this.sitplan.getActivePage());
                             globalThis.undostruct.store();
                         }).bind(this)
@@ -1701,7 +1705,7 @@ export function showSituationPlanPage() {
         globalThis.structure.sitplanview = new SituationPlanView(
             document.getElementById('canvas'),
             document.getElementById('paper'),
-            globalThis.structure.sitplan);
+            globalThis.situationPlanStore);
 
         globalThis.structure.sitplanview.zoomToFit();
     };
