@@ -1,15 +1,3 @@
-#react-situation-controls-root {
-  align-items: center;
-  display: flex;
-  height: var(--ribbon-height);
-  justify-content: center;
-  left: 50%;
-  position: fixed;
-  top: calc(var(--react-shell-height) + var(--menu-height));
-  transform: translateX(-50%);
-  z-index: 2;
-}
-
 #react-situation-zoom-root {
   align-items: center;
   display: flex;
@@ -24,38 +12,6 @@
 #button_zoomout,
 #button_zoomToFit {
   display: none;
-}
-
-.situation-plan-page-controls {
-  align-items: center;
-  background: #f8f8f8;
-  display: grid;
-  gap: 0.25rem;
-  grid-template-columns: auto auto;
-  padding: 0.25rem 0.75rem;
-}
-
-.situation-plan-page-controls label {
-  font-size: 0.875rem;
-  text-align: right;
-}
-
-.situation-plan-page-controls select {
-  min-width: 4rem;
-}
-
-.situation-plan-page-controls button {
-  min-height: 1.5rem;
-}
-
-.situation-plan-page-controls .situation-plan-delete-page {
-  background-color: #c62828;
-  color: white;
-}
-
-.situation-plan-page-controls .situation-plan-delete-page:disabled {
-  background-color: #ddd;
-  color: #777;
 }
 
 .situation-plan-zoom-controls {

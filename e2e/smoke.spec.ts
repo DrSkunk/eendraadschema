@@ -94,6 +94,10 @@ test("situation plan React controls manage pages", async ({ page }) => {
   const pageSelect = controls.getByLabel("Pagina", { exact: true });
   await expect(pageSelect).toHaveValue("1");
 
+  const actionControls = page.getByRole("region", { name: "Situatieplan acties" });
+  await expect(actionControls.getByRole("button")).toHaveCount(4);
+  await expect(page.locator("#button_Delete:visible, #button_edit:visible, #sendBack:visible, #bringFront:visible")).toHaveCount(0);
+
   const zoomControls = page.getByRole("region", { name: "Situatieplan zoom" });
   await expect(page.locator("#button_zoomin:visible, #button_zoomout:visible, #button_zoomToFit:visible")).toHaveCount(0);
   const paper = page.locator("#paper");

@@ -10,6 +10,7 @@ import { ItemPropertiesPanel } from "./properties/ItemPropertiesPanel";
 import { useSchemaSnapshot } from "./useSchemaSnapshot";
 import { SituationPlanPageControls } from "./situation/SituationPlanPageControls";
 import { SituationPlanZoomControls } from "./situation/SituationPlanZoomControls";
+import { SituationPlanActionControls } from "./situation/SituationPlanActionControls";
 import "./editor-shell.css";
 import "./hierarchy/hierarchy.css";
 import "./properties/properties.css";
@@ -29,6 +30,11 @@ export interface EditorAppProps {
   readonly onSituationPlanZoomIn?: () => void;
   readonly onSituationPlanZoomOut?: () => void;
   readonly onSituationPlanZoomToFit?: () => void;
+  readonly situationPlanActionsMountElement?: HTMLElement | null;
+  readonly onSituationPlanDelete?: () => void;
+  readonly onSituationPlanEdit?: () => void;
+  readonly onSituationPlanSendBackward?: () => void;
+  readonly onSituationPlanBringForward?: () => void;
 }
 
 export function EditorApp({
@@ -46,6 +52,11 @@ export function EditorApp({
   onSituationPlanZoomIn = () => {},
   onSituationPlanZoomOut = () => {},
   onSituationPlanZoomToFit = () => {},
+  situationPlanActionsMountElement = null,
+  onSituationPlanDelete = () => {},
+  onSituationPlanEdit = () => {},
+  onSituationPlanSendBackward = () => {},
+  onSituationPlanBringForward = () => {},
 }: EditorAppProps) {
   const snapshot = useSchemaSnapshot(schemaStore);
   const itemCount = snapshot.document
@@ -95,6 +106,17 @@ export function EditorApp({
               onZoomToFit={onSituationPlanZoomToFit}
             />,
             situationPlanZoomMountElement,
+          )
+        : null}
+      {situationPlanActionsMountElement
+        ? createPortal(
+            <SituationPlanActionControls
+              onDelete={onSituationPlanDelete}
+              onEdit={onSituationPlanEdit}
+              onSendBackward={onSituationPlanSendBackward}
+              onBringForward={onSituationPlanBringForward}
+            />,
+            situationPlanActionsMountElement,
           )
         : null}
     </>

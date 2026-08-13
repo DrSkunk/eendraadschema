@@ -33,10 +33,14 @@ export function SituationPlanPageControls({
   }
 
   return (
-    <section className="situation-plan-page-controls" aria-label="Situatieplan pagina's">
-      <label htmlFor="situation-plan-page">Pagina</label>
+    <section
+      className="fixed top-[calc(var(--react-shell-height)+var(--menu-height))] left-[62%] z-20 grid h-[var(--ribbon-height)] -translate-x-1/2 grid-cols-2 items-center gap-1 bg-neutral-50 px-3 py-1"
+      aria-label="Situatieplan pagina's"
+    >
+      <label className="text-right text-sm" htmlFor="situation-plan-page">Pagina</label>
       <select
         id="situation-plan-page"
+        className="min-w-16"
         value={snapshot.activePage}
         onChange={(event) => selectPage(Number(event.target.value))}
       >
@@ -46,6 +50,7 @@ export function SituationPlanPageControls({
       </select>
       <button
         type="button"
+        className="min-h-6"
         disabled={snapshot.activePage !== snapshot.pageCount}
         onClick={addPage}
       >
@@ -53,7 +58,7 @@ export function SituationPlanPageControls({
       </button>
       <button
         type="button"
-        className="situation-plan-delete-page"
+        className="min-h-6 bg-red-700 text-white disabled:bg-neutral-300 disabled:text-neutral-500"
         disabled={snapshot.pageCount <= 1}
         onClick={deleteActivePage}
         aria-label={`Pagina ${snapshot.activePage} verwijderen`}

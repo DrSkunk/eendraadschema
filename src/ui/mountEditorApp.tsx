@@ -18,6 +18,11 @@ export interface EditorAppMountOptions {
   readonly onSituationPlanZoomIn?: () => void;
   readonly onSituationPlanZoomOut?: () => void;
   readonly onSituationPlanZoomToFit?: () => void;
+  readonly situationPlanActionsMountElement?: HTMLElement | null;
+  readonly onSituationPlanDelete?: () => void;
+  readonly onSituationPlanEdit?: () => void;
+  readonly onSituationPlanSendBackward?: () => void;
+  readonly onSituationPlanBringForward?: () => void;
 }
 
 export function mountEditorApp(
@@ -45,6 +50,11 @@ export function mountEditorApp(
         onSituationPlanZoomIn={options.onSituationPlanZoomIn}
         onSituationPlanZoomOut={options.onSituationPlanZoomOut}
         onSituationPlanZoomToFit={options.onSituationPlanZoomToFit}
+        situationPlanActionsMountElement={options.situationPlanActionsMountElement ?? null}
+        onSituationPlanDelete={options.onSituationPlanDelete}
+        onSituationPlanEdit={options.onSituationPlanEdit}
+        onSituationPlanSendBackward={options.onSituationPlanSendBackward}
+        onSituationPlanBringForward={options.onSituationPlanBringForward}
       />
     </StrictMode>,
   );

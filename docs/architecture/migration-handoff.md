@@ -14,6 +14,7 @@ This is the operational memory for continuing the incremental React migration. R
 - Preserve unrelated user changes in a dirty worktree.
 - Preserve EDS compatibility, SVG/PDF output, print behavior, undo/redo, local files, browser storage and the situation plan.
 - Treat legacy implementation code as frozen. Only change it for EDS backward compatibility or migration fixes required by new persisted features (for example new situation-plan symbols); implement replacement UI and behavior in React/application code.
+- Tailwind CSS v4 is integrated through `@tailwindcss/vite` and `css/all.css`; use Tailwind utilities for new React styling instead of adding component CSS where utilities suffice.
 
 ## Current architectural boundary
 
@@ -55,6 +56,7 @@ React must never mutate `Hierarchical_List.data` or an item `props` bag directly
 - `LegacySituationPlanStore` exposes immutable, DOM-independent situation-plan snapshots and validated page/default commands. The legacy view receives this store, its page/default controls use commands, and legacy document replacement refreshes the adapter.
 - React owns the situation-plan page selector and add/delete controls through `SituationPlanPageControls`; the legacy canvas and remaining action/zoom ribbon controls are unchanged.
 - React owns the visible situation-plan zoom controls through `SituationPlanZoomControls`; they use the existing public canvas boundary while the legacy implementation remains unchanged.
+- React owns the visible situation-plan edit/delete/z-order controls through the Tailwind-styled `SituationPlanActionControls`; regenerated legacy widgets are hidden by a React-owned migration shim and legacy implementation files remain unchanged.
 
 ## Important domain invariants
 
@@ -100,7 +102,7 @@ npm run build
 git diff --check
 ```
 
-Baseline on 13 August 2026: 32 test files and 269 tests passed. The Vite build still reports expected warnings for non-module Pako/jsPDF/property scripts; it completes successfully.
+Baseline on 13 August 2026: 33 test files and 271 tests passed. The Vite build still reports expected warnings for non-module Pako/jsPDF/property scripts; it completes successfully.
 
 Playwright end-to-end smoke tests exist in `e2e/smoke.spec.ts` (`npm run test:e2e`, config in `playwright.config.ts`, starts the Vite dev server itself). They cover: example loading into the React editor with live SVG, circuit property editing with SVG update and undo/redo, editor search reveal, secondary-board creation/breadcrumbs/deletion, status-bar zoom, situation-plan page management, and the print page through the print adapter. The first run exposed a real layout bug — the legacy top menu was hidden underneath the ribbon because the legacy absolute offsets did not account for the React shell header; fixed with `--react-shell-height` in `css/styles.css`.
 
@@ -124,7 +126,7 @@ Earlier React/property-editor commits immediately precede these in branch histor
 1. Done: editor search (`HierarchySearch` reveals results across boards via `EditorCommands.revealItem`), board breadcrumbs (`BoardBreadcrumbs` renders the feeder chain), save status and zoom (React `StatusBar` at the bottom of the one-line editor; `LegacySaveStatusStore` adapts `AutoSaver` state and is refreshed from schema commands, the autosave callback and a coarse timer; zoom is editor-only state applied as CSS `zoom` on the legacy SVG container). `src/main.ts` is now fully LF with trailing whitespace stripped — keep it that way.
 2. Done: `LegacyPrintService` (`src/application/PrintService.ts`) is the React-facing print adapter — layout computation, preview state, display-page clamping, per-page preview SVG (EDS crop or situation-plan page) and PDF generation with explicit parameters. The imperative print page (`src/print/print.ts`) now routes its logic through it while emitting identical DOM; a future React print UI should consume the same `printService` instance exported there. `Print_Table.canPrint()` still reads `globalThis.structure` internally. SVG, pagination and jsPDF generation are unchanged.
 3. Done: `LegacyFileService` (`src/application/FileService.ts`) is the React-facing open/save adapter — file state, File System Access open, save/save-as with forced picker when no handle exists, download fallback, manual-autosave bookkeeping, and the deployment upload hook. EDS encoding moved into `encodeEds` in `EdsCodec` (compression with TXT fallback). `exportjson`/`loadClicked` delegate to the shared `fileService` instance; a dismissed file picker no longer logs an error and no longer triggers the export upload hook. The imperative file page (`showFilePage`) still renders its own HTML.
-4. In progress: situation-plan document state, its React-facing store/command boundary, page controls and zoom controls are migrated. Next build React action controls without changing the frozen legacy implementation, then migrate canvas interactions.
+4. In progress: situation-plan document state, its React-facing store/command boundary, page controls, zoom controls and selection actions are migrated. Next migrate undo/redo and save/file navigation, then add/import controls and canvas interactions.
 5. Remove remaining inline handlers only after their React or DOM-listener replacements are tested. Remaining imperative HTML belongs mainly to file/configuration, print and situation-plan screens.
 6. Perform manual browser smoke tests with current and old EDS fixtures, a main/garage board document, save/reload, undo/redo, SVG download and PDF print.
 

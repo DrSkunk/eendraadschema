@@ -474,6 +474,7 @@ container.innerHTML = `
 <div id="outerdiv" style="display:none;"> <!-- Situatieschets -->
     <div id="react-situation-controls-root"></div>
     <div id="react-situation-zoom-root"></div>
+    <div id="react-situation-actions-root"></div>
     <div id="sidebar"></div>
     <div id="canvas">
     <div id="paper"></div>
@@ -542,6 +543,7 @@ const reactStatusBarRoot = document.getElementById("react-statusbar-root");
 const reactEditorCanvas = document.getElementById("canvas_2col");
 const reactSituationControlsRoot = document.getElementById("react-situation-controls-root");
 const reactSituationZoomRoot = document.getElementById("react-situation-zoom-root");
+const reactSituationActionsRoot = document.getElementById("react-situation-actions-root");
 const legacyHierarchyRoot = document.getElementById("left_col_inner");
 const svgPreviewElement = document.getElementById("right_col_inner");
 const reactHierarchyIsEnabled = reactHierarchyRoot !== null;
@@ -584,6 +586,26 @@ if (reactEditorRoot !== null) {
             onSituationPlanZoomToFit: () => {
                 globalThis.structure.sitplanview?.contextMenu?.hide();
                 globalThis.structure.sitplanview?.zoomToFit();
+            },
+            situationPlanActionsMountElement: reactSituationActionsRoot,
+            onSituationPlanDelete: () => {
+                const view = globalThis.structure.sitplanview;
+                if (!view || view.getSelectedBoxesOrdinals().length === 0) return;
+                view.contextMenu?.hide();
+                view.deleteSelectedBoxes();
+                globalThis.undostruct.store();
+            },
+            onSituationPlanEdit: () => {
+                globalThis.structure.sitplanview?.contextMenu?.hide();
+                globalThis.structure.sitplanview?.editSelectedBox();
+            },
+            onSituationPlanSendBackward: () => {
+                globalThis.structure.sitplanview?.contextMenu?.hide();
+                globalThis.structure.sitplanview?.sendToBack();
+            },
+            onSituationPlanBringForward: () => {
+                globalThis.structure.sitplanview?.contextMenu?.hide();
+                globalThis.structure.sitplanview?.bringToFront();
             },
         },
     );
