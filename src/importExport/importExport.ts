@@ -118,7 +118,7 @@ globalThis.importjson = (event) => {
 
     reader.onload = function(){
         EDStoStructure(reader.result.toString());
-        if (globalThis.structure.sitplan) globalThis.structure.sitplan.activePage = 1;
+        if (globalThis.structure.sitplan) globalThis.structure.sitplan.setActivePage(1);
     };
 
     reader.readAsText(input.files[0]);
@@ -151,7 +151,7 @@ globalThis.loadClicked = async () => {
     if ((window as any).showOpenFilePicker) { // Use fileAPI
         let data = await fileService.openDocumentText();
         EDStoStructure(data);
-        if (globalThis.structure.sitplan) globalThis.structure.sitplan.activePage = 1;
+        if (globalThis.structure.sitplan) globalThis.structure.sitplan.setActivePage(1);
     } else { // Legacy
         document.getElementById('importfile').click();
         (document.getElementById('importfile') as HTMLInputElement).value = "";

@@ -626,11 +626,10 @@ let lastSavedInfo:any = null;
                         }).bind(this));
         if (lastSavedStr == null) return;
         EDStoStructure(lastSavedStr, true, true);
-        if (globalThis.structure.sitplan) globalThis.structure.sitplan.activePage = 1;
+        if (globalThis.structure.sitplan) globalThis.structure.sitplan.setActivePage(1);
     }
     globalThis.autoSaver.start();
 });
-
 
 
 

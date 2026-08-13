@@ -46,7 +46,7 @@ export class SituationPlanView {
 
     private mousedrag: MouseDrag; /** behandelt het verslepen van een box */
 
-    private sitplan;
+    private sitplan: SituationPlan;
 
     private event_manager;
 
@@ -151,7 +151,7 @@ export class SituationPlanView {
         //Verwijder de event manager
         this.event_manager.dispose();
         //Ga over all situationplanelements and verwijder de bijhorende boxes uit the DOM
-        for (let element of this.sitplan.elements) {
+        for (let element of this.sitplan.getElements()) {
             if (element.boxref != null) element.boxref.remove();
             if (element.boxlabelref != null) element.boxlabelref.remove();
         }
@@ -301,7 +301,7 @@ export class SituationPlanView {
      */
     private changePageSelectedBoxes() {
         if (this.selected.length() > 0) {
-            const pages = Array.from({ length: this.sitplan.numPages }, (_, i) => String(i + 1)).filter(page => page !== String(this.sitplan.activePage));
+            const pages = Array.from({ length: this.sitplan.getPageCount() }, (_, i) => String(i + 1)).filter(page => page !== String(this.sitplan.getActivePage()));
             let selectedBoxes = this.selected.getAllSelected().filter(e => e != null);
             let selectedMovableBoxes = selectedBoxes.filter(e => (e as any).sitPlanElementRef != null && (e as any).sitPlanElementRef.movable);
             let selectedSitPlanElements = selectedBoxes.map(e => (e as any).sitPlanElementRef).filter(e => e != null);
@@ -365,7 +365,7 @@ export class SituationPlanView {
                 globalThis.undostruct.store();
             }, 'Del');
 
-            if ((this.sitplan.numPages > 1) && (sitPlanElement.movable)) {
+            if ((this.sitplan.getPageCount() > 1) && (sitPlanElement.movable)) {
                 this.contextMenu.addLine();
                 this.contextMenu.addMenuItem('Naar pagina..', this.changePageSelectedBoxes.bind(this), 'PgUp/PgDn');
             }
@@ -507,7 +507,7 @@ export class SituationPlanView {
         }
         if (boxlabel.style.top != top) boxlabel.style.top = top; // Vermijd aanpassingen DOM indien niet nodig
 
-        if (this.sitplan.activePage == sitPlanElement.page) {
+        if (this.sitplan.getActivePage() == sitPlanElement.page) {
             if (boxlabel.classList.contains('hidden')) boxlabel.classList.remove('hidden'); // Vermijd aanpassingen DOM indien niet nodig
         } else {
             if (!boxlabel.classList.contains('hidden')) boxlabel.classList.add('hidden'); // Vermijd aanpassingen DOM indien niet nodig
@@ -555,7 +555,7 @@ export class SituationPlanView {
         const transform = getRotationTransform(sitPlanElement);
         if (div.style.transform != transform) div.style.transform = transform; // Vermijd aanpassingen DOM indien niet nodig
 
-        if (this.sitplan.activePage == sitPlanElement.page) {
+        if (this.sitplan.getActivePage() == sitPlanElement.page) {
             if (div.classList.contains('hidden')) div.classList.remove('hidden'); // Vermijd aanpassingen DOM indien niet nodig
         } else {
             if (!div.classList.contains('hidden')) div.classList.add('hidden'); // Vermijd aanpassingen DOM indien niet nodig
@@ -595,14 +595,14 @@ export class SituationPlanView {
         const fragment: DocumentFragment = document.createDocumentFragment();
 
         let appendNeeded = false;
-        for (let element of this.sitplan.elements) {
+        for (let element of this.sitplan.getElements()) {
             if (!element.boxref) { this.makeBox(element, fragment); appendNeeded = true; }
         }
         if (appendNeeded) this.paper.append(fragment); // We moeten de boxes toevoegen aan de DOM alvorens de label positie te berekenen aangezien we de size van de labels moeten kennen
 
-        this.showPage(this.sitplan.activePage);
-        for (let element of this.sitplan.elements) {
-            if (element.page == this.sitplan.activePage) {
+        this.showPage(this.sitplan.getActivePage());
+        for (let element of this.sitplan.getElements()) {
+            if (element.page == this.sitplan.getActivePage()) {
                 this.updateBoxContent(element);
                 this.updateSymbolAndLabelPosition(element);
             }
@@ -623,7 +623,7 @@ export class SituationPlanView {
     getLastSelectedBoxOrdinal(): number | null {
         if (this.selected.length() == 0) return null;
 
-        return this.sitplan.elements.findIndex(e => e.boxref == this.selected.getLastSelected());
+        return this.sitplan.getElements().findIndex(e => e.boxref == this.selected.getLastSelected());
     }
 
     /**
@@ -634,7 +634,8 @@ export class SituationPlanView {
     getSelectedBoxesOrdinals(): number[] {
         if (this.selected.length() == 0) return [];
 
-        return this.sitplan.elements.filter(e => this.selected.includes(e.boxref)).map(e => this.sitplan.elements.indexOf(e));
+        const elements = this.sitplan.getElements();
+        return elements.filter(e => this.selected.includes(e.boxref)).map(e => elements.indexOf(e));
     }
 
     /**
@@ -713,7 +714,7 @@ export class SituationPlanView {
     sendToBack() {
         if (this.selected.length() == 0) return;
 
-        for (let element of this.sitplan.elements) {
+        for (let element of this.sitplan.getElements()) {
             if (element.boxref != null) {
                 let newzindex;
 
@@ -744,7 +745,7 @@ export class SituationPlanView {
         if (this.selected.length() == 0) return;
 
         let newzindex = 0;
-        for (let element of this.sitplan.elements) {
+        for (let element of this.sitplan.getElements()) {
             if ((element.boxref != null) && (!this.selected.includes(element.boxref))) {
                 newzindex = Math.max(newzindex, parseInt(element.boxref.style.zIndex) || 0);
             }
@@ -753,7 +754,7 @@ export class SituationPlanView {
 
         for (let selected of this.selected.getAllSelected()) {
             let element = (selected as any).sitPlanElementRef;
-            if (element == null) { this.sitplan.syncToSitPlan(); return; }
+            if (element == null) { this.sitplan.syncToEendraadSchema(); return; }
             if (element.movable == false) continue;
             selected.style.zIndex = newzindex.toString();
             if (element.boxlabelref != null) element.boxlabelref.style.zIndex = newzindex.toString();
@@ -964,7 +965,7 @@ export class SituationPlanView {
      * @param page - Het nummer van de pagina die getoond moet worden.
      */
     selectPage(page: number) {
-        this.sitplan.activePage = page;
+        this.sitplan.setActivePage(page);
         this.redraw();
     }
 
@@ -975,7 +976,7 @@ export class SituationPlanView {
      */
     showPage(page: number) {
         this.clearSelection();
-        for (let element of this.sitplan.elements) {
+        for (let element of this.sitplan.getElements()) {
             if (element.page != page) {
                 element.boxref.classList.add('hidden');
                 element.boxlabelref.classList.add('hidden');
@@ -1124,7 +1125,7 @@ export class SituationPlanView {
                             {
                                 let oldPage = sitPlanElement.page;
                                 let newPage = (sitPlanElement.page + 1);
-                                if (newPage > this.sitplan.numPages) newPage = 1;
+                                if (newPage > this.sitplan.getPageCount()) newPage = 1;
 
                                 if (newPage == oldPage) return;
 
@@ -1141,7 +1142,7 @@ export class SituationPlanView {
                             {
                                 let oldPage = sitPlanElement.page;
                                 let newPage = (sitPlanElement.page - 1);
-                                if (newPage < 1) newPage = this.sitplan.numPages;
+                                if (newPage < 1) newPage = this.sitplan.getPageCount();
 
                                 if (newPage == oldPage) return;
 
@@ -1186,20 +1187,20 @@ export class SituationPlanView {
                 switch (event.key) {
                     case 'PageDown':
                         {
-                            let oldPage = this.sitplan.activePage;
+                            let oldPage = this.sitplan.getActivePage();
                             let newPage = (oldPage + 1);
-                            if (newPage > this.sitplan.numPages) newPage = 1;
+                            if (newPage > this.sitplan.getPageCount()) newPage = 1;
                             this.selectPage(newPage);
                             if (newPage != oldPage) globalThis.undostruct.store("changePage");
                         }
                         break;
                     case 'PageUp':
                         {
-                            let oldPage = this.sitplan.activePage;
+                            let oldPage = this.sitplan.getActivePage();
                             let newPage = (oldPage - 1);
-                            if (newPage < 1) newPage = this.sitplan.numPages;
+                            if (newPage < 1) newPage = this.sitplan.getPageCount();
                             this.selectPage(newPage);
-                            if (newPage != this.sitplan.activePage) globalThis.undostruct.store("changePage");
+                            if (newPage != oldPage) globalThis.undostruct.store("changePage");
                         }
                         break;
                 }
@@ -1275,15 +1276,15 @@ export class SituationPlanView {
     attachAddElementFromFileButton(elem: HTMLElement, fileinput: HTMLElement) {
         this.event_manager.addEventListener(elem, 'click', () => { this.contextMenu.hide(); fileinput.click(); });
         this.event_manager.addEventListener(fileinput, 'change', (event) => {
-            let element = this.sitplan.addElementFromFile(event, this.sitplan.activePage, this.paper.offsetWidth / 2, this.paper.offsetHeight / 2,
+            let element = this.sitplan.addElementFromFile(event, this.sitplan.getActivePage(), this.paper.offsetWidth / 2, this.paper.offsetHeight / 2,
                 (() => {
 
                     this.syncToSitPlan();
                     this.clearSelection();
                     element.needsViewUpdate = true; // for an external SVG this is needed, for an electroItem it is automatically set (see next function)
 
-                    const lastscale = element.scale;
-                    element.scaleSelectedBoxToPaperIfNeeded(this.paper.offsetWidth * 0.995, this.paper.offsetHeight * 0.995, this.sitplan.defaults.scale);
+                    const lastscale = element.getscale();
+                    element.scaleSelectedBoxToPaperIfNeeded(this.paper.offsetWidth * 0.995, this.paper.offsetHeight * 0.995, this.sitplan.getDefaults().scale);
 
                     this.redraw();
                     this.selectOneBox(element.boxref); // We moeten dit na redraw doen anders bestaat de box mogelijk nog niet
@@ -1313,7 +1314,7 @@ export class SituationPlanView {
                     this.bringToFront(); // Deze slaat ook automatisch undo informatie op dus we moeten geen globalThis.undostruct.store() meer doen.
                     // We voeren deze om dezelfde reden pas uit na het checken dat het bestand geldig is.
 
-                    if (element.scale != lastscale) {
+                    if (element.getscale() != lastscale) {
                         //Use the built in help top to display a text that the image was scaled
                         const helperTip = new HelperTip(globalThis.appDocStorage);
                         helperTip.show('sitplan.scaledImageToFit',
@@ -1357,7 +1358,7 @@ export class SituationPlanView {
         if (posy == null) posy = paperPos.y;
 
         if (id != null) {
-            let element = this.sitplan.addElementFromElectroItem(id, this.sitplan.activePage, posx, posy,
+            let element = this.sitplan.addElementFromElectroItem(id, this.sitplan.getActivePage(), posx, posy,
                 adrestype, adres, adreslocation, labelfontsize,
                 scale, rotate);
             if (element != null) {
@@ -1412,7 +1413,7 @@ export class SituationPlanView {
                 }*/
                 globalThis.structure.insertChildAfterId(electroItem, container.id);
 
-                let labelfontsize = globalThis.structure.sitplan.defaults.fontsize;
+                let labelfontsize = globalThis.structure.sitplan.getDefaults().fontsize;
                 this.addElectroItem(electroItem.id, 'manueel', '', 'rechts', labelfontsize, scale, rotate);
             });
         });
@@ -1490,22 +1491,6 @@ export class SituationPlanView {
         this.event_manager.addEventListener(elem, 'click', () => { this.editSelectedBox() });
     }
 
-
-    /**
-     * Verwijdert alle elementen van de pagina met het gegeven nummer.
-     * 
-     * @param page - Het nummer van de pagina die leeg gemaakt moet worden.
-     */
-    wipePage(page: number) {
-        let ElementsToWipe = this.sitplan.elements.filter((element) => element.page == page);
-
-        for (let element of ElementsToWipe) {
-            if (element == null) continue;
-            if (element.boxref != null) element.boxref.remove();
-            if (element.boxlabelref != null) element.boxlabelref.remove();
-            this.sitplan.removeElement(element);
-        }
-    }
 
     /**
      * Maakt de knoppen in de ribbon aan om onder andere pagina's te selecteren, elementen te laden of verwijderen en pagina's te zoomen.
@@ -1606,15 +1591,15 @@ export class SituationPlanView {
                 <center>
                     <span style="display: inline-block; white-space: nowrap;">Pagina
                         <select id="id_sitplanpage">`;
-        for (let i = 1; i <= this.sitplan.numPages; i++) {
-            outputleft += '<option value="' + i + '"' + (i == this.sitplan.activePage ? ' selected' : '') + '>' + i + '</option>';
+        for (let i = 1; i <= this.sitplan.getPageCount(); i++) {
+            outputleft += '<option value="' + i + '"' + (i == this.sitplan.getActivePage() ? ' selected' : '') + '>' + i + '</option>';
         }
 
         outputleft += `
                         </select>
                     </span><br><span style="display: inline-block; white-space: nowrap;">
-                        <button id="btn_sitplan_addpage" ${(this.sitplan.activePage != this.sitplan.numPages ? ' disabled' : '')}>Nieuw</button>
-                        <button id="btn_sitplan_delpage" style="background-color:red;" ${(this.sitplan.numPages <= 1 ? ' disabled' : '')}>&#9851;</button>
+                        <button id="btn_sitplan_addpage" ${(this.sitplan.getActivePage() != this.sitplan.getPageCount() ? ' disabled' : '')}>Nieuw</button>
+                        <button id="btn_sitplan_delpage" style="background-color:red;" ${(this.sitplan.getPageCount() <= 1 ? ' disabled' : '')}>&#9851;</button>
                     </span>
                 </center>
             </div>`;
@@ -1653,26 +1638,18 @@ export class SituationPlanView {
 
         document.getElementById('btn_sitplan_addpage')!.onclick = () => {
             this.contextMenu.hide();
-            this.sitplan.numPages++;
-            this.selectPage(this.sitplan.numPages);
+            this.selectPage(this.sitplan.addPage());
             globalThis.undostruct.store();
         };
 
         document.getElementById('btn_sitplan_delpage')!.onclick = () => {
             this.contextMenu.hide();
-            const dialog = new Dialog('Pagina verwijderen', `Pagina ${this.sitplan.activePage} volledig verwijderen?`,
+            const dialog = new Dialog('Pagina verwijderen', `Pagina ${this.sitplan.getActivePage()} volledig verwijderen?`,
                 [
                     {
                         text: 'OK', callback: (() => {
-                            this.wipePage(this.sitplan.activePage);
-                            //set page of all sitplan.elements with page>page one lower
-                            this.sitplan.elements.forEach(element => {
-                                if (element.page > this.sitplan.activePage) {
-                                    element.page--;
-                                }
-                            });
-                            if (this.sitplan.numPages > 1) this.sitplan.numPages--;
-                            this.selectPage(Math.min(this.sitplan.activePage, this.sitplan.numPages))
+                            this.sitplan.deletePage(this.sitplan.getActivePage());
+                            this.selectPage(this.sitplan.getActivePage());
                             globalThis.undostruct.store();
                         }).bind(this)
                     },
