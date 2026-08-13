@@ -4,6 +4,7 @@ import type { EditorStore } from "../application/EditorStore";
 import type { SaveStatusStore } from "../application/SaveStatusStore";
 import type { SchemaStore } from "../application/SchemaStore";
 import type { SituationPlanStore } from "../application/SituationPlanStore";
+import type { WorkspaceStore, WorkspaceTab } from "../application/WorkspaceStore";
 import { EditorApp } from "./App";
 
 export interface EditorAppMountOptions {
@@ -23,6 +24,12 @@ export interface EditorAppMountOptions {
   readonly onSituationPlanEdit?: () => void;
   readonly onSituationPlanSendBackward?: () => void;
   readonly onSituationPlanBringForward?: () => void;
+  readonly workspaceStore?: WorkspaceStore;
+  readonly onSelectWorkspaceTab?: (tab: WorkspaceTab) => void;
+  readonly canCreateSituationOccurrence?: (itemId: number) => boolean;
+  readonly onCreateSituationOccurrence?: (itemId: number) => void;
+  readonly onRevealSituationOccurrence?: (occurrenceId: string) => void;
+  readonly situationPaperElement?: HTMLElement | null;
 }
 
 export function mountEditorApp(
@@ -55,6 +62,12 @@ export function mountEditorApp(
         onSituationPlanEdit={options.onSituationPlanEdit}
         onSituationPlanSendBackward={options.onSituationPlanSendBackward}
         onSituationPlanBringForward={options.onSituationPlanBringForward}
+        workspaceStore={options.workspaceStore}
+        onSelectWorkspaceTab={options.onSelectWorkspaceTab}
+        canCreateSituationOccurrence={options.canCreateSituationOccurrence}
+        onCreateSituationOccurrence={options.onCreateSituationOccurrence}
+        onRevealSituationOccurrence={options.onRevealSituationOccurrence}
+        situationPaperElement={options.situationPaperElement ?? null}
       />
     </StrictMode>,
   );

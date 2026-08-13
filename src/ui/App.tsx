@@ -3,14 +3,20 @@ import type { EditorStore } from "../application/EditorStore";
 import type { SaveStatusStore } from "../application/SaveStatusStore";
 import type { SchemaStore } from "../application/SchemaStore";
 import type { SituationPlanStore } from "../application/SituationPlanStore";
+import {
+  LocalWorkspaceStore,
+  type WorkspaceStore,
+  type WorkspaceTab,
+} from "../application/WorkspaceStore";
 import { HierarchyTree } from "./hierarchy/HierarchyTree";
-import { EditorShell } from "./layout/EditorShell";
 import { StatusBar } from "./layout/StatusBar";
 import { ItemPropertiesPanel } from "./properties/ItemPropertiesPanel";
 import { useSchemaSnapshot } from "./useSchemaSnapshot";
 import { SituationPlanPageControls } from "./situation/SituationPlanPageControls";
 import { SituationPlanZoomControls } from "./situation/SituationPlanZoomControls";
 import { SituationPlanActionControls } from "./situation/SituationPlanActionControls";
+import { WorkspaceHeader } from "./workspace/WorkspaceHeader";
+import { SituationSelectionBridge } from "./workspace/SituationSelectionBridge";
 import "./editor-shell.css";
 import "./hierarchy/hierarchy.css";
 import "./properties/properties.css";
@@ -35,6 +41,12 @@ export interface EditorAppProps {
   readonly onSituationPlanEdit?: () => void;
   readonly onSituationPlanSendBackward?: () => void;
   readonly onSituationPlanBringForward?: () => void;
+  readonly workspaceStore?: WorkspaceStore;
+  readonly onSelectWorkspaceTab?: (tab: WorkspaceTab) => void;
+  readonly canCreateSituationOccurrence?: (itemId: number) => boolean;
+  readonly onCreateSituationOccurrence?: (itemId: number) => void;
+  readonly onRevealSituationOccurrence?: (occurrenceId: string) => void;
+  readonly situationPaperElement?: HTMLElement | null;
 }
 
 export function EditorApp({
@@ -57,6 +69,12 @@ export function EditorApp({
   onSituationPlanEdit = () => {},
   onSituationPlanSendBackward = () => {},
   onSituationPlanBringForward = () => {},
+  workspaceStore = defaultWorkspaceStore,
+  onSelectWorkspaceTab = () => {},
+  canCreateSituationOccurrence = () => false,
+  onCreateSituationOccurrence = () => {},
+  onRevealSituationOccurrence = () => {},
+  situationPaperElement = null,
 }: EditorAppProps) {
   const snapshot = useSchemaSnapshot(schemaStore);
   const itemCount = snapshot.document
@@ -65,10 +83,21 @@ export function EditorApp({
 
   return (
     <>
-      <EditorShell itemCount={itemCount} />
+      <WorkspaceHeader
+        itemCount={itemCount}
+        store={workspaceStore}
+        onSelectTab={onSelectWorkspaceTab}
+      />
       {hierarchyMountElement
         ? createPortal(
-            <HierarchyTree schemaStore={schemaStore} editorStore={editorStore} />,
+            <HierarchyTree
+              schemaStore={schemaStore}
+              editorStore={editorStore}
+              situationPlanStore={situationPlanStore}
+              canCreateSituationOccurrence={canCreateSituationOccurrence}
+              onCreateSituationOccurrence={onCreateSituationOccurrence}
+              onRevealSituationOccurrence={onRevealSituationOccurrence}
+            />,
             hierarchyMountElement,
           )
         : null}
@@ -119,6 +148,12 @@ export function EditorApp({
             situationPlanActionsMountElement,
           )
         : null}
+      <SituationSelectionBridge
+        paperElement={situationPaperElement}
+        editorStore={editorStore}
+      />
     </>
   );
 }
+
+const defaultWorkspaceStore = new LocalWorkspaceStore();

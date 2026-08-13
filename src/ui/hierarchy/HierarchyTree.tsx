@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { EditorStore } from "../../application/EditorStore";
 import type { SchemaStore } from "../../application/SchemaStore";
+import type { SituationPlanStore } from "../../application/SituationPlanStore";
 import { useEditorSnapshot } from "../useEditorSnapshot";
 import { useSchemaSnapshot } from "../useSchemaSnapshot";
 import { BoardBreadcrumbs } from "../boards/BoardBreadcrumbs";
@@ -8,6 +9,7 @@ import { BoardNavigator } from "../boards/BoardNavigator";
 import { AddItemControl } from "./AddItemControl";
 import { HierarchyNode } from "./HierarchyNode";
 import { HierarchySearch } from "./HierarchySearch";
+import { SituationLinksPanel } from "../workspace/SituationLinksPanel";
 import {
   createHierarchyIndex,
   getEditableChildren,
@@ -18,6 +20,10 @@ export interface HierarchyTreeProps {
   readonly schemaStore: SchemaStore;
   readonly editorStore: EditorStore;
   readonly confirmDelete?: (label: string) => boolean;
+  readonly situationPlanStore?: SituationPlanStore | null;
+  readonly canCreateSituationOccurrence?: (itemId: number) => boolean;
+  readonly onCreateSituationOccurrence?: (itemId: number) => void;
+  readonly onRevealSituationOccurrence?: (occurrenceId: string) => void;
 }
 
 function browserConfirmDelete(label: string): boolean {
@@ -28,6 +34,10 @@ export function HierarchyTree({
   schemaStore,
   editorStore,
   confirmDelete = browserConfirmDelete,
+  situationPlanStore = null,
+  canCreateSituationOccurrence = () => false,
+  onCreateSituationOccurrence = () => {},
+  onRevealSituationOccurrence = () => {},
 }: HierarchyTreeProps) {
   const schemaSnapshot = useSchemaSnapshot(schemaStore);
   const editorSnapshot = useEditorSnapshot(editorStore);
@@ -88,6 +98,16 @@ export function HierarchyTree({
         reportError={setErrorMessage}
       />
       <HierarchySearch document={hierarchyDocument} editorStore={editorStore} />
+      {situationPlanStore ? (
+        <SituationLinksPanel
+          schemaStore={schemaStore}
+          editorStore={editorStore}
+          situationPlanStore={situationPlanStore}
+          canCreateOccurrence={canCreateSituationOccurrence}
+          onCreateOccurrence={onCreateSituationOccurrence}
+          onRevealOccurrence={onRevealSituationOccurrence}
+        />
+      ) : null}
       <BoardBreadcrumbs
         document={hierarchyDocument}
         activeBoardId={activeBoardId}

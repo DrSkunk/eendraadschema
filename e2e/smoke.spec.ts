@@ -52,6 +52,31 @@ test("search reveals and selects a matching item", async ({ page }) => {
   await expect(page.locator("#react-hierarchy-root [aria-current='true']")).toBeVisible();
 });
 
+test("unified workspace links hierarchy items to situation-plan placements", async ({ page }) => {
+  await loadExample(page, 1);
+
+  const workspaceTabs = page.getByRole("navigation", { name: "Werkruimteweergave" });
+  const hierarchy = page.getByRole("navigation", { name: "Elektrische hiërarchie" });
+  await expect(workspaceTabs.getByRole("button", { name: "Eéndraadschema" })).toHaveAttribute("aria-current", "page");
+  await expect(page.locator("#minitabs li:visible").filter({ hasText: "Eéndraadschema" })).toHaveCount(0);
+  await expect(page.locator("#minitabs li:visible").filter({ hasText: "Situatieschema" })).toHaveCount(0);
+
+  await page.getByRole("searchbox", { name: "Zoeken in het schema" }).fill("Lichtpunt");
+  await page.locator(".react-hierarchy-search__results button").first().click();
+  const links = page.getByRole("region", { name: "Koppelingen met situatieschema" });
+  await expect(links).toContainText("0 plaatsingen");
+
+  await links.getByRole("button", { name: "Plaats symbool" }).click();
+  await expect(workspaceTabs.getByRole("button", { name: "Situatieschema" })).toHaveAttribute("aria-current", "page");
+  await expect(hierarchy).toBeVisible();
+  await expect(links).toContainText("1 plaatsing");
+
+  const helpDialogOk = page.getByRole("button", { name: "OK" });
+  if (await helpDialogOk.isVisible()) await helpDialogOk.click();
+  await links.getByRole("button", { name: /Toon plaatsing 1/ }).click();
+  await expect(page.locator("#paper .box.selected")).toBeVisible();
+});
+
 test("adds a secondary board, shows breadcrumbs, and deletes it again", async ({ page }) => {
   await loadExample(page, 1);
 
@@ -86,7 +111,8 @@ test("status bar zoom controls scale the SVG preview", async ({ page }) => {
 
 test("situation plan React controls manage pages", async ({ page }) => {
   await loadExample(page, 0);
-  await page.locator("#minitabs").getByText("Situatieschema", { exact: true }).click();
+  await page.getByRole("navigation", { name: "Werkruimteweergave" })
+    .getByRole("button", { name: "Situatieschema" }).click();
   const helpDialogOk = page.getByRole("button", { name: "OK" });
   if (await helpDialogOk.isVisible()) await helpDialogOk.click();
 
@@ -128,6 +154,7 @@ test("print page renders a preview through the print adapter", async ({ page }) 
   await expect(page.getByRole("button", { name: "Genereer PDF" })).toBeVisible();
   await expect(page.locator("#printsvgarea svg").first()).toBeVisible();
 
-  await page.locator("#minitabs").getByText("Eéndraadschema", { exact: true }).click();
+  await page.getByRole("navigation", { name: "Werkruimteweergave" })
+    .getByRole("button", { name: "Eéndraadschema" }).click();
   await expect(page.getByRole("navigation", { name: "Elektrische hiërarchie" })).toBeVisible();
 });

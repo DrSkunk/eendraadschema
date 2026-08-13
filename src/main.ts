@@ -24,6 +24,7 @@ import { LocalEditorStore } from "./application/EditorStore";
 import { LegacySchemaStore } from "./application/LegacySchemaStore";
 import { LegacySaveStatusStore } from "./application/SaveStatusStore";
 import { LegacySituationPlanStore } from "./application/LegacySituationPlanStore";
+import { LocalWorkspaceStore } from "./application/WorkspaceStore";
 import { mountEditorApp } from "./ui/mountEditorApp";
 
 import "../css/all.css";
@@ -40,6 +41,7 @@ globalThis.fileAPIobj = new importExportUsingFileAPI();
 
 let schemaStore: LegacySchemaStore | null = null;
 let editorStore: LocalEditorStore | null = null;
+let workspaceStore: LocalWorkspaceStore | null = null;
 let reactSchemaHistoryEnabled = false;
 
 function schemaCommandHistoryIsActive(): boolean {
@@ -331,11 +333,15 @@ globalThis.toggleAppView = (type: '2col' | 'config' | 'draw') => {
     if ((globalThis.structure.sitplanview != null) && (globalThis.structure.sitplanview.contextMenu != null)) globalThis.structure.sitplanview.contextMenu.hide();
 
     globalThis.structure.properties.currentView = type;
+    if (type === "2col") workspaceStore?.commands.selectTab("schema");
+    if (type === "draw") workspaceStore?.commands.selectTab("situation");
 
     const configsection = document.getElementById("configsection");
     const outerdiv = document.getElementById("outerdiv");
     const ribbon = document.getElementById("ribbon");
     const canvas_2col = document.getElementById("canvas_2col");
+    const workspaceSidebar = document.getElementById("react-workspace-sidebar");
+    const workspaceInspector = document.getElementById("properties_col");
     const left_col_inner = document.getElementById("left_col_inner");
     const EDSSVG = document.getElementById("EDSSVG");
 
@@ -348,6 +354,8 @@ globalThis.toggleAppView = (type: '2col' | 'config' | 'draw') => {
         if (canvas_2col.style.display === 'none') {
             ribbon.style.display = 'flex';
             canvas_2col.style.display = 'flex';
+            workspaceSidebar?.classList.remove("hidden");
+            workspaceInspector?.classList.remove("hidden");
             configsection.style.display = 'none';
             outerdiv.style.display = 'none';
 
@@ -367,6 +375,8 @@ globalThis.toggleAppView = (type: '2col' | 'config' | 'draw') => {
             configsection.style.display = 'block';
             outerdiv.style.display = 'none';
             ribbon.style.display = 'none';
+            workspaceSidebar?.classList.add("hidden");
+            workspaceInspector?.classList.add("hidden");
 
             ribbon.innerHTML = ''; // Voor performance redenen
         }
@@ -388,6 +398,8 @@ globalThis.toggleAppView = (type: '2col' | 'config' | 'draw') => {
             ribbon.style.display = 'flex';
             configsection.style.display = 'none';
             canvas_2col.style.display = 'none';
+            workspaceSidebar?.classList.remove("hidden");
+            workspaceInspector?.classList.remove("hidden");
 
             configsection.innerHTML = "";
             left_col_inner.innerHTML = ''; // Voor performance redenen
@@ -458,20 +470,19 @@ container.innerHTML = `
     <div id="left-icons" class="left-icons"></div>
     <div id="right-icons" class="right-icons"></div>
 </div> <!-- Ribbon -->
-<div id="canvas_2col" style="display:none;"> <!-- Eendraadschema-->
-    <div id="left_col">
+<aside id="react-workspace-sidebar" class="fixed top-[var(--total-offset)] bottom-0 left-0 z-10 hidden w-80 overflow-auto border-r border-neutral-300 bg-white">
     <div id="react-hierarchy-root"></div>
+</aside>
+<div id="canvas_2col" class="!right-80 !left-80" style="display:none;"> <!-- Eendraadschema-->
+    <div id="left_col">
     <div id="left_col_inner"></div>
     </div>
     <div id="right_col">
     <div id="right_col_inner"></div>
     </div>
-    <aside id="properties_col" aria-label="Eigenschappen van het geselecteerde onderdeel">
-    <div id="react-properties-root"></div>
-    </aside>
     <div id="react-statusbar-root"></div>
 </div>
-<div id="outerdiv" style="display:none;"> <!-- Situatieschets -->
+<div id="outerdiv" class="!right-80 !left-80" style="display:none;"> <!-- Situatieschets -->
     <div id="react-situation-controls-root"></div>
     <div id="react-situation-zoom-root"></div>
     <div id="react-situation-actions-root"></div>
@@ -480,6 +491,9 @@ container.innerHTML = `
     <div id="paper"></div>
     </div>
 </div>
+<aside id="properties_col" class="fixed top-[var(--total-offset)] right-0 bottom-0 z-10 hidden w-80 overflow-auto border-l border-neutral-300 bg-white" aria-label="Eigenschappen van het geselecteerde onderdeel">
+    <div id="react-properties-root"></div>
+</aside>
 </div>`
 
 // Configure the app-zone in the HTML
@@ -535,6 +549,7 @@ EDStoStructure(globalThis.EXAMPLE_DEFAULT,false); //Just in case the user doesn'
 schemaStore = new LegacySchemaStore(globalThis.structure);
 globalThis.situationPlanStore = new LegacySituationPlanStore(globalThis.structure);
 editorStore = new LocalEditorStore();
+workspaceStore = new LocalWorkspaceStore();
 const reactEditorRoot = document.getElementById("react-editor-root");
 const reactHierarchyRoot = document.getElementById("react-hierarchy-root");
 const reactPropertiesRoot = document.getElementById("react-properties-root");
@@ -544,7 +559,9 @@ const reactEditorCanvas = document.getElementById("canvas_2col");
 const reactSituationControlsRoot = document.getElementById("react-situation-controls-root");
 const reactSituationZoomRoot = document.getElementById("react-situation-zoom-root");
 const reactSituationActionsRoot = document.getElementById("react-situation-actions-root");
+const situationPaperElement = document.getElementById("paper");
 const legacyHierarchyRoot = document.getElementById("left_col_inner");
+const legacyHierarchyColumn = document.getElementById("left_col");
 const svgPreviewElement = document.getElementById("right_col_inner");
 const reactHierarchyIsEnabled = reactHierarchyRoot !== null;
 reactSchemaHistoryEnabled = reactHierarchyIsEnabled;
@@ -556,9 +573,10 @@ const saveStatusStore = new LegacySaveStatusStore(() => ({
 }));
 
 if (legacyHierarchyRoot !== null) legacyHierarchyRoot.hidden = true;
+if (legacyHierarchyColumn !== null) legacyHierarchyColumn.hidden = true;
 if (reactHierarchyRoot !== null) reactHierarchyRoot.hidden = false;
 if (reactPropertiesRoot !== null) reactPropertiesRoot.hidden = false;
-if (reactPropertiesColumn !== null) reactPropertiesColumn.hidden = false;
+reactPropertiesColumn?.classList.remove("hidden");
 reactEditorCanvas?.classList.add("react-editor-layout");
 if (reactEditorRoot !== null) {
     mountEditorApp(
@@ -607,6 +625,39 @@ if (reactEditorRoot !== null) {
                 globalThis.structure.sitplanview?.contextMenu?.hide();
                 globalThis.structure.sitplanview?.bringToFront();
             },
+            workspaceStore,
+            onSelectWorkspaceTab: (tab) => {
+                if (tab === "schema") globalThis.HLRedrawTree();
+                else showSituationPlanPage();
+            },
+            canCreateSituationOccurrence: (itemId) => {
+                const item = globalThis.structure.getElectroItemById(itemId);
+                return item !== null
+                    && globalThis.structure.sitplan.countByElectroItemId(itemId) < item.maxSituationPlanElements();
+            },
+            onCreateSituationOccurrence: (itemId) => {
+                showSituationPlanPage();
+                const defaults = globalThis.structure.sitplan.getDefaults();
+                globalThis.structure.sitplanview?.addElectroItem(
+                    itemId,
+                    "auto",
+                    "",
+                    "rechts",
+                    defaults.fontsize,
+                    defaults.scale,
+                    defaults.rotate,
+                );
+                globalThis.situationPlanStore.synchronizeLegacyDocument(globalThis.structure);
+            },
+            onRevealSituationOccurrence: (occurrenceId) => {
+                showSituationPlanPage();
+                const element = globalThis.structure.sitplan.getElements()
+                    .find(candidate => candidate.id === occurrenceId);
+                if (!element) return;
+                globalThis.structure.sitplanview?.selectPage(element.page);
+                globalThis.structure.sitplanview?.selectOneBox(element.boxref);
+            },
+            situationPaperElement,
         },
     );
 }
