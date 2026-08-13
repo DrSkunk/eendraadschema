@@ -21,7 +21,6 @@ export interface EditorAppMountOptions {
   readonly onSituationPlanZoomToFit?: () => void;
   readonly situationPlanActionsMountElement?: HTMLElement | null;
   readonly onSituationPlanDelete?: () => void;
-  readonly onSituationPlanEdit?: () => void;
   readonly onSituationPlanSendBackward?: () => void;
   readonly onSituationPlanBringForward?: () => void;
   readonly workspaceStore?: WorkspaceStore;
@@ -59,7 +58,6 @@ export function mountEditorApp(
         onSituationPlanZoomToFit={options.onSituationPlanZoomToFit}
         situationPlanActionsMountElement={options.situationPlanActionsMountElement ?? null}
         onSituationPlanDelete={options.onSituationPlanDelete}
-        onSituationPlanEdit={options.onSituationPlanEdit}
         onSituationPlanSendBackward={options.onSituationPlanSendBackward}
         onSituationPlanBringForward={options.onSituationPlanBringForward}
         workspaceStore={options.workspaceStore}

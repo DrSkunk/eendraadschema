@@ -17,6 +17,8 @@ import { SituationPlanZoomControls } from "./situation/SituationPlanZoomControls
 import { SituationPlanActionControls } from "./situation/SituationPlanActionControls";
 import { WorkspaceHeader } from "./workspace/WorkspaceHeader";
 import { SituationSelectionBridge } from "./workspace/SituationSelectionBridge";
+import { SituationElementInspector } from "./workspace/SituationElementInspector";
+import { useWorkspaceSnapshot } from "./useWorkspaceSnapshot";
 import "./editor-shell.css";
 import "./hierarchy/hierarchy.css";
 import "./properties/properties.css";
@@ -38,7 +40,6 @@ export interface EditorAppProps {
   readonly onSituationPlanZoomToFit?: () => void;
   readonly situationPlanActionsMountElement?: HTMLElement | null;
   readonly onSituationPlanDelete?: () => void;
-  readonly onSituationPlanEdit?: () => void;
   readonly onSituationPlanSendBackward?: () => void;
   readonly onSituationPlanBringForward?: () => void;
   readonly workspaceStore?: WorkspaceStore;
@@ -66,7 +67,6 @@ export function EditorApp({
   onSituationPlanZoomToFit = () => {},
   situationPlanActionsMountElement = null,
   onSituationPlanDelete = () => {},
-  onSituationPlanEdit = () => {},
   onSituationPlanSendBackward = () => {},
   onSituationPlanBringForward = () => {},
   workspaceStore = defaultWorkspaceStore,
@@ -77,6 +77,7 @@ export function EditorApp({
   situationPaperElement = null,
 }: EditorAppProps) {
   const snapshot = useSchemaSnapshot(schemaStore);
+  const workspace = useWorkspaceSnapshot(workspaceStore);
   const itemCount = snapshot.document
     .getAllItems()
     .filter((item) => item.role === "item").length;
@@ -103,7 +104,15 @@ export function EditorApp({
         : null}
       {propertiesMountElement
         ? createPortal(
-            <ItemPropertiesPanel schemaStore={schemaStore} editorStore={editorStore} />,
+            workspace.activeTab === "situation" && situationPlanStore
+              ? (
+                  <SituationElementInspector
+                    situationPlanStore={situationPlanStore}
+                    workspaceStore={workspaceStore}
+                    onMutation={() => onSituationPlanMutation()}
+                  />
+                )
+              : <ItemPropertiesPanel schemaStore={schemaStore} editorStore={editorStore} />,
             propertiesMountElement,
           )
         : null}
@@ -141,7 +150,6 @@ export function EditorApp({
         ? createPortal(
             <SituationPlanActionControls
               onDelete={onSituationPlanDelete}
-              onEdit={onSituationPlanEdit}
               onSendBackward={onSituationPlanSendBackward}
               onBringForward={onSituationPlanBringForward}
             />,
@@ -151,6 +159,7 @@ export function EditorApp({
       <SituationSelectionBridge
         paperElement={situationPaperElement}
         editorStore={editorStore}
+        workspaceStore={workspaceStore}
       />
     </>
   );

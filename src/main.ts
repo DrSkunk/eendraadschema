@@ -613,10 +613,6 @@ if (reactEditorRoot !== null) {
                 view.deleteSelectedBoxes();
                 globalThis.undostruct.store();
             },
-            onSituationPlanEdit: () => {
-                globalThis.structure.sitplanview?.contextMenu?.hide();
-                globalThis.structure.sitplanview?.editSelectedBox();
-            },
             onSituationPlanSendBackward: () => {
                 globalThis.structure.sitplanview?.contextMenu?.hide();
                 globalThis.structure.sitplanview?.sendToBack();
@@ -648,12 +644,17 @@ if (reactEditorRoot !== null) {
                     defaults.rotate,
                 );
                 globalThis.situationPlanStore.synchronizeLegacyDocument(globalThis.structure);
+                const created = globalThis.structure.sitplan.getElements()
+                    .filter(candidate => candidate.getElectroItemId() === itemId)
+                    .at(-1);
+                workspaceStore?.commands.selectSituationElement(created?.id ?? null);
             },
             onRevealSituationOccurrence: (occurrenceId) => {
                 showSituationPlanPage();
                 const element = globalThis.structure.sitplan.getElements()
                     .find(candidate => candidate.id === occurrenceId);
                 if (!element) return;
+                workspaceStore?.commands.selectSituationElement(element.id);
                 globalThis.structure.sitplanview?.selectPage(element.page);
                 globalThis.structure.sitplanview?.selectOneBox(element.boxref);
             },

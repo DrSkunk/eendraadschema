@@ -104,4 +104,45 @@ describe("LegacySituationPlanStore", () => {
     expect(store.getSnapshot().revision).toBe(1);
     expect(mutationCommitted).toHaveBeenCalledTimes(1);
   });
+
+  it("validates and publishes placement property changes", () => {
+    const { structure, mutationCommitted, store } = createStore();
+    const element = new SituationPlanElement();
+    structure.sitplan.addElement(element);
+    store.synchronizeLegacyDocument();
+    mutationCommitted.mockClear();
+
+    store.commands.updateElement(element.id, {
+      position: { x: 120, y: 80 },
+      rotation: 45,
+      scale: 0.8,
+      labelFontSize: 13,
+      movable: false,
+    });
+
+    expect(store.getSnapshot().elements[0]).toMatchObject({
+      position: { x: 120, y: 80 },
+      rotation: 45,
+      scale: 0.8,
+      labelFontSize: 13,
+      movable: false,
+    });
+    expect(mutationCommitted).toHaveBeenCalledOnce();
+  });
+
+  it("rejects invalid placement changes without publishing", () => {
+    const { structure, store } = createStore();
+    const element = new SituationPlanElement();
+    structure.sitplan.addElement(element);
+    store.synchronizeLegacyDocument();
+    const revision = store.getSnapshot().revision;
+
+    expect(() => store.commands.updateElement(element.id, { scale: 0 })).toThrowError(
+      expect.objectContaining<Partial<SituationPlanCommandError>>({ code: "INVALID_ELEMENT_CHANGE" }),
+    );
+    expect(() => store.commands.updateElement("missing", { rotation: 90 })).toThrowError(
+      expect.objectContaining<Partial<SituationPlanCommandError>>({ code: "ELEMENT_NOT_FOUND" }),
+    );
+    expect(store.getSnapshot().revision).toBe(revision);
+  });
 });

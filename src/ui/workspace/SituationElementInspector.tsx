@@ -1,0 +1,259 @@
+import { useEffect, useState } from "react";
+import type {
+  SituationPlanElementChanges,
+  SituationPlanElementSnapshot,
+  SituationPlanStore,
+} from "../../application/SituationPlanStore";
+import type { WorkspaceStore } from "../../application/WorkspaceStore";
+import { useSituationPlanSnapshot } from "../useSituationPlanSnapshot";
+import { useWorkspaceSnapshot } from "../useWorkspaceSnapshot";
+
+interface SituationElementInspectorProps {
+  readonly situationPlanStore: SituationPlanStore;
+  readonly workspaceStore: WorkspaceStore;
+  readonly onMutation: () => void;
+}
+
+interface PlacementDraft {
+  page: string;
+  x: string;
+  y: string;
+  scalePercent: string;
+  rotation: string;
+  labelFontSize: string;
+  addressType: "auto" | "manueel";
+  address: string;
+  addressLocation: "rechts" | "links" | "boven" | "onder";
+  movable: boolean;
+}
+
+function createDraft(element: SituationPlanElementSnapshot): PlacementDraft {
+  return {
+    page: String(element.page),
+    x: String(element.position.x),
+    y: String(element.position.y),
+    scalePercent: String(element.scale * 100),
+    rotation: String(element.rotation),
+    labelFontSize: String(element.labelFontSize),
+    addressType: element.addressType === "manueel" ? "manueel" : "auto",
+    address: element.address ?? "",
+    addressLocation: element.addressLocation as PlacementDraft["addressLocation"],
+    movable: element.movable,
+  };
+}
+
+export function SituationElementInspector({
+  situationPlanStore,
+  workspaceStore,
+  onMutation,
+}: SituationElementInspectorProps) {
+  const situation = useSituationPlanSnapshot(situationPlanStore);
+  const workspace = useWorkspaceSnapshot(workspaceStore);
+  const element = situation.elements.find(
+    candidate => candidate.id === workspace.selectedSituationElementId,
+  );
+  const [draft, setDraft] = useState<PlacementDraft | null>(
+    element ? createDraft(element) : null,
+  );
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    setDraft(element ? createDraft(element) : null);
+    setError("");
+  }, [element]);
+
+  if (!element || !draft) {
+    return (
+      <section className="p-4" aria-label="Eigenschappen van situatiesymbool">
+        <p className="m-0 text-xs tracking-wide text-neutral-500 uppercase">Situatieschema</p>
+        <h2 className="mt-1 text-lg font-semibold">Plaatsing</h2>
+        <p className="text-sm text-neutral-600">
+          Selecteer een symbool op het situatieschema of kies een plaatsing in de linkerzijbalk.
+        </p>
+      </section>
+    );
+  }
+
+  function commit(changes: SituationPlanElementChanges) {
+    try {
+      situationPlanStore.commands.updateElement(element.id, changes);
+      onMutation();
+      setError("");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "De plaatsing kon niet worden aangepast.");
+      setDraft(createDraft(element));
+    }
+  }
+
+  function commitNumber(
+    key: keyof Pick<PlacementDraft, "page" | "scalePercent" | "rotation" | "labelFontSize">,
+    changes: (value: number) => SituationPlanElementChanges,
+  ) {
+    const value = Number(draft[key]);
+    if (!Number.isFinite(value)) {
+      setError("Vul een geldig getal in.");
+      setDraft(createDraft(element));
+      return;
+    }
+    commit(changes(value));
+  }
+
+  function commitPosition() {
+    const x = Number(draft.x);
+    const y = Number(draft.y);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      setError("Vul geldige coördinaten in.");
+      setDraft(createDraft(element));
+      return;
+    }
+    commit({ position: { x, y } });
+  }
+
+  const inputClass = "w-full rounded border border-neutral-300 bg-white px-2 py-1.5 text-sm focus:border-blue-700 focus:outline-none";
+  const labelClass = "grid gap-1 text-xs font-semibold text-neutral-600";
+
+  return (
+    <section className="p-4" aria-label="Eigenschappen van situatiesymbool">
+      <p className="m-0 text-xs tracking-wide text-neutral-500 uppercase">Situatieschema</p>
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <h2 className="my-1 text-lg font-semibold">Plaatsing</h2>
+          <p className="m-0 text-xs text-neutral-500">{element.id}</p>
+        </div>
+        <label className="flex items-center gap-2 text-xs font-semibold text-neutral-700">
+          <input
+            type="checkbox"
+            checked={!draft.movable}
+            onChange={(event) => {
+              const movable = !event.target.checked;
+              setDraft(current => current ? { ...current, movable } : current);
+              commit({ movable });
+            }}
+          />
+          Vergrendeld
+        </label>
+      </div>
+
+      {error ? <p className="rounded bg-red-50 p-2 text-sm text-red-800" role="alert">{error}</p> : null}
+
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <label className={labelClass}>
+          Pagina
+          <select
+            className={inputClass}
+            value={draft.page}
+            onChange={(event) => {
+              setDraft({ ...draft, page: event.target.value });
+              commit({ page: Number(event.target.value) });
+            }}
+          >
+            {Array.from({ length: situation.pageCount }, (_, index) => index + 1).map(page => (
+              <option key={page} value={page}>{page}</option>
+            ))}
+          </select>
+        </label>
+        <label className={labelClass}>
+          Rotatie (°)
+          <input
+            className={inputClass}
+            type="number"
+            value={draft.rotation}
+            onChange={(event) => setDraft({ ...draft, rotation: event.target.value })}
+            onBlur={() => commitNumber("rotation", rotation => ({ rotation }))}
+          />
+        </label>
+        <label className={labelClass}>
+          X
+          <input
+            className={inputClass}
+            type="number"
+            value={draft.x}
+            onChange={(event) => setDraft({ ...draft, x: event.target.value })}
+            onBlur={commitPosition}
+          />
+        </label>
+        <label className={labelClass}>
+          Y
+          <input
+            className={inputClass}
+            type="number"
+            value={draft.y}
+            onChange={(event) => setDraft({ ...draft, y: event.target.value })}
+            onBlur={commitPosition}
+          />
+        </label>
+        <label className={labelClass}>
+          Schaal (%)
+          <input
+            className={inputClass}
+            type="number"
+            min="1"
+            value={draft.scalePercent}
+            onChange={(event) => setDraft({ ...draft, scalePercent: event.target.value })}
+            onBlur={() => commitNumber("scalePercent", scale => ({ scale: scale / 100 }))}
+          />
+        </label>
+        <label className={labelClass}>
+          Tekengrootte
+          <input
+            className={inputClass}
+            type="number"
+            min="1"
+            value={draft.labelFontSize}
+            onChange={(event) => setDraft({ ...draft, labelFontSize: event.target.value })}
+            onBlur={() => commitNumber("labelFontSize", labelFontSize => ({ labelFontSize }))}
+          />
+        </label>
+      </div>
+
+      {element.electroItemId !== null ? (
+        <fieldset className="mt-4 grid gap-3 border-0 border-t border-neutral-200 p-0 pt-4">
+          <legend className="text-sm font-semibold">Adreslabel</legend>
+          <label className={labelClass}>
+            Bron
+            <select
+              className={inputClass}
+              value={draft.addressType}
+              onChange={(event) => {
+                const addressType = event.target.value as PlacementDraft["addressType"];
+                setDraft({ ...draft, addressType });
+                commit({ addressType });
+              }}
+            >
+              <option value="auto">Automatisch uit schema</option>
+              <option value="manueel">Handmatig</option>
+            </select>
+          </label>
+          {draft.addressType === "manueel" ? (
+            <label className={labelClass}>
+              Adres
+              <input
+                className={inputClass}
+                value={draft.address}
+                onChange={(event) => setDraft({ ...draft, address: event.target.value })}
+                onBlur={() => commit({ address: draft.address })}
+              />
+            </label>
+          ) : null}
+          <label className={labelClass}>
+            Positie
+            <select
+              className={inputClass}
+              value={draft.addressLocation}
+              onChange={(event) => {
+                const addressLocation = event.target.value as PlacementDraft["addressLocation"];
+                setDraft({ ...draft, addressLocation });
+                commit({ addressLocation });
+              }}
+            >
+              <option value="rechts">Rechts</option>
+              <option value="links">Links</option>
+              <option value="boven">Boven</option>
+              <option value="onder">Onder</option>
+            </select>
+          </label>
+        </fieldset>
+      ) : null}
+    </section>
+  );
+}

@@ -75,6 +75,14 @@ test("unified workspace links hierarchy items to situation-plan placements", asy
   if (await helpDialogOk.isVisible()) await helpDialogOk.click();
   await links.getByRole("button", { name: /Toon plaatsing 1/ }).click();
   await expect(page.locator("#paper .box.selected")).toBeVisible();
+  const placementInspector = page.getByRole("region", { name: "Eigenschappen van situatiesymbool" });
+  const rotation = placementInspector.getByLabel("Rotatie (°)");
+  await rotation.fill("90");
+  await rotation.blur();
+  await expect(rotation).toHaveValue("90");
+  await expect.poll(() => page.evaluate(() => (
+    globalThis.situationPlanStore.getSnapshot().elements[0]?.rotation
+  ))).toBe(90);
 });
 
 test("adds a secondary board, shows breadcrumbs, and deletes it again", async ({ page }) => {
@@ -121,7 +129,7 @@ test("situation plan React controls manage pages", async ({ page }) => {
   await expect(pageSelect).toHaveValue("1");
 
   const actionControls = page.getByRole("region", { name: "Situatieplan acties" });
-  await expect(actionControls.getByRole("button")).toHaveCount(4);
+  await expect(actionControls.getByRole("button")).toHaveCount(3);
   await expect(page.locator("#button_Delete:visible, #button_edit:visible, #sendBack:visible, #bringFront:visible")).toHaveCount(0);
 
   const zoomControls = page.getByRole("region", { name: "Situatieplan zoom" });

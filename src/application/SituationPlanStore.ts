@@ -1,4 +1,17 @@
 import type { SituationPlanDefaults } from "../sitplan/SituationPlan";
+import type { AdresLocation, AdresType } from "../sitplan/SituationPlanElement";
+
+export interface SituationPlanElementChanges {
+  readonly page?: number;
+  readonly position?: Readonly<{ x: number; y: number }>;
+  readonly labelFontSize?: number;
+  readonly addressType?: AdresType;
+  readonly address?: string;
+  readonly addressLocation?: AdresLocation;
+  readonly rotation?: number;
+  readonly scale?: number;
+  readonly movable?: boolean;
+}
 
 export interface SituationPlanElementSnapshot {
   readonly id: string;
@@ -30,6 +43,7 @@ export interface SituationPlanCommands {
   addPage(): number;
   deletePage(page: number): void;
   updateDefaults(changes: Partial<SituationPlanDefaults>): void;
+  updateElement(elementId: string, changes: SituationPlanElementChanges): void;
 }
 
 export interface SituationPlanStore {
@@ -41,7 +55,9 @@ export interface SituationPlanStore {
 export type SituationPlanCommandErrorCode =
   | "INVALID_PAGE"
   | "LAST_PAGE"
-  | "INVALID_DEFAULT";
+  | "INVALID_DEFAULT"
+  | "ELEMENT_NOT_FOUND"
+  | "INVALID_ELEMENT_CHANGE";
 
 export class SituationPlanCommandError extends Error {
   constructor(

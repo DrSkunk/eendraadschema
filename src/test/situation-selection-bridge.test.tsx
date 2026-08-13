@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { LocalEditorStore } from "../application/EditorStore";
 import { SituationPlanElement } from "../sitplan/SituationPlanElement";
 import { SituationSelectionBridge } from "../ui/workspace/SituationSelectionBridge";
+import { LocalWorkspaceStore } from "../application/WorkspaceStore";
 
 beforeEach(() => {
   globalThis.SITPLANVIEW_DEFAULT_SCALE = 1;
@@ -31,14 +32,17 @@ describe("SituationSelectionBridge", () => {
     paper.append(box);
 
     const editorStore = new LocalEditorStore();
+    const workspaceStore = new LocalWorkspaceStore();
     render(
       <SituationSelectionBridge
         paperElement={paper}
         editorStore={editorStore}
+        workspaceStore={workspaceStore}
       />,
     );
 
     fireEvent.mouseDown(child);
     expect(editorStore.getSnapshot().selectedItemId).toBe(42);
+    expect(workspaceStore.getSnapshot().selectedSituationElementId).toBe(element.id);
   });
 });

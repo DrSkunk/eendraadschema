@@ -7,25 +7,21 @@ afterEach(cleanup);
 describe("SituationPlanActionControls", () => {
   it("routes each action through its injected canvas command", () => {
     const onDelete = vi.fn();
-    const onEdit = vi.fn();
     const onSendBackward = vi.fn();
     const onBringForward = vi.fn();
     render(
       <SituationPlanActionControls
         onDelete={onDelete}
-        onEdit={onEdit}
         onSendBackward={onSendBackward}
         onBringForward={onBringForward}
       />,
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Verwijder" }));
-    fireEvent.click(screen.getByRole("button", { name: "Bewerk" }));
     fireEvent.click(screen.getByRole("button", { name: "Naar achter" }));
     fireEvent.click(screen.getByRole("button", { name: "Naar voor" }));
 
     expect(onDelete).toHaveBeenCalledOnce();
-    expect(onEdit).toHaveBeenCalledOnce();
     expect(onSendBackward).toHaveBeenCalledOnce();
     expect(onBringForward).toHaveBeenCalledOnce();
   });
@@ -37,7 +33,6 @@ describe("SituationPlanActionControls", () => {
     render(
       <SituationPlanActionControls
         onDelete={() => {}}
-        onEdit={() => {}}
         onSendBackward={() => {}}
         onBringForward={() => {}}
       />,

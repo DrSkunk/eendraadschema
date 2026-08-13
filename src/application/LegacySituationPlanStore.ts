@@ -4,6 +4,7 @@ import type { SituationPlanElement } from "../sitplan/SituationPlanElement";
 import {
   SituationPlanCommandError,
   type SituationPlanCommands,
+  type SituationPlanElementChanges,
   type SituationPlanElementSnapshot,
   type SituationPlanSnapshot,
   type SituationPlanStore,
@@ -32,6 +33,7 @@ export class LegacySituationPlanStore implements SituationPlanStore {
       addPage: this.addPage.bind(this),
       deletePage: this.deletePage.bind(this),
       updateDefaults: this.updateDefaults.bind(this),
+      updateElement: this.updateElement.bind(this),
     });
   }
 
@@ -96,6 +98,82 @@ export class LegacySituationPlanStore implements SituationPlanStore {
     );
     if (!changed) return;
     this.commit(() => this.plan.updateDefaults(changes));
+  }
+
+  private updateElement(elementId: string, changes: SituationPlanElementChanges): void {
+    const element = this.plan.getElements().find(candidate => candidate.id === elementId);
+    if (!element) {
+      throw new SituationPlanCommandError(
+        "ELEMENT_NOT_FOUND",
+        `Situatieplanplaatsing '${elementId}' bestaat niet.`,
+      );
+    }
+    if (changes.page !== undefined) this.assertPage(changes.page);
+    if (changes.position !== undefined && (
+      !Number.isFinite(changes.position.x) || !Number.isFinite(changes.position.y)
+    )) {
+      throw new SituationPlanCommandError("INVALID_ELEMENT_CHANGE", "De positie moet uit geldige getallen bestaan.");
+    }
+    if (changes.labelFontSize !== undefined && (
+      !Number.isFinite(changes.labelFontSize) || changes.labelFontSize <= 0
+    )) {
+      throw new SituationPlanCommandError("INVALID_ELEMENT_CHANGE", "De lettergrootte moet groter zijn dan nul.");
+    }
+    if (changes.scale !== undefined && (!Number.isFinite(changes.scale) || changes.scale <= 0)) {
+      throw new SituationPlanCommandError("INVALID_ELEMENT_CHANGE", "De schaal moet groter zijn dan nul.");
+    }
+    if (changes.rotation !== undefined && !Number.isFinite(changes.rotation)) {
+      throw new SituationPlanCommandError("INVALID_ELEMENT_CHANGE", "De rotatie moet een geldig getal zijn.");
+    }
+
+    const serialized = element.toJsonObject();
+    const changed = (
+      (changes.page !== undefined && changes.page !== serialized.page)
+      || (changes.position !== undefined && (
+        changes.position.x !== serialized.posx || changes.position.y !== serialized.posy
+      ))
+      || (changes.labelFontSize !== undefined && changes.labelFontSize !== serialized.labelfontsize)
+      || (changes.addressType !== undefined && changes.addressType !== serialized.adrestype)
+      || (changes.address !== undefined && changes.address !== serialized.adres)
+      || (changes.addressLocation !== undefined && changes.addressLocation !== serialized.adreslocation)
+      || (changes.rotation !== undefined && changes.rotation !== serialized.rotate)
+      || (changes.scale !== undefined && changes.scale !== serialized.scale)
+      || (changes.movable !== undefined && changes.movable !== serialized.movable)
+    );
+    if (!changed) return;
+
+    this.commit(() => {
+      if (changes.page !== undefined) element.page = changes.page;
+      if (changes.position !== undefined) {
+        element.posx = changes.position.x;
+        element.posy = changes.position.y;
+      }
+      if (changes.labelFontSize !== undefined) element.labelfontsize = changes.labelFontSize;
+      if (
+        changes.addressType !== undefined
+        || changes.address !== undefined
+        || changes.addressLocation !== undefined
+      ) {
+        const addressType = changes.addressType ?? (serialized.adrestype === "manueel" ? "manueel" : "auto");
+        const addressLocation = changes.addressLocation ?? (
+          serialized.adreslocation === "links"
+            ? "links"
+            : serialized.adreslocation === "boven"
+              ? "boven"
+              : serialized.adreslocation === "onder"
+                ? "onder"
+                : "rechts"
+        );
+        element.setAdres(
+          addressType,
+          changes.address ?? serialized.adres ?? "",
+          addressLocation,
+        );
+      }
+      if (changes.rotation !== undefined) element.rotate = changes.rotation;
+      if (changes.scale !== undefined) element.setscale(changes.scale);
+      if (changes.movable !== undefined) element.movable = changes.movable;
+    });
   }
 
   private assertPage(page: number): void {

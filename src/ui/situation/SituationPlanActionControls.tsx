@@ -9,14 +9,12 @@ const LEGACY_ACTION_IDS = [
 
 export interface SituationPlanActionControlsProps {
   readonly onDelete: () => void;
-  readonly onEdit: () => void;
   readonly onSendBackward: () => void;
   readonly onBringForward: () => void;
 }
 
 export function SituationPlanActionControls({
   onDelete,
-  onEdit,
   onSendBackward,
   onBringForward,
 }: SituationPlanActionControlsProps) {
@@ -55,10 +53,6 @@ export function SituationPlanActionControls({
       <button type="button" className={buttonClass} onClick={onDelete}>
         <span className="text-2xl" aria-hidden="true">🗑</span>
         <span>Verwijder</span>
-      </button>
-      <button type="button" className={buttonClass} onClick={onEdit}>
-        <span className="text-2xl" aria-hidden="true">⚙</span>
-        <span>Bewerk</span>
       </button>
       <button type="button" className={buttonClass} onClick={onSendBackward}>
         <span className="text-2xl" aria-hidden="true">↓↓</span>
