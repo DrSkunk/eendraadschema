@@ -142,7 +142,7 @@ Earlier React/property-editor commits immediately precede these in branch histor
 2. Done: `LegacyPrintService` (`src/application/PrintService.ts`) is the React-facing print adapter for settings, automatic/manual pagination, preview, SVG download and PDF generation. The React `PrintDialog` owns the workflow; renderer internals remain unchanged.
 3. Done: `LegacyFileService` (`src/application/FileService.ts`) is the React-facing open/save adapter. The React `FileDialog` owns open, save, save-as, append and persisted file settings while retaining established browser/file-system fallbacks.
 4. Done: the unified workspace owns situation contextual commands and the fully manual `Bordindeling` editor. Board layouts are persisted in EDS006 and all mutations pass through schema commands.
-5. Retain old imperative file/print entry points only as compatibility adapters while external/global callbacks still reference them. Do not extend those pages with new UI.
+5. Done: obsolete imperative file/print pages, their global callbacks, `Print_Table` DOM builders and the superseded one-line ribbon were removed. File-system callbacks and print render/pagination services remain as compatibility boundaries; the frozen situation implementation still owns its renderer-required DOM.
 6. Perform a small manual browser smoke pass with current and old EDS fixtures, a main/garage board document, board placement save/reload, undo/redo, SVG download and PDF print.
 
 ## Common pitfalls

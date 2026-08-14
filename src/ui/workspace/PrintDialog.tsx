@@ -234,7 +234,7 @@ export function PrintDialog({ printService, onDownloadSvg, onClose }: PrintDialo
               </button>
             </div>
           </div>
-          <div className="flex min-h-[30rem] items-start justify-center overflow-auto rounded-lg border border-neutral-300 bg-neutral-100 p-4">
+          <div aria-label="Afdrukvoorbeeld" className="flex min-h-[30rem] items-start justify-center overflow-auto rounded-lg border border-neutral-300 bg-neutral-100 p-4">
             {previewSvg
               ? <div className="max-w-full bg-white shadow" dangerouslySetInnerHTML={{ __html: previewSvg }} />
               : <p className="text-neutral-500">Geen afdrukvoorbeeld beschikbaar.</p>}

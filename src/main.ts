@@ -663,9 +663,9 @@ if (reactEditorRoot !== null) {
                 const element = globalThis.structure.sitplan.getElements()
                     .find(candidate => candidate.id === occurrenceId);
                 if (!element) return;
-                workspaceStore?.commands.selectSituationElement(element.id);
                 globalThis.structure.sitplanview?.selectPage(element.page);
                 globalThis.structure.sitplanview?.selectOneBox(element.boxref);
+                workspaceStore?.commands.selectSituationElement(element.id);
             },
             situationPaperElement,
             commandBarMountElement: reactCommandBarRoot,
@@ -706,7 +706,14 @@ if (reactHierarchyIsEnabled) {
 }
 globalThis.situationPlanStore.subscribe(() => {
     if (globalThis.structure.properties.currentView === 'draw') {
-        globalThis.structure.sitplanview?.redraw();
+        const selectedIds = workspaceStore?.getSnapshot().selectedSituationElementIds ?? [];
+        const view = globalThis.structure.sitplanview;
+        view?.redraw();
+        for (const elementId of selectedIds) {
+            const element = globalThis.structure.sitplan.getElements()
+                .find(candidate => candidate.id === elementId);
+            view?.selectBox(element?.boxref ?? null);
+        }
     }
 });
 // Filename edits and legacy-view mutations bypass the schema store; a coarse

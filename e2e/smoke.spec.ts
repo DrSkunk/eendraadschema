@@ -36,7 +36,8 @@ test("edits a circuit property through React and updates the SVG", async ({ page
   await undoButton.click();
   await expect(page.locator("#right_col_inner #EDS svg")).not.toContainText("Smoketest-adres");
 
-  await page.getByRole("button", { name: "Opnieuw" }).click();
+  await page.getByRole("toolbar", { name: "Werkruimtecommando's" })
+    .getByRole("button", { name: "Opnieuw" }).click();
   await expect(page.locator("#right_col_inner #EDS svg")).toContainText("Smoketest-adres");
 });
 
@@ -132,7 +133,7 @@ test("situation plan React controls manage pages", async ({ page }) => {
   const initialElementCount = await paper.locator(".box").count();
   await controls.getByLabel("Kies een plattegrondbestand").setInputFiles("css/bg.jpg");
   await expect(paper.locator(".box")).toHaveCount(initialElementCount + 1);
-  await expect(controls.getByRole("status")).toContainText("plattegrond is toegevoegd");
+  await expect(controls.getByText("De plattegrond is toegevoegd", { exact: false })).toBeAttached();
 
   await controls.getByRole("button", { name: "Los symbool" }).click();
   const symbolDialog = page.getByRole("dialog", { name: "Los symbool toevoegen" });
@@ -166,10 +167,11 @@ test("print page renders a preview through the print adapter", async ({ page }) 
   await loadExample(page, 1);
 
   await page.locator("#minitabs").getByText("Print", { exact: true }).click();
-  await expect(page.getByRole("dialog", { name: "Afdrukken" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "PDF genereren" })).toBeVisible();
-  await expect(page.getByLabel("Afdrukvoorbeeld").locator("svg")).toBeVisible();
-  await page.getByRole("button", { name: "Annuleren" }).click();
+  const printDialog = page.getByRole("dialog", { name: "Afdrukken" });
+  await expect(printDialog).toBeVisible();
+  await expect(printDialog.getByRole("button", { name: "PDF genereren" })).toBeVisible();
+  await expect(printDialog.locator('[aria-label="Afdrukvoorbeeld"] > div > svg')).toBeVisible();
+  await page.getByRole("button", { name: "Sluiten" }).click();
 
   await page.getByRole("navigation", { name: "Werkruimteweergave" })
     .getByRole("button", { name: "Eéndraadschema" }).click();
