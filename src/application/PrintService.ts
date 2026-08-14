@@ -8,7 +8,6 @@ export interface PrintPreviewState {
   readonly sitplanPageCount: number;
   readonly totalPageCount: number;
   readonly displayPageIndex: number;
-  readonly canPrint: boolean;
   readonly enableAutopage: boolean;
   readonly paperSize: string;
   readonly dpi: number;
@@ -60,7 +59,6 @@ export class LegacyPrintService {
       sitplanPageCount,
       totalPageCount: edsPageCount + sitplanPageCount,
       displayPageIndex: document.print_table.displaypage,
-      canPrint: document.print_table.canPrint(),
       enableAutopage: document.print_table.enableAutopage,
       paperSize: document.print_table.getPaperSize(),
       dpi: this.getDpi(),
@@ -78,6 +76,11 @@ export class LegacyPrintService {
   setDisplayPageIndex(pageIndex: number): void {
     this.getDocument().print_table.displaypage = pageIndex;
     this.clampDisplayPage();
+  }
+
+  validatePageRange(pageRange: string): boolean {
+    const state = this.getPreviewState();
+    return this.getDocument().print_table.canPrint(pageRange, state.totalPageCount);
   }
 
   updateSettings(changes: PrintSettingsChanges): void {
@@ -137,6 +140,9 @@ export class LegacyPrintService {
 
     const svg = flattenSVGfromString(document.toSVG(0, "horizontal").data);
     const state = this.getPreviewState();
+    if (!this.validatePageRange(options.pageRange ?? "")) {
+      throw new RangeError("Het opgegeven paginabereik is ongeldig.");
+    }
     const pageRange = options.pageRange?.trim() !== "" && options.pageRange !== undefined
       ? options.pageRange.trim()
       : `1-${state.totalPageCount}`;

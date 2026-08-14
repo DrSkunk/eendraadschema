@@ -26,6 +26,7 @@ export function PrintDialog({ printService, onDownloadSvg, onClose }: PrintDialo
   }
 
   const previewSvg = state.totalPageCount > 0 ? printService.getPreviewSvg() : "";
+  const validPageRange = printService.validatePageRange(pageRange);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <section role="dialog" aria-modal="true" aria-labelledby="print-dialog-title" className="grid max-h-[95vh] w-full max-w-6xl gap-5 overflow-auto rounded-xl bg-white p-6 shadow-2xl lg:grid-cols-[20rem_1fr]">
@@ -178,7 +179,14 @@ export function PrintDialog({ printService, onDownloadSvg, onClose }: PrintDialo
             ) : null}
             <label className="grid gap-1 text-sm font-semibold">
               Paginabereik
-              <input className="rounded border border-neutral-300 px-3 py-2" placeholder={`1-${state.totalPageCount}`} value={pageRange} onChange={event => setPageRange(event.target.value)} />
+              <input
+                className="rounded border border-neutral-300 px-3 py-2"
+                aria-invalid={!validPageRange}
+                placeholder={`1-${state.totalPageCount}`}
+                value={pageRange}
+                onChange={event => setPageRange(event.target.value)}
+              />
+              {!validPageRange ? <span className="text-xs font-normal text-red-700">Gebruik oplopende pagina&apos;s binnen 1-{state.totalPageCount}.</span> : null}
             </label>
             <label className="grid gap-1 text-sm font-semibold">
               PDF-bestandsnaam
@@ -187,7 +195,7 @@ export function PrintDialog({ printService, onDownloadSvg, onClose }: PrintDialo
             <button
               type="button"
               className="rounded bg-blue-700 px-4 py-2 font-semibold text-white hover:bg-blue-800 disabled:opacity-50"
-              disabled={!state.canPrint}
+              disabled={!validPageRange}
               onClick={() => {
                 if (!status.current) return;
                 printService.generatePdf({

@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { LegacyPrintService } from "../application/PrintService";
-import { getPrintSVGWithoutAddress } from "../print/print";
 import { SVGSymbols } from "../SVGSymbols";
 import { loadFixture } from "./helpers";
 
@@ -11,7 +10,6 @@ afterEach(() => {
 function createService() {
   SVGSymbols.clearSymbols();
   const structure = loadFixture("example001.eds");
-  // Print_Table.canPrint() still reads globalThis.structure internally.
   globalThis.structure = structure;
   const service = new LegacyPrintService(() => structure);
   return { structure, service };
@@ -49,6 +47,17 @@ describe("LegacyPrintService", () => {
     expect(structure.print_table.displaypage).toBe(0);
   });
 
+  it("validates React-owned PDF page ranges", () => {
+    const { service } = createService();
+    service.computeLayout();
+    const pageCount = service.getPreviewState().totalPageCount;
+
+    expect(service.validatePageRange("")).toBe(true);
+    expect(service.validatePageRange(`1-${pageCount}`)).toBe(true);
+    expect(service.validatePageRange(`${pageCount + 1}`)).toBe(false);
+    expect(service.validatePageRange("2-1")).toBe(false);
+  });
+
   it("produces a viewbox-cropped SVG for an EDS preview page", () => {
     const { structure, service } = createService();
     const outSVG = service.computeLayout();
@@ -62,13 +71,6 @@ describe("LegacyPrintService", () => {
     expect(previewSvg).toMatch(/^<svg /);
     expect(previewSvg).toContain(`viewBox="${expectedViewbox}"`);
     expect(previewSvg).toContain("</svg>");
-  });
-
-  it("keeps the legacy getPrintSVGWithoutAddress wrapper byte-identical", () => {
-    const { service } = createService();
-    const outSVG = service.computeLayout();
-
-    expect(getPrintSVGWithoutAddress(outSVG, 0)).toBe(service.getPreviewSvg(0, outSVG));
   });
 
   it("manages manual page boundaries and metadata safely", () => {

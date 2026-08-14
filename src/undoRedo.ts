@@ -1,6 +1,5 @@
 import { loadFromText } from "./importExport/importExport";
 import { showSituationPlanPage } from "./sitplan/SituationPlanView";
-import { printsvg } from "./print/print";
 import { DocumentSnapshotHistory } from "./application/DocumentSnapshotHistory";
 
 class LargeStringStore {
@@ -133,7 +132,12 @@ export class undoRedo {
 
                 break;
             case '2col': globalThis.topMenu.selectMenuItemByOrdinal(2); globalThis.HLRedrawTree(); break;
-            case 'config': globalThis.topMenu.selectMenuItemByOrdinal(4); printsvg(); break;
+            case 'config':
+                globalThis.structure.properties.currentView = '2col';
+                globalThis.toggleAppView('2col');
+                globalThis.topMenu.selectMenuItemByOrdinal(2);
+                globalThis.HLRedrawTree();
+                break;
         }
     }
 

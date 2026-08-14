@@ -22,18 +22,13 @@ declare global {
         SITPLANVIEW_ZOOMINTERVAL: {MIN: number, MAX: number};
         SITPLANVIEW_DEFAULT_SCALE: number;
         fileAPIobj: importExportUsingFileAPI;
-        CONFIGPRINTPAGE: string;
         EXAMPLE0: string;
         EXAMPLE1: string;
         EXAMPLE_DEFAULT: string;
         loadFromText: () => void;
         HLRedrawTree: () => void;
         HLRedrawTreeSVG: () => void;
-        HLDisplayPage: () => void;
         HLRedrawTreeHTML: () => void;
-        HL_cancelFilename: () => void;
-        HL_changeFilename: () => void;
-        HL_enterSettings: () => void;
         HLRedrawTreeHTMLLight: () => void;
         toggleAppView: (type: '2col' | 'config' | 'draw') => void;
         load_example: (nr: number) => void;
@@ -42,9 +37,6 @@ declare global {
         historyCanUndo: () => boolean;
         historyCanRedo: () => boolean;
         read_settings: () => void;
-        dosvgdownload: () => void;
-        displayButtonPrintToPdf: () => void;
-        handleButtonPrintToPdf: () => void;
         propUpload: (text: string) => void;
         loadFileFromText: () => void;
     }

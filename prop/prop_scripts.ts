@@ -42,16 +42,6 @@ globalThis.loadFileFromText = () => {
 
 /// --- END OF DEVELOPMENT OPTIONS ---
 
-globalThis.displayButtonPrintToPdf = () => {
-  return("");
-  //Does nothing, we use jsPDF now, not Latex anymore
-}
-
-globalThis.handleButtonPrintToPdf = () => {
-  return(0);
-  //Does nothing, we use jsPDF now, not Latex anymore
-}
-
 globalThis.propUpload = (text: string) => {
   return(0);
   //Does nothing in the serverless version, only used on https://eendraadschema.goethals-jacobs.be
