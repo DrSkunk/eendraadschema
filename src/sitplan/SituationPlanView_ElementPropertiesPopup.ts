@@ -422,8 +422,8 @@ export function SituationPlanView_ElementPropertiesPopup(sitplanElement: Situati
         rotationInput.value = formatFloat(sitplanElement.rotate,2);
     } else { // Form werd aangeroepen om een nieuw element te creëren
         selectAdresTypeChanged();
-        fontSizeInput.value = formatFloat(globalThis.structure.sitplan.defaults.fontsize,2);
-        scaleInput.value = formatFloat(globalThis.structure.sitplan.defaults.scale*100,6);
+        fontSizeInput.value = formatFloat(globalThis.structure.sitplan.getDefaults().fontsize,2);
+        scaleInput.value = formatFloat(globalThis.structure.sitplan.getDefaults().scale*100,6);
         selectAdresLocation.value = 'rechts';
     }
 
@@ -476,13 +476,13 @@ export function SituationPlanView_ElementPropertiesPopup(sitplanElement: Situati
             return /^-?\d+(\.\d+)?$/.test(value);
         }
         let returnId = (trimString(electroItemIdInput.value) == '' ? null : Number(electroItemIdInput.value));
-        if (!(isNumeric(scaleInput.value)) || (Number(scaleInput.value) <= 0)) scaleInput.value = String(globalThis.structure.sitplan.defaults.scale*100);
+        if (!(isNumeric(scaleInput.value)) || (Number(scaleInput.value) <= 0)) scaleInput.value = String(globalThis.structure.sitplan.getDefaults().scale*100);
         if (!(isNumeric(rotationInput.value))) rotationInput.value = String(0);
         
         if (setDefaultCheckbox.checked) {
             if ( (sitplanElement == null) || ( (sitplanElement != null) && (sitplanElement.getElectroItemId() != null) ) )
-                globalThis.structure.sitplan.defaults.fontsize = Number(fontSizeInput.value);
-            globalThis.structure.sitplan.defaults.scale = Number(scaleInput.value)/100;
+                globalThis.situationPlanStore.commands.updateDefaults({ fontsize: Number(fontSizeInput.value) });
+            globalThis.situationPlanStore.commands.updateDefaults({ scale: Number(scaleInput.value)/100 });
         }
         closePopup(); // We close the popup first to avoid that an error somewhere leaves it open
         callbackOK(returnId, selectAdresType.value, adresInput.value, selectAdresLocation.value, Number(fontSizeInput.value), Number(scaleInput.value)/100, Number(rotationInput.value));

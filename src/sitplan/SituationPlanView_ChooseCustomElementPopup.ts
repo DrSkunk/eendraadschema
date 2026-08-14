@@ -101,7 +101,7 @@ export class SituationPlanView_ChooseCustomElementPopup {
             const cancelButton = div.querySelector('#cancelButton') as HTMLButtonElement;
 
         // Zet standaard schaal en rotatie
-        scaleInput.value = formatFloat(globalThis.structure.sitplan.defaults.scale*100,6);
+        scaleInput.value = formatFloat(globalThis.structure.sitplan.getDefaults().scale*100,6);
         rotationInput.value = formatFloat(0);
 
         /*
@@ -125,11 +125,11 @@ export class SituationPlanView_ChooseCustomElementPopup {
             function isNumeric(value: any) {
                 return /^-?\d+(\.\d+)?$/.test(value);
             }
-            if (!(isNumeric(scaleInput.value)) || (Number(scaleInput.value) <= 0)) scaleInput.value = String(globalThis.structure.sitplan.defaults.scale*100);
+            if (!(isNumeric(scaleInput.value)) || (Number(scaleInput.value) <= 0)) scaleInput.value = String(globalThis.structure.sitplan.getDefaults().scale*100);
             if (!(isNumeric(rotationInput.value))) rotationInput.value = String(0);
             
             if (setDefaultCheckbox.checked) {
-                globalThis.structure.sitplan.defaults.scale = Number(scaleInput.value)/100;
+                globalThis.situationPlanStore.commands.updateDefaults({ scale: Number(scaleInput.value)/100 });
             }
             const selectedType = itemTypeSelect.value;
             closePopup();

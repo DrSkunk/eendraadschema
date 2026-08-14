@@ -1,0 +1,407 @@
+.react-hierarchy {
+  color: #20252b;
+  min-width: 20rem;
+  padding: 1rem;
+}
+
+.react-hierarchy__header {
+  align-items: flex-end;
+  border-bottom: 1px solid #d8dee4;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.react-hierarchy__header h2 {
+  font-size: 1.125rem;
+  margin: 0;
+}
+
+.react-hierarchy__eyebrow {
+  color: #64707d;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.board-navigator {
+  background: #f4f6f8;
+  border: 1px solid #d8dee4;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+}
+
+.board-navigator__header {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.board-navigator__header h2 {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.board-navigator__issue-count,
+.board-navigator__valid {
+  font-size: 0.75rem;
+}
+
+.board-navigator__issue-count {
+  color: #b42318;
+}
+
+.board-navigator__valid {
+  color: #067647;
+}
+
+.board-navigator__list {
+  display: grid;
+  gap: 0.375rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.board-navigator__board {
+  background: #fff;
+  border: 1px solid #d8dee4;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem 0.625rem;
+  text-align: left;
+  width: 100%;
+}
+
+.board-navigator__board--active {
+  background: #eff4ff;
+  border-color: #175cd3;
+}
+
+.board-navigator__board small {
+  color: #64707d;
+  margin-top: 0.125rem;
+}
+
+.board-navigator__add,
+.board-navigator__document,
+.board-navigator__edit,
+.board-navigator__validation {
+  margin-top: 0.75rem;
+}
+
+.board-navigator__add summary,
+.board-navigator__document summary,
+.board-navigator__edit summary,
+.board-navigator__validation summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.board-navigator__add form,
+.board-navigator__document form,
+.board-navigator__edit form {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.625rem;
+}
+
+.board-navigator__add label,
+.board-navigator__document label,
+.board-navigator__edit label {
+  display: grid;
+  font-size: 0.8125rem;
+  gap: 0.1875rem;
+}
+
+.board-navigator__add input,
+.board-navigator__add select,
+.board-navigator__add button,
+.board-navigator__edit input,
+.board-navigator__edit select,
+.board-navigator__edit button {
+  box-sizing: border-box;
+  font: inherit;
+  min-height: 2.25rem;
+  width: 100%;
+}
+
+.board-navigator__document textarea,
+.board-navigator__document button {
+  box-sizing: border-box;
+  font: inherit;
+  width: 100%;
+}
+
+.board-navigator__delete {
+  color: #b42318;
+}
+
+.board-navigator__validation ul {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+}
+
+.board-navigator__validation button {
+  background: #fef3f2;
+  border: 1px solid #fecdca;
+  color: #b42318;
+  height: auto;
+  margin-top: 0.25rem;
+  padding: 0.5rem;
+  text-align: left;
+  width: 100%;
+}
+
+.react-hierarchy__tree,
+.react-hierarchy__children {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.react-hierarchy__node {
+  margin: 0.25rem 0;
+}
+
+.react-hierarchy__row {
+  align-items: stretch;
+  border: 1px solid #d8dee4;
+  border-radius: 6px;
+  display: grid;
+  gap: 0.25rem;
+  grid-template-columns: 2rem minmax(8rem, 1fr) minmax(8rem, auto) auto;
+  margin-left: calc(var(--hierarchy-depth, 0) * 1.25rem);
+  padding: 0.25rem;
+}
+
+.react-hierarchy__row--selected {
+  border-color: #175cd3;
+  box-shadow: 0 0 0 2px rgb(23 92 211 / 18%);
+}
+
+.react-hierarchy button,
+.react-hierarchy select {
+  font: inherit;
+  min-height: 2rem;
+}
+
+.react-hierarchy button:focus-visible,
+.react-hierarchy select:focus-visible {
+  outline: 3px solid rgb(23 92 211 / 35%);
+  outline-offset: 2px;
+}
+
+.react-hierarchy__expand,
+.react-hierarchy__expand-placeholder {
+  align-self: center;
+  display: inline-grid;
+  min-width: 2rem;
+  place-items: center;
+}
+
+.react-hierarchy__summary {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0.25rem 0.5rem;
+  text-align: left;
+}
+
+.react-hierarchy__summary small {
+  color: #64707d;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.react-hierarchy__type {
+  align-self: center;
+}
+
+.react-hierarchy__type select {
+  max-width: 13rem;
+  width: 100%;
+}
+
+.react-hierarchy__actions,
+.react-hierarchy__add-control,
+.react-hierarchy__history {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.react-hierarchy__history {
+  margin-left: auto;
+}
+
+.react-hierarchy__actions button {
+  padding: 0.25rem 0.5rem;
+}
+
+.react-hierarchy__delete {
+  color: #b42318;
+}
+
+.react-hierarchy__add-control {
+  margin: 0.25rem 0 0.5rem;
+  margin-left: calc((var(--hierarchy-depth, 0) + 1) * 1.25rem);
+}
+
+.react-hierarchy__error {
+  background: #fef3f2;
+  border: 1px solid #fecdca;
+  color: #b42318;
+  padding: 0.75rem;
+}
+
+.react-hierarchy__empty {
+  color: #64707d;
+  padding: 1rem 0;
+}
+
+.react-hierarchy-search {
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.react-hierarchy-search__field input {
+  border: 1px solid #cbd3dc;
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.react-hierarchy-search__results {
+  background: #ffffff;
+  border: 1px solid #cbd3dc;
+  border-radius: 0.375rem;
+  margin-top: 0.25rem;
+  padding: 0.5rem;
+}
+
+.react-hierarchy-search__count {
+  color: #64707d;
+  font-size: 0.85rem;
+  margin: 0 0 0.25rem;
+}
+
+.react-hierarchy-search__results ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.react-hierarchy-search__results li + li {
+  border-top: 1px solid #eef1f5;
+}
+
+.react-hierarchy-search__results button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.375rem 0.25rem;
+  text-align: left;
+  width: 100%;
+}
+
+.react-hierarchy-search__results button:hover,
+.react-hierarchy-search__results button:focus-visible {
+  background: #eef4fd;
+}
+
+.react-hierarchy-search__results small {
+  color: #64707d;
+}
+
+.react-hierarchy-search__more {
+  color: #64707d;
+  font-size: 0.8rem;
+  margin: 0.25rem 0 0;
+}
+
+.board-breadcrumbs {
+  margin-bottom: 0.5rem;
+}
+
+.board-breadcrumbs ol {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.board-breadcrumbs li {
+  align-items: center;
+  color: #64707d;
+  display: flex;
+  font-size: 0.85rem;
+  gap: 0.25rem;
+}
+
+.board-breadcrumbs li + li::before {
+  content: "›";
+}
+
+.board-breadcrumbs button {
+  background: none;
+  border: none;
+  color: #175cd3;
+  cursor: pointer;
+  font-size: inherit;
+  padding: 0.125rem 0.25rem;
+  text-decoration: underline;
+}
+
+.board-breadcrumbs [aria-current="page"] {
+  color: #101828;
+  font-weight: 600;
+}
+
+.react-hierarchy__visually-hidden {
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: 1px;
+  clip: rect(0 0 0 0);
+}
+
+@media (max-width: 52rem) {
+  .react-hierarchy {
+    min-width: 0;
+  }
+
+  .react-hierarchy__row {
+    grid-template-columns: 2rem minmax(8rem, 1fr);
+  }
+
+  .react-hierarchy__actions {
+    grid-column: 2;
+  }
+
+  .react-hierarchy__type {
+    grid-column: 2;
+  }
+}
