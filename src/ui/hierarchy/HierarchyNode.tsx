@@ -4,6 +4,7 @@ import type { HierarchyViewNode } from "../../application/SchemaDocumentReader";
 import type { SchemaStore } from "../../application/SchemaStore";
 import { AddItemControl } from "./AddItemControl";
 import { getEditableChildren, type HierarchyIndex } from "./hierarchyModel";
+import { cx, ui } from "../uiStyles";
 
 interface HierarchyNodeProps {
   readonly node: HierarchyViewNode;
@@ -93,38 +94,42 @@ export function HierarchyNode({
   }
 
   return (
-    <li className="react-hierarchy__node">
+    <li className="my-1">
       <div
-        className={selected ? "react-hierarchy__row react-hierarchy__row--selected" : "react-hierarchy__row"}
+        className={cx(
+          "grid grid-cols-[2rem_minmax(8rem,1fr)_minmax(8rem,auto)_auto] items-stretch gap-1 rounded-md border border-neutral-300 p-1 [margin-left:calc(var(--hierarchy-depth)*1.25rem)] max-[52rem]:grid-cols-[2rem_minmax(8rem,1fr)]",
+          selected && "border-blue-700 ring-2 ring-blue-700/20",
+        )}
         style={{ "--hierarchy-depth": depth } as React.CSSProperties}
       >
         {children.length > 0 ? (
           <button
             type="button"
-            className="react-hierarchy__expand"
+            className={cx(ui.button, "inline-grid min-w-8 place-items-center self-center p-0")}
             aria-label={`${expanded ? "Inklappen" : "Uitklappen"}: ${node.label}`}
             aria-expanded={expanded}
             onClick={() => editorStore.commands.toggleExpanded(node.id)}
           >
             {expanded ? "−" : "+"}
           </button>
-        ) : <span className="react-hierarchy__expand-placeholder" aria-hidden="true" />}
+        ) : <span className="inline-grid min-w-8 place-items-center self-center" aria-hidden="true" />}
 
         <button
           type="button"
-          className="react-hierarchy__summary"
+          className="flex min-h-8 min-w-0 cursor-pointer flex-col border-0 bg-transparent px-2 py-1 text-left font-[inherit] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-blue-700/35"
           data-hierarchy-item-id={node.id}
           aria-current={selected ? "true" : undefined}
           onClick={() => editorStore.commands.selectItem(node.id)}
           onKeyDown={handleKeyboard}
         >
           <span>{node.label}</span>
-          {node.description ? <small>{node.description}</small> : null}
+          {node.description ? <small className="truncate text-neutral-500">{node.description}</small> : null}
         </button>
 
-        <label className="react-hierarchy__type">
-          <span className="react-hierarchy__visually-hidden">Type van {node.label}</span>
+        <label className="self-center max-[52rem]:col-start-2">
+          <span className="sr-only">Type van {node.label}</span>
           <select
+            className={cx(ui.field, "max-w-52")}
             aria-label={`Type van ${node.label}`}
             value={node.type}
             onChange={(event) => runCommand(() => schemaStore.commands.changeItemType(node.id, event.target.value))}
@@ -133,8 +138,9 @@ export function HierarchyNode({
           </select>
         </label>
 
-        <div className="react-hierarchy__actions" aria-label={`Acties voor ${node.label}`}>
+        <div className="flex flex-wrap items-center gap-1 max-[52rem]:col-start-2" aria-label={`Acties voor ${node.label}`}>
           <button
+            className={ui.button}
             type="button"
             aria-label={`${node.label} omhoog verplaatsen`}
             disabled={!node.capabilities.canMove || siblingIndex <= 0}
@@ -144,6 +150,7 @@ export function HierarchyNode({
             }))}
           >↑</button>
           <button
+            className={ui.button}
             type="button"
             aria-label={`${node.label} omlaag verplaatsen`}
             disabled={!node.capabilities.canMove || siblingIndex < 0 || siblingIndex >= siblings.length - 1}
@@ -153,6 +160,7 @@ export function HierarchyNode({
             }))}
           >↓</button>
           <button
+            className={ui.button}
             type="button"
             aria-label={`${node.label} dupliceren`}
             disabled={!node.capabilities.canDuplicate}
@@ -163,6 +171,7 @@ export function HierarchyNode({
           >Dupliceren</button>
           {node.capabilities.canExpand ? (
             <button
+              className={ui.button}
               type="button"
               aria-label={`${node.label} uitpakken`}
               onClick={() => runCommand(() => {
@@ -173,7 +182,7 @@ export function HierarchyNode({
           ) : null}
           <button
             type="button"
-            className="react-hierarchy__delete"
+            className={ui.dangerButton}
             aria-label={`${node.label} verwijderen`}
             disabled={!node.capabilities.canDelete}
             onClick={() => {
@@ -200,7 +209,7 @@ export function HierarchyNode({
       ) : null}
 
       {children.length > 0 && expanded ? (
-        <ol className="react-hierarchy__children">
+        <ol className="m-0 list-none p-0">
           {children.map((child) => (
             <HierarchyNode
               key={child.id}

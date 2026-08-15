@@ -1023,6 +1023,7 @@ export class Hierarchical_List {
 
         // Eerst creëren we een array van SVGelements met alle kinderen van myParent en eventueel myParent zelf
         let inSVG: Array<SVGelement> = new Array<SVGelement>(); //Results from nested calls will be added here
+        let inSVGItemIds: number[] = [];
         let elementCounter: number = 0;
 
         // Dan vullen we de array door doorheen de lijst van kinderen te gaan en een tekening van elk kind op te slaan
@@ -1112,7 +1113,10 @@ export class Hierarchical_List {
                         this.tekenVerticaleLijnIndienKindVanKring(this.data[i] as Electro_Item,inSVG[elementCounter]);
                         break;
                 }
-                if (mytype !== 'Container') elementCounter++;
+                if (mytype !== 'Container') {
+                    inSVGItemIds[elementCounter] = this.id[i];
+                    elementCounter++;
+                }
             }    
         }
 
@@ -1159,7 +1163,10 @@ export class Hierarchical_List {
                 let xpos:number = 0;
 
                 for (let i = 0; i<elementCounter; i++) {
-                    outSVG.data += '<svg x="' + xpos + '" y="' + (max_yup-inSVG[i].yup) + '">';
+                    outSVG.data += '<svg data-schema-item-id="' + inSVGItemIds[i]
+                        + '" data-schema-anchor-y="' + inSVG[i].yup
+                        + '" data-schema-end-x="' + (inSVG[i].xleft + inSVG[i].xright)
+                        + '" x="' + xpos + '" y="' + (max_yup-inSVG[i].yup) + '">';
                     outSVG.data += inSVG[i].data;
                     outSVG.data += '</svg>';
                     xpos += inSVG[i].xleft + inSVG[i].xright;
@@ -1210,7 +1217,10 @@ export class Hierarchical_List {
                 let ypos:number = 0;
 
                 for (let i = elementCounter-1; i>=0; i--) {
-                    outSVG.data += '<svg x="' + (outSVG.xleft-inSVG[i].xleft) + '" y="' + ypos + '">';
+                    outSVG.data += '<svg data-schema-item-id="' + inSVGItemIds[i]
+                        + '" data-schema-anchor-y="' + inSVG[i].yup
+                        + '" data-schema-end-x="' + (inSVG[i].xleft + inSVG[i].xright)
+                        + '" x="' + (outSVG.xleft-inSVG[i].xleft) + '" y="' + ypos + '">';
                     outSVG.data += inSVG[i].data;
                     outSVG.data += '</svg>';
                     ypos += inSVG[i].yup + inSVG[i].ydown;

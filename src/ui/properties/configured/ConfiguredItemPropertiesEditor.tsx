@@ -11,6 +11,7 @@ import {
   type ConfiguredEditorField,
 } from "./configuredItemEditorConfig";
 import { useSchemaSnapshot } from "../../useSchemaSnapshot";
+import { propertyStyles } from "../../uiStyles";
 
 function optionLabel(value: string): string {
   const labels: Readonly<Record<string, string>> = {
@@ -77,8 +78,8 @@ export function ConfiguredItemPropertiesEditor({ itemId, schemaStore }: ItemEdit
   };
 
   return (
-    <form className="react-properties__form" onSubmit={(event) => event.preventDefault()}>
-      <fieldset>
+    <form className={propertyStyles.form} onSubmit={(event) => event.preventDefault()}>
+      <fieldset className={propertyStyles.fieldset}>
         <legend>{properties.type}</legend>
         {commonFields.length === 0 ? <p>Dit item heeft geen bewerkbare eigenschappen.</p> : null}
         {commonFields.map((field) => (
@@ -86,7 +87,7 @@ export function ConfiguredItemPropertiesEditor({ itemId, schemaStore }: ItemEdit
         ))}
       </fieldset>
       {advancedFields.length > 0 ? (
-        <details className="react-properties__advanced">
+        <details className={propertyStyles.advanced}>
           <summary>Geavanceerde instellingen</summary>
           {advancedFields.map((field) => (
             <ConfiguredField key={field.key} field={field} properties={properties} update={update} />

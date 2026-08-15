@@ -22,9 +22,9 @@ export function WorkspaceHeader({ itemCount, store, onSelectTab }: WorkspaceHead
     const hiddenItems = new Set<HTMLLIElement>();
 
     const hideDuplicateWorkspaceLinks = () => {
-      for (const anchor of Array.from(menu.querySelectorAll("a"))) {
-        if (anchor.textContent === "Eéndraadschema" || anchor.textContent === "Situatieschema") {
-          const listItem = anchor.closest("li");
+      for (const control of Array.from(menu.querySelectorAll("a, button"))) {
+        if (control.textContent === "Eéndraadschema" || control.textContent === "Situatieschema") {
+          const listItem = control.closest("li");
           if (listItem instanceof HTMLLIElement) {
             listItem.style.display = "none";
             hiddenItems.add(listItem);

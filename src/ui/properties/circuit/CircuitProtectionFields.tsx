@@ -11,6 +11,7 @@ import {
   poleCountOptions,
   protectionOptions,
 } from "./circuitOptions";
+import { propertyStyles } from "../../uiStyles";
 
 export function CircuitProtectionFields({ properties, update }: CircuitSectionProps) {
   const showsPolesAndAmperage = !["geen", "relais"].includes(properties.protection);
@@ -20,19 +21,19 @@ export function CircuitProtectionFields({ properties, update }: CircuitSectionPr
   const showsShortCircuit = ["automatisch", "differentieel", "differentieelautomaat"].includes(properties.protection);
 
   return (
-    <fieldset>
+    <fieldset className={propertyStyles.fieldset}>
       <legend>Kring</legend>
       <SelectField label="Naamgeving" value={properties.nameMode} options={nameModeOptions} onChange={(nameMode) => update({ nameMode })} />
       <DraftTextField key={`name:${properties.name}`} label="Naam" value={properties.name} disabled={properties.nameMode === "auto"} onCommit={(name) => update({ name })} />
       <SelectField label="Bescherming" value={properties.protection} options={protectionOptions} onChange={(protection) => update({ protection })} />
       {showsPolesAndAmperage ? (
-        <div className="react-properties__row">
+        <div className={propertyStyles.row}>
           <SelectField label="Aantal polen" value={properties.poleCount} options={poleCountOptions} onChange={(poleCount) => update({ poleCount })} />
           <DraftTextField key={`amperage:${properties.amperage}`} label="Stroom (A)" value={properties.amperage} inputMode="decimal" validate={optionalPositiveNumber} onCommit={(amperage) => update({ amperage })} />
         </div>
       ) : null}
       {showsDifferential ? (
-        <div className="react-properties__row">
+        <div className={propertyStyles.row}>
           <DraftTextField key={`differential:${properties.differentialCurrent}`} label="Differentieelstroom (mA)" value={properties.differentialCurrent} inputMode="decimal" validate={optionalPositiveNumber} onCommit={(differentialCurrent) => update({ differentialCurrent })} />
           <SelectField label="Type differentieel" value={properties.differentialType} options={differentialTypeOptions} onChange={(differentialType) => update({ differentialType })} />
         </div>

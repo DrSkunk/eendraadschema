@@ -44,6 +44,26 @@ describe("one-line SVG generation", () => {
     expect(svg).toMatch(/>A<\/text>/);
   });
 
+  it("marks rendered items with insertion anchor metadata", () => {
+    const structure = new Hierarchical_List();
+    const board = structure.addItem("Bord");
+    const store = new LegacySchemaStore(structure);
+    const circuitId = store.commands.addItem(board.id, "Kring");
+    const socketId = store.commands.addItem(circuitId, "Contactdoos");
+
+    const document = new DOMParser().parseFromString(
+      store.getLegacyDocument().toSVG(0, "horizontal").data,
+      "image/svg+xml",
+    );
+
+    for (const itemId of [board.id, circuitId, socketId]) {
+      const element = document.querySelector(`[data-schema-item-id="${itemId}"]`);
+      expect(element).not.toBeNull();
+      expect(Number(element?.getAttribute("data-schema-anchor-y"))).toBeGreaterThanOrEqual(0);
+      expect(Number(element?.getAttribute("data-schema-end-x"))).toBeGreaterThan(0);
+    }
+  });
+
   it("renders secondary boards at their feeder with board export metadata", () => {
     const structure = new Hierarchical_List();
     const mainBoard = structure.addItem("Bord");

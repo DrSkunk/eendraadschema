@@ -8,6 +8,7 @@ import {
   socketPhaseCountOptions,
 } from "./socketOptions";
 import { useSchemaSnapshot } from "../../useSchemaSnapshot";
+import { propertyStyles } from "../../uiStyles";
 
 export function SocketPropertiesEditor({ itemId, schemaStore }: ItemEditorProps) {
   const properties = useSchemaSnapshot(schemaStore).properties.getSocket(itemId);
@@ -18,11 +19,11 @@ export function SocketPropertiesEditor({ itemId, schemaStore }: ItemEditorProps)
   }
 
   return (
-    <form className="react-properties__form" onSubmit={(event) => event.preventDefault()}>
-      <fieldset>
+    <form className={propertyStyles.form} onSubmit={(event) => event.preventDefault()}>
+      <fieldset className={propertyStyles.fieldset}>
         <legend>Contactdoos</legend>
         {properties.canEditNumber ? (
-          <div className="react-properties__row">
+          <div className={propertyStyles.row}>
             <SelectField
               label="Nummering"
               value={properties.numberMode}
@@ -54,12 +55,12 @@ export function SocketPropertiesEditor({ itemId, schemaStore }: ItemEditorProps)
         />
       </fieldset>
 
-      <details className="react-properties__advanced">
+      <details className={propertyStyles.advanced}>
         <summary>Geavanceerde instellingen</summary>
         <CheckboxField label="Halfwaterdicht" checked={properties.splashProof} onChange={(splashProof) => update({ splashProof })} />
         <CheckboxField label="Meerfasig" checked={properties.multiPhase} onChange={(multiPhase) => update({ multiPhase })} />
         {properties.multiPhase ? (
-          <div className="react-properties__row">
+          <div className={propertyStyles.row}>
             <SelectField
               label="Aantal fasen"
               value={properties.phaseCount}

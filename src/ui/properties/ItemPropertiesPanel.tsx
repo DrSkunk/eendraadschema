@@ -3,6 +3,7 @@ import type { SchemaStore } from "../../application/SchemaStore";
 import { useEditorSnapshot } from "../useEditorSnapshot";
 import { useSchemaSnapshot } from "../useSchemaSnapshot";
 import { propertyEditors } from "./propertyEditors";
+import { ui } from "../uiStyles";
 
 interface ItemPropertiesPanelProps {
   readonly schemaStore: SchemaStore;
@@ -18,15 +19,15 @@ export function ItemPropertiesPanel({ schemaStore, editorStore }: ItemProperties
   const PropertyEditor = item === undefined ? undefined : propertyEditors[item.type];
 
   return (
-    <section className="react-properties" aria-labelledby="react-properties-title">
-      <header className="react-properties__header">
-        <span className="react-properties__eyebrow">Selectie</span>
-        <h2 id="react-properties-title">Eigenschappen</h2>
+    <section className="p-4 text-neutral-800" aria-labelledby="react-properties-title">
+      <header className="mb-3">
+        <span className={ui.eyebrow}>Selectie</span>
+        <h2 className="m-0 text-lg" id="react-properties-title">Eigenschappen</h2>
       </header>
       {item === undefined ? (
-        <p className="react-properties__empty">Selecteer een onderdeel om de eigenschappen te bewerken.</p>
+        <p className="text-neutral-500">Selecteer een onderdeel om de eigenschappen te bewerken.</p>
       ) : PropertyEditor === undefined ? (
-        <div className="react-properties__empty">
+        <div className="text-neutral-500 [&_p]:mb-0">
           <strong>{item.label}</strong>
           <p>De eigenschappen van dit onderdeel worden nog door de bestaande editor beheerd.</p>
         </div>

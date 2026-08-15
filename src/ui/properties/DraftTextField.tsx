@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { propertyStyles, ui } from "../uiStyles";
 
 interface DraftTextFieldProps {
   readonly label: string;
@@ -27,9 +28,10 @@ export function DraftTextField({
   }
 
   return (
-    <label className="react-properties__field">
+    <label className={propertyStyles.field}>
       <span>{label}</span>
       <input
+        className={ui.field}
         aria-invalid={error === undefined ? undefined : true}
         disabled={disabled}
         inputMode={inputMode}
@@ -40,7 +42,7 @@ export function DraftTextField({
         }}
         value={draft}
       />
-      {error ? <small role="alert">{error}</small> : null}
+      {error ? <small className="text-red-700" role="alert">{error}</small> : null}
     </label>
   );
 }

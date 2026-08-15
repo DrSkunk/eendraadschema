@@ -1,3 +1,5 @@
+import { propertyStyles, ui } from "../uiStyles";
+
 export type PropertyOption<Value extends string> = readonly [Value, string];
 
 interface SelectFieldProps<Value extends string> {
@@ -15,9 +17,9 @@ export function SelectField<Value extends string>({
 }: SelectFieldProps<Value>) {
   const isKnownValue = options.some(([optionValue]) => optionValue === value);
   return (
-    <label className="react-properties__field">
+    <label className={propertyStyles.field}>
       <span>{label}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value as Value)}>
+      <select className={ui.field} value={value} onChange={(event) => onChange(event.target.value as Value)}>
         {isKnownValue ? null : <option value={value}>Huidige waarde: {value}</option>}
         {options.map(([optionValue, optionLabel]) => (
           <option key={optionValue} value={optionValue}>{optionLabel}</option>
@@ -35,7 +37,7 @@ interface CheckboxFieldProps {
 
 export function CheckboxField({ label, checked, onChange }: CheckboxFieldProps) {
   return (
-    <label className="react-properties__checkbox">
+    <label className={propertyStyles.checkbox}>
       <input
         checked={checked}
         onChange={(event) => onChange(event.target.checked)}

@@ -52,6 +52,25 @@ describe("LegacySchemaStore", () => {
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
+  it("inserts an item atomically between an existing parent and child", () => {
+    const { store, boardId } = createStore();
+    const circuitId = store.commands.addItem(boardId, "Kring");
+    const lightId = store.commands.addItem(circuitId, "Lichtpunt");
+
+    const socketId = store.commands.insertItemBefore(lightId, "Contactdoos");
+
+    expect(store.getSnapshot().document.getItem(socketId)).toMatchObject({
+      type: "Contactdoos",
+      parentId: circuitId,
+    });
+    expect(store.getSnapshot().document.getItem(lightId)?.parentId).toBe(socketId);
+    expect(store.getSnapshot().document.getItem(circuitId)?.childIds).toEqual([socketId]);
+
+    store.commands.undo();
+    expect(store.getSnapshot().document.getItem(socketId)).toBeUndefined();
+    expect(store.getSnapshot().document.getItem(lightId)?.parentId).toBe(circuitId);
+  });
+
   it("adds situation-only symbols beneath the hidden document container", () => {
     const { store } = createStore();
 

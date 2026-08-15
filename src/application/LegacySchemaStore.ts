@@ -61,6 +61,7 @@ export class LegacySchemaStore implements SchemaStore {
     this.snapshot = this.createSnapshot();
     this.commands = Object.freeze({
       addItem: this.addItem.bind(this),
+      insertItemBefore: this.insertItemBefore.bind(this),
       addSituationOnlyItem: this.addSituationOnlyItem.bind(this),
       deleteItem: this.deleteItem.bind(this),
       moveItem: this.moveItem.bind(this),
@@ -136,6 +137,36 @@ export class LegacySchemaStore implements SchemaStore {
       }
 
       return item.id;
+    });
+  }
+
+  private insertItemBefore(itemId: number, type: string): number {
+    const item = this.requireItem(itemId);
+    this.assertUserEditable(item);
+    this.assertNotBoardRoot(itemId);
+    const parent = this.getParent(item.parent === 0 ? null : item.parent);
+    if (parent === null) {
+      throw new SchemaCommandError("INVALID_CHANGE", "Voor een hoofdelement kan niets worden ingevoegd.");
+    }
+    this.assertChildAllowed(parent, type);
+
+    const candidate = this.structure.createItem(type);
+    candidate.parent = parent.id;
+    if (!candidate.allowedChilds().includes(item.getType()) || candidate.getMaxNumChilds() < 1) {
+      throw new SchemaCommandError(
+        "INVALID_CHILD_TYPE",
+        `Itemtype '${type}' kan niet vóór ${item.getType()} worden ingevoegd.`,
+      );
+    }
+
+    return this.commitTransaction(() => {
+      const newItemId = this.structure.curid;
+      const placeholder = this.structure.createItem("");
+      this.structure.insertItemBeforeId(placeholder, item.id);
+      this.structure.adjustTypeById(newItemId, type);
+      item.parent = newItemId;
+      this.structure.reSort();
+      return newItemId;
     });
   }
 

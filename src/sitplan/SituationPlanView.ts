@@ -15,6 +15,7 @@ import { SituationPlanView_ElementPropertiesPopup } from "./SituationPlanView_El
 import { SituationPlanView_MultiElementPropertiesPopup } from "./SituationPlanView_MultiElementPropertiesPopup";
 import { AskLegacySchakelaar } from "../importExport/AskLegacySchakelaar";
 import type { LegacySituationPlanStore } from "../application/LegacySituationPlanStore";
+import { legacyUi } from "../ui/legacyStyles";
 
 enum MovableType { Movable, NotMovable, Mixed, Undefined };
 
@@ -395,13 +396,21 @@ export class SituationPlanView {
         // Box aanmaken op de DOM voor het symbool of in te laden externe figuur
         // extra property sitPlanElementRef toegevoegd aan DOM zodat we later ons situatieplan element kunnen terugvinden
         let box = document.createElement('div');
-        Object.assign(box, { id: element.id, className: "box", sitPlanElementRef: element });
+        Object.assign(box, {
+            id: element.id,
+            className: `${legacyUi.situationBox}${element.movable ? '' : ' cursor-default'}`,
+            sitPlanElementRef: element,
+        });
         box.setAttribute('movable', (element.movable ? 'true' : 'false'));
         element.boxref = box;
 
         // Boxlabel aanmaken op de DOM voor de tekst bij het symbool
         let boxlabel = document.createElement('div');
-        Object.assign(boxlabel, { id: element.id + '_label', className: "boxlabel", sitPlanElementRef: element });
+        Object.assign(boxlabel, {
+            id: element.id + '_label',
+            className: `${legacyUi.situationLabel}${element.movable ? '' : ' cursor-default'}`,
+            sitPlanElementRef: element,
+        });
         boxlabel.setAttribute('movable', (element.movable ? 'true' : 'false'));
         boxlabel.innerHTML = htmlspecialchars(element.getAdres()); // is deze nodig? Wellicht reeds onderdeel van updateContent
         element.boxlabelref = boxlabel;
@@ -648,7 +657,7 @@ export class SituationPlanView {
      */
     public selectOneBox(box: HTMLElement | null) {
         if (!box) return;
-        box.classList.add('selected');
+        this.setBoxSelected(box, true);
         this.selected.selectOne(box);
         globalThis.undostruct.updateSelectedBoxes();
     }
@@ -660,7 +669,7 @@ export class SituationPlanView {
      */
     public selectBox(box: HTMLElement | null) {
         if (!box) return;
-        box.classList.add('selected');
+        this.setBoxSelected(box, true);
         this.selected.select(box);
         globalThis.undostruct.updateSelectedBoxes();
     }
@@ -674,7 +683,7 @@ export class SituationPlanView {
     public selectToggleBox(box: HTMLElement | null) {
         if (!box) return;
         this.selected.toggleButNeverRemoveLast(box);
-        if (this.selected.includes(box)) box.classList.add('selected'); else box.classList.remove('selected');
+        this.setBoxSelected(box, this.selected.includes(box));
         globalThis.undostruct.updateSelectedBoxes();
     }
 
@@ -683,8 +692,16 @@ export class SituationPlanView {
      */
     clearSelection() {
         let boxes = document.querySelectorAll('.box');
-        boxes.forEach(b => b.classList.remove('selected'));
+        boxes.forEach(box => this.setBoxSelected(box as HTMLElement, false));
         this.selected.clear();
+    }
+
+    private setBoxSelected(box: HTMLElement, selected: boolean) {
+        const canMove = box.getAttribute('movable') !== 'false';
+        box.classList.toggle('selected', selected);
+        box.classList.toggle('[border-width:calc(var(--selectPadding)*1px)]', selected);
+        box.classList.toggle('border-green-600', selected && canMove);
+        box.classList.toggle('border-red-600', selected && !canMove);
     }
 
     /**
@@ -1511,60 +1528,60 @@ export class SituationPlanView {
         // -- Undo/redo buttons --
 
         outputleft += `
-            <div class="icon" ${(globalThis.undostruct.undoStackSize() > 0 ? 'onclick="undoClicked()"' : 'style="filter: opacity(45%)"')}>
-                <img src="gif/undo.png" alt="Ongedaan maken" class="icon-image">
-                <span class="icon-text">Ongedaan maken</span>
+            <div class="${legacyUi.ribbonButton}" ${(globalThis.undostruct.undoStackSize() > 0 ? 'onclick="undoClicked()"' : 'style="filter: opacity(45%)"')}>
+                <img src="gif/undo.png" alt="Ongedaan maken" class="${legacyUi.ribbonIcon}">
+                <span class="${legacyUi.ribbonLabel}">Ongedaan maken</span>
             </div>
-            <div class="icon"  ${(globalThis.undostruct.redoStackSize() > 0 ? 'onclick="redoClicked()"' : 'style=\"filter: opacity(45%)\"')}>
-                <img src="gif/redo.png" alt="Opnieuw" class="icon-image">
-                <span class="icon-text">Opnieuw</span>
+            <div class="${legacyUi.ribbonButton}"  ${(globalThis.undostruct.redoStackSize() > 0 ? 'onclick="redoClicked()"' : 'style=\"filter: opacity(45%)\"')}>
+                <img src="gif/redo.png" alt="Opnieuw" class="${legacyUi.ribbonIcon}">
+                <span class="${legacyUi.ribbonLabel}">Opnieuw</span>
             </div>`
 
         // -- Visuals om items te laden of verwijderen --
 
         outputleft += `
             <span style="display: inline-block; width: 30px;"></span>
-            <div class="icon" id="button_Add">
-                <span class="icon-image" style="font-size:24px">➕</span>
-                <span class="icon-text">Uit bestand</span>
+            <div class="${legacyUi.ribbonButton}" id="button_Add">
+                <span class="${legacyUi.ribbonIcon}">➕</span>
+                <span class="${legacyUi.ribbonLabel}">Uit bestand</span>
             </div>
-            <div class="icon" id="button_Add_electroItem">
-                <span class="icon-image" style="font-size:24px">➕</span>
-                <span class="icon-text">Uit schema</span>
+            <div class="${legacyUi.ribbonButton}" id="button_Add_electroItem">
+                <span class="${legacyUi.ribbonIcon}">➕</span>
+                <span class="${legacyUi.ribbonLabel}">Uit schema</span>
             </div>`;
 
         outputleft += `
-            <div class="icon" id="button_Add_customItem">
-                <span class="icon-image" style="font-size:24px">➕</span>
-                <span class="icon-text">Los symbool</span>
+            <div class="${legacyUi.ribbonButton}" id="button_Add_customItem">
+                <span class="${legacyUi.ribbonIcon}">➕</span>
+                <span class="${legacyUi.ribbonLabel}">Los symbool</span>
             </div>`;
 
         outputleft += `
-            <div class="icon" id="button_Delete">
-                <span class="icon-image" style="font-size:24px">🗑</span>
-                <span class="icon-text">Verwijder</span>
+            <div class="${legacyUi.ribbonButton}" id="button_Delete">
+                <span class="${legacyUi.ribbonIcon}">🗑</span>
+                <span class="${legacyUi.ribbonLabel}">Verwijder</span>
             </div>`;
 
         // -- Visuals om items te bewerken --
 
         outputleft += `
             <span style="display: inline-block; width: 10px;"></span>
-            <div class="icon" id="button_edit">
-                <span class="icon-image" style="font-size:24px">&#x2699;</span>
-                <span class="icon-text">Bewerk</span>
+            <div class="${legacyUi.ribbonButton}" id="button_edit">
+                <span class="${legacyUi.ribbonIcon}">&#x2699;</span>
+                <span class="${legacyUi.ribbonLabel}">Bewerk</span>
             </div>`;
 
         // -- Visuals om naar achteren of voren te sturen --
 
         outputleft += `
             <span style="display: inline-block; width: 10px;"></span>
-            <div class="icon" id="sendBack">
-                <span class="icon-image" style="font-size:24px">⬇⬇</span>
-                <span class="icon-text">Naar achter</span>
+            <div class="${legacyUi.ribbonButton}" id="sendBack">
+                <span class="${legacyUi.ribbonIcon}">⬇⬇</span>
+                <span class="${legacyUi.ribbonLabel}">Naar achter</span>
             </div>
-            <div class="icon" id="bringFront">
-                <span class="icon-image" style="font-size:24px">⬆⬆</span>
-                <span class="icon-text">Naar voor</span>
+            <div class="${legacyUi.ribbonButton}" id="bringFront">
+                <span class="${legacyUi.ribbonIcon}">⬆⬆</span>
+                <span class="${legacyUi.ribbonLabel}">Naar voor</span>
             </div>`
 
         // -- Add an icon of a floppy (save symbol) like the icons above --
@@ -1572,16 +1589,16 @@ export class SituationPlanView {
         if (globalThis.autoSaver && globalThis.autoSaver.hasChangesSinceLastManualSave()) {
             outputleft += `
                 <span style="display: inline-block; width: 10px;"></span>
-                <div class="highlight-warning-big" style="width: 64px; display: inline-block; vertical-align: middle; text-align: center;" id="button_save" onclick="exportjson(false)" onmouseover="this.style.cursor='pointer'" onmouseout="this.style.cursor='default'">
-                    <span class="icon-image" style="font-size:24px">💾</span>
-                    <span class="icon-text" style="display: inline-block; width: 100%;">Opslaan</span>
+                <div class="${legacyUi.ribbonButton} border-orange-400 bg-orange-50" id="button_save" onclick="exportjson(false)">
+                    <span class="${legacyUi.ribbonIcon}">💾</span>
+                    <span class="${legacyUi.ribbonLabel}">Opslaan</span>
                 </div>`
         } else {
             outputleft += `
                 <span style="display: inline-block; width: 10px;"></span>
-                <div class="highlight-ok-big" id="button_save" style="width: 64px; display: inline-block; vertical-align: middle; text-align: center;" onmouseover="this.style.cursor='pointer'" onmouseout="this.style.cursor='default'" onclick="topMenu.selectMenuItemByName('Bestand')">
-                    <span class="icon-image" style="font-size:24px; filter: grayscale(100%); opacity: 0.5;">💾</span>
-                    <span class="icon-text" style="display: inline-block; width: 100%;">Bestand</span>
+                <div class="${legacyUi.ribbonButton} border-green-300 bg-green-50" id="button_save" onclick="topMenu.selectMenuItemByName('Bestand')">
+                    <span class="${legacyUi.ribbonIcon} grayscale opacity-50">💾</span>
+                    <span class="${legacyUi.ribbonLabel}">Bestand</span>
                 </div>`
         }
 
@@ -1589,24 +1606,23 @@ export class SituationPlanView {
 
         outputright += `
             <span style="display: inline-block; width: 10px;"></span>
-            <div class="icon" id="button_zoomin">
-                <span class="icon-image" style="font-size: 24px;">🔍</span>
-                <span class="icon-text">In</span>
+            <div class="${legacyUi.ribbonButton}" id="button_zoomin">
+                <span class="${legacyUi.ribbonIcon}">🔍</span>
+                <span class="${legacyUi.ribbonLabel}">In</span>
             </div>
-            <div class="icon" id="button_zoomout">
-                <span class="icon-image" style="font-size: 24px;">🌍</span>
-                <span class="icon-text">Uit</span>
+            <div class="${legacyUi.ribbonButton}" id="button_zoomout">
+                <span class="${legacyUi.ribbonIcon}">🌍</span>
+                <span class="${legacyUi.ribbonLabel}">Uit</span>
             </div>
-            <div class="icon" id="button_zoomToFit">
-                <span class="icon-image" style="font-size: 24px;">🖥️</span>
-                <!--<img src="gif/scaleup.png" alt="Schermvullend" class="icon-image">-->
-                <span class="icon-text">Schermvullend</span>
+            <div class="${legacyUi.ribbonButton}" id="button_zoomToFit">
+                <span class="${legacyUi.ribbonIcon}">🖥️</span>
+                <span class="${legacyUi.ribbonLabel}">Schermvullend</span>
             </div>
             <span style="display: inline-block; width: 10px;"></span>`;
 
         // -- Put everything in the ribbon --
 
-        document.getElementById("ribbon").innerHTML = `<div id="left-icons">${outputleft}</div><div id="right-icons">${outputright}</div>`;
+        document.getElementById("ribbon").innerHTML = `<div id="left-icons" class="flex flex-wrap items-center gap-1">${outputleft}</div><div id="right-icons" class="ml-auto flex items-center gap-1">${outputright}</div>`;
 
         // -- Actions om elementen toe te voegen of verwijderen --
 

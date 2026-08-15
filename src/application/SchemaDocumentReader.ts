@@ -2,11 +2,13 @@ export type HierarchyNodeRole = "item" | "attribute" | "container";
 
 export interface HierarchyNodeCapabilities {
   readonly canAddChild: boolean;
+  readonly canInsertBefore: boolean;
   readonly canDelete: boolean;
   readonly canDuplicate: boolean;
   readonly canMove: boolean;
   readonly canExpand: boolean;
   readonly allowedChildTypes: readonly string[];
+  readonly allowedInsertBeforeTypes: readonly string[];
   readonly allowedItemTypes: readonly string[];
 }
 

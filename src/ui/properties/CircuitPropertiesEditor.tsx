@@ -4,6 +4,7 @@ import { useSchemaSnapshot } from "../useSchemaSnapshot";
 import { CircuitAdvancedFields } from "./circuit/CircuitAdvancedFields";
 import { CircuitCableFields } from "./circuit/CircuitCableFields";
 import { CircuitProtectionFields } from "./circuit/CircuitProtectionFields";
+import { propertyStyles } from "../uiStyles";
 
 export function CircuitPropertiesEditor({ itemId, schemaStore }: ItemEditorProps) {
   const properties = useSchemaSnapshot(schemaStore).properties.getCircuit(itemId);
@@ -14,7 +15,7 @@ export function CircuitPropertiesEditor({ itemId, schemaStore }: ItemEditorProps
   }
 
   return (
-    <form className="react-properties__form" onSubmit={(event) => event.preventDefault()}>
+    <form className={propertyStyles.form} onSubmit={(event) => event.preventDefault()}>
       <CircuitProtectionFields properties={properties} update={update} />
       <CircuitCableFields properties={properties} update={update} />
       <CircuitAdvancedFields properties={properties} update={update} />

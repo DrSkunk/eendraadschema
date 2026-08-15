@@ -16,6 +16,7 @@ export interface EditorAppMountOptions {
   readonly saveStatusStore?: SaveStatusStore | null;
   readonly statusBarMountElement?: HTMLElement | null;
   readonly zoomTargetElement?: HTMLElement | null;
+  readonly schematicControlsMountElement?: HTMLElement | null;
   readonly situationPlanStore?: SituationPlanStore | null;
   readonly onSituationPlanMutation?: (historyKey?: string) => void;
   readonly onSituationPlanZoomIn?: () => void;
@@ -65,6 +66,7 @@ export function mountEditorApp(
         saveStatusStore={options.saveStatusStore ?? null}
         statusBarMountElement={options.statusBarMountElement ?? null}
         zoomTargetElement={options.zoomTargetElement ?? null}
+        schematicControlsMountElement={options.schematicControlsMountElement ?? null}
         situationPlanStore={options.situationPlanStore ?? null}
         onSituationPlanMutation={options.onSituationPlanMutation}
         onSituationPlanZoomIn={options.onSituationPlanZoomIn}

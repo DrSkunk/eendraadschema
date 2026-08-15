@@ -57,6 +57,21 @@ function allowedChildTypes(item: Electro_Item): readonly string[] {
   );
 }
 
+function allowedInsertBeforeTypes(
+  structure: Hierarchical_List,
+  item: Electro_Item,
+  isBoardRoot: boolean,
+): readonly string[] {
+  const parent = item.getParent();
+  if (parent === null || isBoardRoot) return Object.freeze([]);
+
+  return Object.freeze(allowedChildTypes(parent).filter((type) => {
+    const candidate = structure.createItem(type);
+    candidate.parent = parent.id;
+    return candidate.getMaxNumChilds() >= 1 && candidate.allowedChilds().includes(item.getType());
+  }));
+}
+
 /**
  * Read-only projection over the current legacy document.
  *
@@ -90,6 +105,7 @@ export class LegacySchemaDocumentReader implements SchemaDocumentReader {
 
     this.rootCapabilities = Object.freeze({
       canAddChild: true,
+      canInsertBefore: false,
       canDelete: false,
       canDuplicate: false,
       canMove: false,
@@ -97,6 +113,7 @@ export class LegacySchemaDocumentReader implements SchemaDocumentReader {
       allowedChildTypes: Object.freeze(
         structure.allowedRootChilds().filter((type) => type !== ""),
       ),
+      allowedInsertBeforeTypes: Object.freeze([]),
       allowedItemTypes: Object.freeze([]),
     });
     this.items = Object.freeze(activeItems.map((item) => this.toViewNode(
@@ -191,6 +208,9 @@ export class LegacySchemaDocumentReader implements SchemaDocumentReader {
     const summary = getSummary(item);
     const role = getRole(item);
     const isEditableItem = role === "item";
+    const insertBeforeTypes = isEditableItem
+      ? allowedInsertBeforeTypes(item.sourcelist, item, isBoardRoot)
+      : Object.freeze([]);
     return Object.freeze({
       id: item.id,
       parentId: item.parent === 0 ? null : item.parent,
@@ -202,11 +222,13 @@ export class LegacySchemaDocumentReader implements SchemaDocumentReader {
       role,
       capabilities: Object.freeze({
         canAddChild: isEditableItem && item.checkInsertChild(),
+        canInsertBefore: insertBeforeTypes.length > 0,
         canDelete: isEditableItem && !isBoardRoot,
         canDuplicate: isEditableItem && !isBoardRoot && item.checkInsertSibling(),
         canMove: isEditableItem && !isBoardRoot,
         canExpand: isEditableItem && item.isExpandable(),
         allowedChildTypes: isEditableItem ? allowedChildTypes(item) : Object.freeze([]),
+        allowedInsertBeforeTypes: insertBeforeTypes,
         allowedItemTypes: isEditableItem ? Object.freeze(isBoardRoot
           ? [item.getType()]
           : Array.from(new Set([

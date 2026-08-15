@@ -4,6 +4,7 @@ import type { ItemEditorProps } from "../ItemEditorProps";
 import { SelectField } from "../PropertyFields";
 import { socketNumberModeOptions } from "../socket/socketOptions";
 import { useSchemaSnapshot } from "../../useSchemaSnapshot";
+import { propertyStyles } from "../../uiStyles";
 
 export function BasicConsumerPropertiesEditor({ itemId, schemaStore }: ItemEditorProps) {
   const properties = useSchemaSnapshot(schemaStore).properties.getBasicConsumer(itemId);
@@ -14,11 +15,11 @@ export function BasicConsumerPropertiesEditor({ itemId, schemaStore }: ItemEdito
   }
 
   return (
-    <form className="react-properties__form" onSubmit={(event) => event.preventDefault()}>
-      <fieldset>
+    <form className={propertyStyles.form} onSubmit={(event) => event.preventDefault()}>
+      <fieldset className={propertyStyles.fieldset}>
         <legend>{properties.type}</legend>
         {properties.canEditNumber ? (
-          <div className="react-properties__row">
+          <div className={propertyStyles.row}>
             <SelectField
               label="Nummering"
               value={properties.numberMode}

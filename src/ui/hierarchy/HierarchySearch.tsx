@@ -2,6 +2,7 @@ import { useId, useMemo, useState } from "react";
 import type { EditorStore } from "../../application/EditorStore";
 import type { SchemaDocumentReader } from "../../application/SchemaDocumentReader";
 import { searchHierarchyItems, type HierarchySearchResult } from "./hierarchyModel";
+import { ui } from "../uiStyles";
 
 const MAX_VISIBLE_RESULTS = 20;
 
@@ -34,10 +35,11 @@ export function HierarchySearch({ document, editorStore }: HierarchySearchProps)
   }
 
   return (
-    <search className="react-hierarchy-search">
-      <label className="react-hierarchy-search__field">
-        <span className="react-hierarchy__visually-hidden">Zoeken in het schema</span>
+    <search className="mb-3 block">
+      <label>
+        <span className="sr-only">Zoeken in het schema</span>
         <input
+          className={ui.field}
           type="search"
           placeholder="Zoeken op naam, adres of type…"
           value={query}
@@ -53,19 +55,19 @@ export function HierarchySearch({ document, editorStore }: HierarchySearchProps)
         />
       </label>
       {hasQuery ? (
-        <div className="react-hierarchy-search__results" id={resultsId}>
-          <p role="status" className="react-hierarchy-search__count">
+        <div className="mt-1 rounded-md border border-neutral-300 bg-white p-2" id={resultsId}>
+          <p role="status" className="m-0 mb-1 text-sm text-neutral-500">
             {results.length === 0
               ? "Geen onderdelen gevonden."
               : `${results.length} ${results.length === 1 ? "onderdeel" : "onderdelen"} gevonden`}
           </p>
           {visibleResults.length > 0 ? (
-            <ol>
+            <ol className="m-0 list-none p-0">
               {visibleResults.map((result) => (
-                <li key={result.node.id}>
-                  <button type="button" onClick={() => reveal(result)}>
+                <li className="border-t border-neutral-100 first:border-t-0" key={result.node.id}>
+                  <button className="flex w-full cursor-pointer flex-col gap-0.5 border-0 bg-transparent px-1 py-1.5 text-left hover:bg-blue-50 focus-visible:bg-blue-50" type="button" onClick={() => reveal(result)}>
                     <span>{result.node.label}</span>
-                    <small>
+                    <small className="text-neutral-500">
                       {result.node.type}
                       {result.boardName ? ` — ${result.boardName}` : ""}
                       {result.node.summary.address ? ` — ${result.node.summary.address}` : ""}
@@ -76,7 +78,7 @@ export function HierarchySearch({ document, editorStore }: HierarchySearchProps)
             </ol>
           ) : null}
           {results.length > MAX_VISIBLE_RESULTS ? (
-            <p className="react-hierarchy-search__more">
+            <p className="m-0 mt-1 text-xs text-neutral-500">
               Enkel de eerste {MAX_VISIBLE_RESULTS} resultaten worden getoond. Verfijn de zoekopdracht.
             </p>
           ) : null}

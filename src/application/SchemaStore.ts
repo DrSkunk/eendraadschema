@@ -72,6 +72,7 @@ export interface PlaceBoardLayoutItemProperties {
 
 export interface SchemaCommands {
   addItem(parentId: number | null, type: string): number;
+  insertItemBefore(itemId: number, type: string): number;
   addSituationOnlyItem(type: string): number;
   deleteItem(itemId: number): void;
   moveItem(itemId: number, options: MoveItemOptions): void;

@@ -9,6 +9,7 @@ import type { SaveStatusSnapshot, SaveStatusStore } from "../../application/Save
 import type { SchemaStore } from "../../application/SchemaStore";
 import { useEditorSnapshot } from "../useEditorSnapshot";
 import { useSchemaSnapshot } from "../useSchemaSnapshot";
+import { cx, ui } from "../uiStyles";
 
 const ZOOM_STEP = 25;
 
@@ -49,34 +50,37 @@ export function StatusBar({
   }, [zoomTargetElement, zoomPercent]);
 
   return (
-    <footer className="react-statusbar" aria-label="Statusbalk van de editor">
-      <span className="react-statusbar__section">
+    <footer className="flex h-9 items-center justify-between gap-4 border-t border-neutral-300 bg-neutral-50 px-4 text-xs text-neutral-800" aria-label="Statusbalk van de editor">
+      <span className="truncate">
         {activeBoard ? `Bord: ${activeBoard.name}` : null}
         {selectedItem ? ` — ${selectedItem.label}` : null}
       </span>
       <span
-        className={saveStatus.hasUnsavedChanges
-          ? "react-statusbar__save react-statusbar__save--dirty"
-          : "react-statusbar__save"}
+        className={cx(
+          saveStatus.hasUnsavedChanges ? "font-semibold text-red-700" : "text-emerald-700",
+        )}
         role="status"
       >
         {saveStatus.hasUnsavedChanges
           ? `Niet opgeslagen wijzigingen in ${saveStatus.filename}`
           : `${saveStatus.filename} is opgeslagen`}
       </span>
-      <span className="react-statusbar__zoom" aria-label="Zoomniveau van de tekening">
+      <span className="flex items-center gap-1" aria-label="Zoomniveau van de tekening">
         <button
+          className={cx(ui.button, "min-w-8 px-1.5 py-0.5")}
           type="button"
           aria-label="Uitzoomen"
           disabled={zoomPercent <= MIN_ZOOM_PERCENT}
           onClick={() => editorStore.commands.setZoomPercent(zoomPercent - ZOOM_STEP)}
         >−</button>
         <button
+          className={cx(ui.button, "min-w-8 px-1.5 py-0.5")}
           type="button"
           aria-label="Zoom terugzetten naar 100 procent"
           onClick={() => editorStore.commands.setZoomPercent(DEFAULT_ZOOM_PERCENT)}
         >{zoomPercent}%</button>
         <button
+          className={cx(ui.button, "min-w-8 px-1.5 py-0.5")}
           type="button"
           aria-label="Inzoomen"
           disabled={zoomPercent >= MAX_ZOOM_PERCENT}

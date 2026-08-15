@@ -3,6 +3,7 @@ import { ElectroItemZoeker } from "./ElectroItemZoeker";
 import { Electro_Item } from "../List_Item/Electro_Item";
 import { EventManager } from "../EventManager";
 import { formatFloat, htmlspecialchars, trimString } from "../general";
+import { legacyUi } from "../ui/legacyStyles";
 
 /** 
  * Een serie functies om een formulier te tonen met edit-functionaliteiten voor symbolen in het situatieplan
@@ -304,8 +305,8 @@ export function SituationPlanView_ElementPropertiesPopup(sitplanElement: Situati
     const div = document.createElement('div');
 
     div.innerHTML = `
-        <div id="popupOverlay" class="popup-overlay">
-            <div id="popupWindow" class="popup">
+        <div id="popupOverlay" class="${legacyUi.popupOverlay}">
+            <div id="popupWindow" class="${legacyUi.popup}">
                 <h3>Element toevoegen/bewerken</h3>
                 <div style="position: absolute; top: 5px; right: 5px; display: flex; align-items: center; justify-content: center;">
                     <button id="closeButton" style="background-color: #e00; border-radius: 4px; width: 20px; height: 20px; font-size: 16px; color: white; border: none; outline: none; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0px; vertical-align: middle;">&#10006;</button>
@@ -361,8 +362,8 @@ export function SituationPlanView_ElementPropertiesPopup(sitplanElement: Situati
                     }            
                 </div>
                 <div style="display: flex; justify-content: center; gap: 0px;">
-                    <button id="okButton" class="rounded-button">OK</button>
-                    <button id="cancelButton" class="rounded-button">Annuleren</button>
+                    <button id="okButton" class="${legacyUi.dialogButton}">OK</button>
+                    <button id="cancelButton" class="${legacyUi.dialogButton}">Annuleren</button>
                 </div>
             </div>
         </div>`;

@@ -184,13 +184,14 @@ globalThis.HLRedrawTreeHTMLLight = () => {
 }
 
 globalThis.HLRedrawTreeSVG = () => {
-    let str:string = '<b>Tekening: </b>Ga naar het print-menu om de tekening af te printen of te exporteren als SVG vector graphics.<br><br>'
+    const legendButton = 'inline-flex size-6 items-center justify-center rounded border border-neutral-300 bg-neutral-100 align-middle text-sm font-bold';
+    let str:string = '<b>Tekening: </b>Gebruik de + knoppen op de lijnen om een onderdeel tussen twee symbolen of aan het einde van een tak toe te voegen. Ga naar het print-menu om de tekening af te printen of te exporteren als SVG vector graphics.<br><br>'
                    + '<div id="EDS">' + flattenSVGfromString(globalThis.structure.toSVG(0,"horizontal").data,10) + '</div>'
                    + '<h2>Legende:</h2>'
-                   + '<button class="button-insertBefore"></button> Item hierboven invoegen (zelfde niveau)<br>'
-                   + '<button class="button-insertAfter"></button> Item hieronder invoegen (zelfde niveau)<br>'
-                   + '<button class="button-insertChild"></button> Afhankelijk item hieronder toevoegen (niveau dieper)<br>'
-                   + '<button class="button-delete-garbage-can"></button> Item verwijderen<br>'
+                   + `<button class="${legendButton}">↑</button> Item hierboven invoegen (zelfde niveau)<br>`
+                   + `<button class="${legendButton}">↓</button> Item hieronder invoegen (zelfde niveau)<br>`
+                   + `<button class="${legendButton}">↳</button> Afhankelijk item hieronder toevoegen (niveau dieper)<br>`
+                   + `<button class="${legendButton}">🗑</button> Item verwijderen<br>`
                    + '<i><br><small>Versie: ' + BUILD_DATE
                    + ' (C) Ivan Goethals -- <a href="license.html" target="popup" onclick="window.open(\'license.html\',\'popup\',\'width=800,height=600\'); return false;">Terms</a></small></i><br><br>';
 
@@ -438,39 +439,40 @@ if (container == null) throw new Error("HTML element container is null");
 
 container.innerHTML = `
 <div id="react-editor-root"></div>
-<div id="topmenu"><ul id="minitabs"></ul></div>
-<div id="app">
+<div id="topmenu" class="flex h-[var(--menu-height)] w-full items-center border-b border-neutral-300 bg-neutral-200 px-2 select-none"><ul id="minitabs" class="m-0 flex h-full list-none items-center whitespace-nowrap p-0 text-left font-semibold"></ul></div>
+<div id="app" class="flex-1 overflow-hidden">
 <svg id="svgdefs"></svg> <!-- Bevat SVG patronen die app-wide gebruikt worden -->
-<div id="configsection" class="configsection">
-    <div style="display:flex;align-items:center;justify-content:center;height:100vh;font-size:larger;font-weight:bold; text-align: center;">
+<div id="configsection" class="absolute inset-x-0 bottom-0 top-[calc(var(--react-shell-height)+var(--menu-height))] overflow-auto bg-slate-50">
+    <div class="flex h-screen items-center justify-center text-center text-lg font-bold">
     De App wordt geladen.<br><br>Even geduld..
     </div>
 </div> <!-- Full page configuratie -->
-<div id="ribbon" style="display:none;">
-    <div id="left-icons" class="left-icons"></div>
-    <div id="right-icons" class="right-icons"></div>
+<div id="ribbon" class="absolute inset-x-0 top-[calc(var(--react-shell-height)+var(--menu-height))] h-[var(--ribbon-height)] items-center justify-between border-b border-neutral-300 bg-neutral-50 select-none" style="display:none;">
+    <div id="left-icons" class="flex h-full w-full items-center justify-start"></div>
+    <div id="right-icons" class="flex h-full w-full items-center justify-end"></div>
 </div> <!-- Ribbon -->
 <div id="react-workspace-commandbar-root" class="fixed top-[calc(var(--react-shell-height)+var(--menu-height))] right-0 left-0 z-30 hidden h-[var(--ribbon-height)]"></div>
 <aside id="react-workspace-sidebar" class="fixed top-[var(--total-offset)] bottom-0 left-0 z-10 hidden w-80 overflow-auto border-r border-neutral-300 bg-white">
     <div id="react-hierarchy-root"></div>
 </aside>
 <main id="react-board-layout-root" class="fixed top-[var(--total-offset)] right-80 bottom-0 left-80 z-0 hidden overflow-hidden"></main>
-<div id="canvas_2col" class="!right-80 !left-80" style="display:none;"> <!-- Eendraadschema-->
-    <div id="left_col">
-    <div id="left_col_inner"></div>
+<div id="canvas_2col" class="absolute top-[var(--total-offset)] right-80 bottom-0 left-80 flex-row overflow-hidden bg-white pb-9 max-[52rem]:overflow-x-auto" style="display:none;"> <!-- Eendraadschema-->
+    <div id="left_col" class="flex-[0.4] overflow-auto max-[52rem]:flex-[0_0_20rem]">
+    <div id="left_col_inner" class="p-2.5 text-black"></div>
     </div>
-    <div id="right_col">
-    <div id="right_col_inner"></div>
+    <div id="right_col" class="relative flex-[0.7] overflow-auto max-[52rem]:flex-[0_0_20rem]">
+    <div id="right_col_inner" class="p-2.5 text-black"></div>
+    <div id="react-schematic-controls-root" class="pointer-events-none absolute inset-0 z-[2]"></div>
     </div>
-    <div id="react-statusbar-root"></div>
+    <div id="react-statusbar-root" class="absolute inset-x-0 bottom-0"></div>
 </div>
-<div id="outerdiv" class="!right-80 !left-80" style="display:none;"> <!-- Situatieschets -->
-    <div id="sidebar"></div>
-    <div id="canvas">
-    <div id="paper"></div>
+<div id="outerdiv" class="absolute top-[var(--total-offset)] right-80 bottom-0 left-80 flex-row bg-white" style="display:none;"> <!-- Situatieschets -->
+    <div id="sidebar" class="h-full w-[var(--sideBarWidth)]"></div>
+    <div id="canvas" class="absolute inset-y-0 right-0 left-[var(--sideBarWidth)] flex flex-row overflow-auto bg-white">
+    <div id="paper" class="absolute top-[var(--paperPadding)] left-[var(--paperPadding)] h-[150mm] w-[277mm] rounded-md bg-white shadow-xl"></div>
     </div>
 </div>
-<aside id="properties_col" class="fixed top-[var(--total-offset)] right-0 bottom-0 z-10 hidden w-80 overflow-auto border-l border-neutral-300 bg-white" aria-label="Eigenschappen van het geselecteerde onderdeel">
+<aside id="properties_col" class="fixed top-[var(--total-offset)] right-0 bottom-0 z-10 hidden w-80 min-w-72 flex-[0.4] overflow-auto border-l border-neutral-300 bg-white max-[52rem]:flex-[0_0_20rem]" aria-label="Eigenschappen van het geselecteerde onderdeel">
     <div id="react-properties-root"></div>
 </aside>
 </div>`
@@ -541,6 +543,7 @@ const situationPaperElement = document.getElementById("paper");
 const legacyHierarchyRoot = document.getElementById("left_col_inner");
 const legacyHierarchyColumn = document.getElementById("left_col");
 const svgPreviewElement = document.getElementById("right_col_inner");
+const schematicControlsRoot = document.getElementById("react-schematic-controls-root");
 const reactHierarchyIsEnabled = reactHierarchyRoot !== null;
 reactSchemaHistoryEnabled = reactHierarchyIsEnabled;
 
@@ -567,7 +570,6 @@ if (legacyHierarchyColumn !== null) legacyHierarchyColumn.hidden = true;
 if (reactHierarchyRoot !== null) reactHierarchyRoot.hidden = false;
 if (reactPropertiesRoot !== null) reactPropertiesRoot.hidden = false;
 reactPropertiesColumn?.classList.remove("hidden");
-reactEditorCanvas?.classList.add("react-editor-layout");
 if (reactEditorRoot !== null) {
     mountEditorApp(
         reactEditorRoot,
@@ -579,6 +581,7 @@ if (reactEditorRoot !== null) {
             saveStatusStore,
             statusBarMountElement: reactStatusBarRoot,
             zoomTargetElement: svgPreviewElement,
+            schematicControlsMountElement: schematicControlsRoot,
             situationPlanStore: globalThis.situationPlanStore,
             onSituationPlanMutation: (historyKey) => {
                 globalThis.undostruct.store(historyKey);

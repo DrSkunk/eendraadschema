@@ -23,11 +23,9 @@ import { useWorkspaceSnapshot } from "./useWorkspaceSnapshot";
 import { WorkspaceCommandBar } from "./workspace/WorkspaceCommandBar";
 import { BoardLayoutWorkspace } from "./boards/BoardLayoutWorkspace";
 import { BoardLayoutInspector } from "./boards/BoardLayoutInspector";
+import { SchematicInsertControls } from "./schematic/SchematicInsertControls";
 import { FileDialog } from "./workspace/FileDialog";
 import { PrintDialog } from "./workspace/PrintDialog";
-import "./editor-shell.css";
-import "./hierarchy/hierarchy.css";
-import "./properties/properties.css";
 
 export interface EditorAppProps {
   readonly schemaStore: SchemaStore;
@@ -37,6 +35,7 @@ export interface EditorAppProps {
   readonly saveStatusStore?: SaveStatusStore | null;
   readonly statusBarMountElement?: HTMLElement | null;
   readonly zoomTargetElement?: HTMLElement | null;
+  readonly schematicControlsMountElement?: HTMLElement | null;
   readonly situationPlanStore?: SituationPlanStore | null;
   readonly onSituationPlanMutation?: (historyKey?: string) => void;
   readonly onSituationPlanZoomIn?: () => void;
@@ -76,6 +75,7 @@ export function EditorApp({
   saveStatusStore = null,
   statusBarMountElement = null,
   zoomTargetElement = null,
+  schematicControlsMountElement = null,
   situationPlanStore = null,
   onSituationPlanMutation = () => {},
   onSituationPlanZoomIn = () => {},
@@ -173,6 +173,17 @@ export function EditorApp({
               zoomTargetElement={zoomTargetElement}
             />,
             statusBarMountElement,
+          )
+        : null}
+      {schematicControlsMountElement && zoomTargetElement
+        ? createPortal(
+            <SchematicInsertControls
+              schemaStore={schemaStore}
+              editorStore={editorStore}
+              previewElement={zoomTargetElement}
+              overlayElement={schematicControlsMountElement.parentElement ?? schematicControlsMountElement}
+            />,
+            schematicControlsMountElement,
           )
         : null}
       {commandBarMountElement

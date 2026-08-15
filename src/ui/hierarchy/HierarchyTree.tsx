@@ -15,6 +15,7 @@ import {
   getEditableChildren,
   getVisibleHierarchy,
 } from "./hierarchyModel";
+import { ui } from "../uiStyles";
 
 export interface HierarchyTreeProps {
   readonly schemaStore: SchemaStore;
@@ -88,7 +89,7 @@ export function HierarchyTree({
   }
 
   return (
-    <nav className="react-hierarchy" aria-labelledby="react-hierarchy-title">
+    <nav className="min-w-80 p-4 text-neutral-800 max-[52rem]:min-w-0" aria-labelledby="react-hierarchy-title">
       <BoardNavigator
         schemaStore={schemaStore}
         editorStore={editorStore}
@@ -113,10 +114,10 @@ export function HierarchyTree({
         activeBoardId={activeBoardId}
         editorStore={editorStore}
       />
-      <header className="react-hierarchy__header">
+      <header className="mb-3 flex flex-wrap items-end justify-between gap-3 border-b border-neutral-300 pb-3">
         <div>
-          <span className="react-hierarchy__eyebrow">{activeBoard?.name ?? "Document"}</span>
-          <h2 id="react-hierarchy-title">Elektrische hiërarchie</h2>
+          <span className={ui.eyebrow}>{activeBoard?.name ?? "Document"}</span>
+          <h2 className="m-0 text-lg" id="react-hierarchy-title">Elektrische hiërarchie</h2>
         </div>
         {rootItems.length === 0 && !activeBoard?.feeder ? (
           <AddItemControl
@@ -125,13 +126,15 @@ export function HierarchyTree({
             onAdd={addRootItem}
           />
         ) : null}
-        <div className="react-hierarchy__history" aria-label="Bewerkingsgeschiedenis">
+        <div className="ml-auto flex flex-wrap items-center gap-1" aria-label="Bewerkingsgeschiedenis">
           <button
+            className={ui.button}
             type="button"
             disabled={!schemaSnapshot.canUndo}
             onClick={() => runHistoryCommand(schemaStore.commands.undo)}
           >Ongedaan maken</button>
           <button
+            className={ui.button}
             type="button"
             disabled={!schemaSnapshot.canRedo}
             onClick={() => runHistoryCommand(schemaStore.commands.redo)}
@@ -139,14 +142,14 @@ export function HierarchyTree({
         </div>
       </header>
 
-      {errorMessage ? <p className="react-hierarchy__error" role="alert">{errorMessage}</p> : null}
+      {errorMessage ? <p className={ui.error} role="alert">{errorMessage}</p> : null}
 
       {rootItems.length === 0 ? (
-        <p className="react-hierarchy__empty">
+        <p className="px-0 py-4 text-neutral-500">
           Dit verdeelbord bevat nog geen elektrische onderdelen.
         </p>
       ) : (
-        <ol className="react-hierarchy__tree">
+        <ol className="m-0 list-none p-0">
           {rootItems.map((node) => (
             <HierarchyNode
               key={node.id}

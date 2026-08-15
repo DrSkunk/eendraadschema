@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import type { SchemaDocumentDetails } from "../../application/SchemaDocumentReader";
 import type { SchemaStore } from "../../application/SchemaStore";
+import { ui } from "../uiStyles";
 
 interface DocumentDetailsEditorProps {
   readonly details: SchemaDocumentDetails;
@@ -45,14 +46,14 @@ export function DocumentDetailsEditor({ details, schemaStore, reportError }: Doc
   }
 
   return (
-    <details className="board-navigator__document">
-      <summary>Documentgegevens</summary>
-      <form onSubmit={save}>
-        <label>Plaats van de elektrische installatie<textarea rows={5} value={owner} onChange={(event) => setOwner(event.target.value)} /></label>
-        <label>Installateur<textarea rows={3} value={installer} onChange={(event) => setInstaller(event.target.value)} /></label>
-        <label>Erkend organisme (keuring)<textarea rows={3} value={control} onChange={(event) => setControl(event.target.value)} /></label>
-        <label>Info<textarea rows={2} value={info} onChange={(event) => setInfo(event.target.value)} /></label>
-        <button type="submit">Documentgegevens opslaan</button>
+    <details className="mt-3">
+      <summary className="cursor-pointer font-semibold">Documentgegevens</summary>
+      <form className="mt-2.5 grid gap-2" onSubmit={save}>
+        <label className={ui.label}>Plaats van de elektrische installatie<textarea className={ui.field} rows={5} value={owner} onChange={(event) => setOwner(event.target.value)} /></label>
+        <label className={ui.label}>Installateur<textarea className={ui.field} rows={3} value={installer} onChange={(event) => setInstaller(event.target.value)} /></label>
+        <label className={ui.label}>Erkend organisme (keuring)<textarea className={ui.field} rows={3} value={control} onChange={(event) => setControl(event.target.value)} /></label>
+        <label className={ui.label}>Info<textarea className={ui.field} rows={2} value={info} onChange={(event) => setInfo(event.target.value)} /></label>
+        <button className={ui.primaryButton} type="submit">Documentgegevens opslaan</button>
       </form>
     </details>
   );

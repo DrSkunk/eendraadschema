@@ -15,12 +15,38 @@ test("loads an example into the React editor with a live SVG preview", async ({ 
   await expect(page.getByRole("contentinfo", { name: "Statusbalk van de editor" })).toBeVisible();
 });
 
+test("adds components at branch ends and between drawn components", async ({ page }) => {
+  await loadExample(page, 0);
+
+  const endTrigger = page.getByRole("button", { name: /na Contactdoos.*toevoegen/ }).first();
+  await expect(endTrigger).toBeVisible();
+  await endTrigger.click();
+  let dialog = page.getByRole("dialog", { name: "Onderdeel toevoegen" });
+  await dialog.getByRole("combobox").selectOption("Lichtpunt");
+  await dialog.getByRole("button", { name: "Toevoegen" }).click();
+
+  const selectedItem = page.locator("#react-hierarchy-root [aria-current='true']");
+  await expect(selectedItem).toContainText("Lichtpunt");
+  const insertedLightId = await selectedItem.getAttribute("data-hierarchy-item-id");
+  await expect(page.locator(`#right_col_inner [data-schema-item-id="${insertedLightId}"]`).first()).toBeVisible();
+
+  const betweenTrigger = page.getByRole("button", { name: /vóór Lichtpunt.*invoegen/ }).first();
+  await expect(betweenTrigger).toBeVisible();
+  await betweenTrigger.click();
+  dialog = page.getByRole("dialog", { name: "Onderdeel toevoegen" });
+  await dialog.getByRole("combobox").selectOption("Contactdoos");
+  await dialog.getByRole("button", { name: "Toevoegen" }).click();
+
+  await expect(page.locator("#react-hierarchy-root [aria-current='true']")).toContainText("Contactdoos");
+  await expect(page.locator(".vite-error-overlay")).toHaveCount(0);
+});
+
 test("edits a circuit property through React and updates the SVG", async ({ page }) => {
   await loadExample(page, 1);
 
   // Rows start collapsed; reveal a circuit through the editor search.
   await page.getByRole("searchbox", { name: "Zoeken in het schema" }).fill("Kring");
-  await page.locator(".react-hierarchy-search__results button").first().click();
+  await page.getByRole("search").getByRole("button").first().click();
 
   const propertiesPanel = page.locator("#react-properties-root");
   await expect(propertiesPanel.getByRole("heading", { name: "Eigenschappen" })).toBeVisible();
@@ -46,9 +72,9 @@ test("search reveals and selects a matching item", async ({ page }) => {
 
   const searchInput = page.getByRole("searchbox", { name: "Zoeken in het schema" });
   await searchInput.fill("Lichtpunt");
-  await expect(page.locator(".react-hierarchy-search__results")).toContainText("gevonden");
+  await expect(page.getByRole("search").getByRole("status")).toContainText("gevonden");
 
-  await page.locator(".react-hierarchy-search__results button").first().click();
+  await page.getByRole("search").getByRole("button").first().click();
   await expect(searchInput).toHaveValue("");
   await expect(page.locator("#react-hierarchy-root [aria-current='true']")).toBeVisible();
 });
@@ -63,7 +89,7 @@ test("unified workspace links hierarchy items to situation-plan placements", asy
   await expect(page.locator("#minitabs li:visible").filter({ hasText: "Situatieschema" })).toHaveCount(0);
 
   await page.getByRole("searchbox", { name: "Zoeken in het schema" }).fill("Lichtpunt");
-  await page.locator(".react-hierarchy-search__results button").first().click();
+  await page.getByRole("search").getByRole("button").first().click();
   const links = page.getByRole("region", { name: "Koppelingen met situatieschema" });
   await expect(links).toContainText("0 plaatsingen");
 
@@ -90,12 +116,13 @@ test("adds a secondary board, shows breadcrumbs, and deletes it again", async ({
   await loadExample(page, 1);
 
   await page.getByText("+ Verdeelbord toevoegen").click();
-  const addForm = page.locator(".board-navigator__add form");
+  const boardNavigator = page.getByRole("region", { name: "Verdeelborden" });
+  const addForm = boardNavigator.locator("details").filter({ hasText: "+ Verdeelbord toevoegen" }).locator("form");
   await addForm.getByLabel("Naam").fill("Garage");
   await addForm.locator("select").selectOption({ index: 1 });
   await addForm.getByRole("button", { name: "Verdeelbord toevoegen" }).click();
 
-  await expect(page.locator(".board-navigator__list")).toContainText("Garage");
+  await expect(boardNavigator.getByRole("list").first()).toContainText("Garage");
   const breadcrumbs = page.getByRole("navigation", { name: /Voedingspad/ });
   await expect(breadcrumbs).toContainText("Hoofdbord");
   await expect(breadcrumbs).toContainText("Garage");
@@ -103,7 +130,7 @@ test("adds a secondary board, shows breadcrumbs, and deletes it again", async ({
   page.on("dialog", (dialog) => dialog.accept());
   await page.getByText("Instellingen van Garage").click();
   await page.getByRole("button", { name: "Verdeelbord verwijderen" }).click();
-  await expect(page.locator(".board-navigator__list")).not.toContainText("Garage");
+  await expect(boardNavigator.getByRole("list").first()).not.toContainText("Garage");
 });
 
 test("status bar zoom controls scale the SVG preview", async ({ page }) => {

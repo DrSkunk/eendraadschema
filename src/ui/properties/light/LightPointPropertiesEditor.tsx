@@ -10,6 +10,7 @@ import type { ItemEditorProps } from "../ItemEditorProps";
 import { CheckboxField, SelectField, type PropertyOption } from "../PropertyFields";
 import { socketNumberModeOptions } from "../socket/socketOptions";
 import { useSchemaSnapshot } from "../../useSchemaSnapshot";
+import { propertyStyles } from "../../uiStyles";
 
 function options<Value extends string>(values: readonly Value[]): ReadonlyArray<PropertyOption<Value>> {
   return values.map((value) => [value, value]);
@@ -26,11 +27,11 @@ export function LightPointPropertiesEditor({ itemId, schemaStore }: ItemEditorPr
   const update = (changes: LightPointPropertyChanges) => schemaStore.commands.updateLightPoint(itemId, changes);
 
   return (
-    <form className="react-properties__form" onSubmit={(event) => event.preventDefault()}>
-      <fieldset>
+    <form className={propertyStyles.form} onSubmit={(event) => event.preventDefault()}>
+      <fieldset className={propertyStyles.fieldset}>
         <legend>Lichtpunt</legend>
         {properties.canEditNumber ? (
-          <div className="react-properties__row">
+          <div className={propertyStyles.row}>
             <SelectField label="Nummering" value={properties.numberMode} options={socketNumberModeOptions} onChange={(numberMode) => update({ numberMode })} />
             <DraftTextField key={`number:${properties.number}`} label="Nummer" value={properties.number} disabled={properties.numberMode === "auto"} onCommit={(number) => update({ number })} />
           </div>
@@ -40,7 +41,7 @@ export function LightPointPropertiesEditor({ itemId, schemaStore }: ItemEditorPr
         <SelectField label="Aantal lampen" value={properties.count} options={lightCountOptions} onChange={(count) => update({ count })} />
         <DraftTextField key={`address:${properties.address}`} label="Adres of tekst" value={properties.address} onCommit={(address) => update({ address })} />
       </fieldset>
-      <details className="react-properties__advanced">
+      <details className={propertyStyles.advanced}>
         <summary>Geavanceerde instellingen</summary>
         <CheckboxField label="Wandlamp" checked={properties.wallLight} onChange={(wallLight) => update({ wallLight })} />
         <CheckboxField label="Halfwaterdicht" checked={properties.splashProof} onChange={(splashProof) => update({ splashProof })} />

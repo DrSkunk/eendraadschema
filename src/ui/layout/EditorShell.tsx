@@ -10,12 +10,12 @@ function itemCountLabel(itemCount: number): string {
 
 export function EditorShell({ itemCount }: EditorShellProps) {
   return (
-    <header className="react-editor-shell">
-      <div className="react-editor-shell__title">
-        <span className="react-editor-shell__eyebrow">Editor</span>
+    <header className="flex h-[var(--react-shell-height)] items-center justify-between overflow-hidden border-b border-neutral-300 bg-white px-4 py-2 text-neutral-800 max-[36rem]:flex-col max-[36rem]:items-start max-[36rem]:gap-1">
+      <div className="flex flex-col leading-tight">
+        <span className="text-xs tracking-wide text-neutral-500 uppercase">Editor</span>
         <strong>Eéndraadschema</strong>
       </div>
-      <p className="react-editor-shell__status" role="status" aria-live="polite">
+      <p className="m-0 text-sm text-neutral-500" role="status" aria-live="polite">
         {itemCountLabel(itemCount)}
       </p>
     </header>

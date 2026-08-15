@@ -2,10 +2,11 @@ import { DraftTextField } from "../DraftTextField";
 import { CheckboxField, SelectField } from "../PropertyFields";
 import type { CircuitSectionProps } from "./CircuitSectionProps";
 import { cableLocationOptions } from "./circuitOptions";
+import { propertyStyles } from "../../uiStyles";
 
 export function CircuitCableFields({ properties, update }: CircuitSectionProps) {
   return (
-    <fieldset>
+    <fieldset className={propertyStyles.fieldset}>
       <legend>Voedingskabel</legend>
       <CheckboxField label="Kabel aanwezig" checked={properties.hasCable} onChange={(hasCable) => update({ hasCable })} />
       {properties.hasCable ? (
