@@ -7,7 +7,7 @@
   --menu-height: 40px;
   --ribbon-height: 68px;
   --status-bar-height: 0px;
-  --react-shell-height: 48px; /* Height of the React editor header above the legacy menu */
+  --react-shell-height: 72px; /* Height of the React workflow header above the legacy menu */
 
   --sideBarWidth: 0px; /* Can be overwritte in propstyles */
 
@@ -106,20 +106,28 @@ ul#minitabs li.menu-item {
   display: inline; margin: 
   0 6px; 
 }
-ul#minitabs a {
-  text-decoration: none;
+ul#minitabs button {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-bottom: 4px solid #e8e8e8;
+  color: #555565;
+  font: inherit;
   padding: 0 0 3px;
-  border-bottom: 4px solid #e8e8e8; 
-  color: #555565
 }
-ul#minitabs a#current {
+ul#minitabs button#current {
   border-color: #F60;
   color:#06F
 }
-ul#minitabs a:hover {
+ul#minitabs button:hover {
   border-color: #F60;
   color: #333;
   cursor: pointer
+}
+ul#minitabs button:focus-visible {
+  border-radius: 2px;
+  outline: 3px solid rgb(23 92 211 / 35%);
+  outline-offset: 2px;
 }
 
 /* RIBBON */
@@ -286,8 +294,418 @@ ul#minitabs a:hover {
   right: 0;
   bottom: 0;
   overflow: auto; /* Add scrollbars if content overflows */
-  background-color: #ffffff; /* Optional: Background color for visibility */
-  padding: 12px 8px 8px 8px; /* Padding to create the empty border effect */
+  background-color: #f5f7fb;
+  padding: 0;
+}
+
+.start-page {
+  color: #20252b;
+  font-family: Arial, Helvetica, sans-serif;
+  margin: 0 auto;
+  max-width: 1180px;
+  padding: clamp(1rem, 2vw, 1.75rem);
+}
+
+.start-page__hero {
+  background: linear-gradient(135deg, #eff4ff 0%, #ffffff 68%);
+  border: 1px solid #b2ccff;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgb(16 24 40 / 8%);
+  padding: clamp(1rem, 2.5vw, 1.75rem);
+}
+
+.start-page__eyebrow,
+.start-page__card-kicker {
+  color: #175cd3;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  margin: 0 0 0.375rem;
+  text-transform: uppercase;
+}
+
+.start-page h1,
+.start-page h2,
+.start-page h3 {
+  color: #101828;
+  line-height: 1.15;
+}
+
+.start-page h1 {
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  margin: 0;
+}
+
+.start-page h2 {
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+.start-page h3 {
+  font-size: 1.15rem;
+  margin: 0;
+}
+
+.start-page__lead {
+  font-size: 1.05rem;
+  line-height: 1.45;
+  margin: 0.625rem 0 1rem;
+  max-width: 56rem;
+}
+
+.start-page__workflow {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.start-page__workflow li {
+  align-items: center;
+  background: rgb(255 255 255 / 82%);
+  border: 1px solid #d0d5dd;
+  border-radius: 9px;
+  display: flex;
+  gap: 0.625rem;
+  min-width: 0;
+  padding: 0.625rem;
+}
+
+.start-page__workflow li > span {
+  align-items: center;
+  background: #175cd3;
+  border-radius: 50%;
+  color: #fff;
+  display: inline-flex;
+  flex: 0 0 1.75rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  height: 1.75rem;
+  justify-content: center;
+}
+
+.start-page__workflow li div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.start-page__workflow strong {
+  font-size: 0.9rem;
+}
+
+.start-page__workflow small {
+  color: #667085;
+  font-size: 0.75rem;
+  margin-top: 0.125rem;
+}
+
+.start-page__connection {
+  color: #344054;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin: 0.75rem 0 0;
+}
+
+.start-page__start {
+  margin-top: 1.5rem;
+}
+
+.start-page__start-header {
+  margin-bottom: 0.875rem;
+}
+
+.start-page__start-header > p:last-child {
+  color: #667085;
+  margin: 0.375rem 0 0;
+}
+
+.start-page__cards {
+  align-items: stretch;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.start-page__card {
+  background: #fff;
+  border: 1px solid #d0d5dd;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgb(16 24 40 / 6%);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 1rem;
+}
+
+.start-page__card--primary {
+  background: #f9fbff;
+  border-color: #175cd3;
+  box-shadow: 0 0 0 2px rgb(23 92 211 / 10%);
+}
+
+.start-page__card > p:not(.start-page__card-kicker) {
+  color: #475467;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.start-page__settings {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 0.875rem;
+}
+
+.start-page__settings label {
+  align-items: center;
+  display: flex;
+  font-size: 0.85rem;
+  font-weight: 600;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.start-page__settings input,
+.start-page__settings select {
+  background: #fff;
+  border: 1px solid #98a2b3;
+  border-radius: 6px;
+  font: inherit;
+  min-height: 2.25rem;
+  padding: 0.375rem 0.5rem;
+}
+
+.start-page__settings input {
+  text-align: right;
+  width: 4.5rem;
+}
+
+.start-page__settings select {
+  max-width: 9.5rem;
+  width: 100%;
+}
+
+.start-page__value {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.375rem;
+}
+
+.start-page__value > span {
+  color: #667085;
+  font-size: 0.8rem;
+  min-width: 1.5rem;
+}
+
+.start-page__action {
+  background: #fff;
+  border: 1px solid #175cd3;
+  border-radius: 7px;
+  color: #175cd3;
+  font: inherit;
+  font-weight: 700;
+  margin-top: auto;
+  min-height: 2.75rem;
+  padding: 0.625rem 0.875rem;
+  width: 100%;
+}
+
+.start-page__action:hover {
+  background: #eff4ff;
+}
+
+.start-page__action--primary {
+  background: #175cd3;
+  color: #fff;
+}
+
+.start-page__action--primary:hover {
+  background: #1849a9;
+}
+
+.start-page button:focus-visible,
+.start-page input:focus-visible,
+.start-page select:focus-visible,
+.start-page summary:focus-visible {
+  outline: 3px solid rgb(23 92 211 / 35%);
+  outline-offset: 2px;
+}
+
+.start-page__open-icon {
+  height: 5.25rem;
+  margin: auto auto 0.25rem;
+  max-width: 8rem;
+  object-fit: contain;
+  width: 100%;
+}
+
+.start-page__examples {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: auto;
+}
+
+.start-page__examples button {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #d0d5dd;
+  border-radius: 7px;
+  color: #20252b;
+  display: grid;
+  font: inherit;
+  gap: 0.625rem;
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  min-height: 4.75rem;
+  padding: 0.375rem 0.5rem;
+  text-align: left;
+  width: 100%;
+}
+
+.start-page__examples button:hover {
+  background: #eff4ff;
+  border-color: #175cd3;
+}
+
+.start-page__examples img {
+  height: 4rem;
+  object-fit: contain;
+  width: 4.5rem;
+}
+
+.start-page__examples span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.start-page__examples small {
+  color: #667085;
+  font-size: 0.75rem;
+  margin-top: 0.125rem;
+}
+
+.start-page__help {
+  color: #475467;
+  margin: 1rem 0 0;
+  text-align: center;
+}
+
+.start-page__help button {
+  background: none;
+  border: 0;
+  color: #175cd3;
+  font: inherit;
+  font-weight: 700;
+  padding: 0.25rem;
+  text-decoration: underline;
+}
+
+.start-page__advanced,
+.start-page__updates {
+  background: #fff;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  margin-top: 0.75rem;
+  padding: 0.625rem 0.75rem;
+}
+
+.start-page__advanced summary,
+.start-page__updates summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.start-page__advanced h2 {
+  font-size: 1rem;
+  margin-top: 0.75rem;
+}
+
+.start-page__advanced textarea {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.start-page__updates table {
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  margin-top: 0.625rem;
+  width: 100%;
+}
+
+.start-page__updates th,
+.start-page__updates td {
+  border-top: 1px solid #eaecf0;
+  padding: 0.5rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.start-page__updates th {
+  white-space: nowrap;
+}
+
+@media (min-width: 52.01rem) and (max-width: 70rem) {
+  .start-page {
+    padding: 0.875rem 1.25rem;
+  }
+
+  .start-page__hero {
+    padding: 1rem;
+  }
+
+  .start-page__lead {
+    margin: 0.5rem 0 0.75rem;
+  }
+
+  .start-page__workflow li {
+    padding: 0.5rem;
+  }
+
+  .start-page__connection {
+    margin-top: 0.5rem;
+  }
+
+  .start-page__start {
+    margin-top: 1rem;
+  }
+
+  .start-page__start-header {
+    margin-bottom: 0.5rem;
+  }
+
+  .start-page__card {
+    padding: 0.75rem;
+  }
+
+  .start-page__card > p:not(.start-page__card-kicker) {
+    margin: 0.375rem 0 0.5rem;
+  }
+
+  .start-page__open-icon {
+    height: 4rem;
+  }
+
+  .start-page__examples button {
+    min-height: 4rem;
+  }
+
+  .start-page__examples img {
+    height: 3.25rem;
+  }
+}
+
+@media (max-width: 52rem) {
+  .start-page__workflow,
+  .start-page__cards {
+    grid-template-columns: 1fr;
+  }
+
+  .start-page__workflow small {
+    white-space: normal;
+  }
 }
 
 #canvas_2col {
