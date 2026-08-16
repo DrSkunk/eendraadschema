@@ -12,6 +12,7 @@ export interface SituationLinksPanelProps {
   readonly canCreateOccurrence: (itemId: number) => boolean;
   readonly onCreateOccurrence: (itemId: number) => void;
   readonly onRevealOccurrence: (occurrenceId: string) => void;
+  readonly onRevealBoardItem?: (itemId: number) => void;
 }
 
 export function SituationLinksPanel({
@@ -21,6 +22,7 @@ export function SituationLinksPanel({
   canCreateOccurrence,
   onCreateOccurrence,
   onRevealOccurrence,
+  onRevealBoardItem = () => {},
 }: SituationLinksPanelProps) {
   const schema = useSchemaSnapshot(schemaStore);
   const editor = useEditorSnapshot(editorStore);
@@ -67,6 +69,11 @@ export function SituationLinksPanel({
             </li>
           ))}
         </ul>
+      ) : null}
+      {selectedItem && schema.document.getBoardForItem(selectedItem.id) ? (
+        <button type="button" className="mt-2 rounded border border-blue-700 bg-white px-2 py-1 text-xs font-semibold text-blue-800 hover:bg-blue-100" onClick={() => onRevealBoardItem(selectedItem.id)}>
+          Toon in bordindeling
+        </button>
       ) : null}
     </section>
   );

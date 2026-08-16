@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import type { LegacyPrintService } from "../../application/PrintService";
+import type { DossierIssue } from "../../application/DossierReader";
 
 interface PrintDialogProps {
   readonly printService: LegacyPrintService;
   readonly onDownloadSvg: (svg: string, filename: string) => void;
   readonly onClose: () => void;
+  readonly dossierIssues?: readonly DossierIssue[];
 }
 
-export function PrintDialog({ printService, onDownloadSvg, onClose }: PrintDialogProps) {
+export function PrintDialog({ printService, onDownloadSvg, onClose, dossierIssues = [] }: PrintDialogProps) {
   const [, setRevision] = useState(0);
   const [pdfFilename, setPdfFilename] = useState("eendraadschema_print.pdf");
   const [svgFilename, setSvgFilename] = useState("eendraadschema_print.svg");
@@ -39,6 +41,7 @@ export function PrintDialog({ printService, onDownloadSvg, onClose }: PrintDialo
             <button type="button" className="rounded px-2 py-1 text-xl hover:bg-neutral-100" aria-label="Sluiten" onClick={onClose}>×</button>
           </div>
           <div className="mt-5 grid gap-3">
+            {dossierIssues.length > 0 ? <div className="rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950"><strong>Documentatie nakijken ({dossierIssues.length})</strong><ul className="mb-0 mt-1 pl-4">{dossierIssues.slice(0, 3).map(issue => <li key={issue.id}>{issue.message}</li>)}</ul><p className="mb-0 mt-2">U kunt enkel verder als expliciet onvolledig concept.</p></div> : null}
             <label className="grid gap-1 text-sm font-semibold">
               Papierformaat
               <select
@@ -77,6 +80,10 @@ export function PrintDialog({ printService, onDownloadSvg, onClose }: PrintDialo
                 }}
               />
               Automatisch over pagina&apos;s verdelen
+            </label>
+            <label className="flex items-start gap-2 text-sm">
+              <input className="mt-1" type="checkbox" checked={state.includeBoardLayout} onChange={(event) => { printService.updateSettings({ includeBoardLayout: event.target.checked }); refresh(); }} />
+              Bordindeling als bijlage toevoegen
             </label>
             {!state.enableAutopage ? (
               <div className="grid gap-2 rounded border border-neutral-200 bg-neutral-50 p-3">
@@ -198,10 +205,12 @@ export function PrintDialog({ printService, onDownloadSvg, onClose }: PrintDialo
               disabled={!validPageRange}
               onClick={() => {
                 if (!status.current) return;
+                if (dossierIssues.length > 0 && !window.confirm("Er zijn onopgeloste dossierpunten. Exporteer als onvolledig concept?")) return;
                 printService.generatePdf({
                   filename: pdfFilename,
                   pageRange,
                   statusElement: status.current,
+                  incompleteDraft: dossierIssues.length > 0,
                 });
               }}
             >

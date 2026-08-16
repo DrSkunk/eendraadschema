@@ -143,6 +143,7 @@ export class LegacySchemaDocumentReader implements SchemaDocumentReader {
       installer: structure.properties.installer,
       control: structure.properties.control,
       info: structure.properties.info,
+      dossier: Object.freeze({ ...structure.properties.dossier }),
     });
   }
 

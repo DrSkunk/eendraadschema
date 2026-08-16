@@ -35,7 +35,7 @@ export class BrowserMcpBridge {
     this.socket = null;
   }
 
-  private handleMessage(payload: string): void {
+  private async handleMessage(payload: string): Promise<void> {
     let request: BridgeRequest;
     try {
       request = JSON.parse(payload) as BridgeRequest;
@@ -44,13 +44,13 @@ export class BrowserMcpBridge {
       return;
     }
     try {
-      this.respond(request.id, { ok: true, result: this.execute(request) });
+      this.respond(request.id, { ok: true, result: await this.execute(request) });
     } catch (error) {
       this.respond(request.id, { ok: false, error: error instanceof Error ? error.message : "Onbekende fout." });
     }
   }
 
-  private execute(request: BridgeRequest): unknown {
+  private async execute(request: BridgeRequest): Promise<unknown> {
     const schema = this.schemaStore.getSnapshot();
     switch (request.method) {
       case "get_dossier_summary": {
@@ -60,6 +60,7 @@ export class BrowserMcpBridge {
           boards: schema.document.getBoards().map(board => ({ id: board.id, name: board.name, location: board.location })),
           itemCount: dossier.items.length,
           issues: dossier.issues,
+          placementTasks: schema.placementTasks,
         };
       }
       case "list_circuits":
@@ -79,13 +80,15 @@ export class BrowserMcpBridge {
           item.label.toLocaleLowerCase("nl-BE").includes(query) || item.type.toLocaleLowerCase("nl-BE").includes(query)
         ));
       }
+      case "list_placement_tasks":
+        return schema.placementTasks;
       case "propose_change_set": {
         const baseRevision = getNumberParam(request.params, "baseRevision");
         if (baseRevision !== schema.revision) throw new Error("Het dossier is gewijzigd; lees het opnieuw en maak een nieuw voorstel.");
         const operations = getOperations(request.params);
         const description = getTextParam(request.params, "description");
         const summary = describeProposal(operations, description);
-        if (!window.confirm(`${summary}\n\nDeze wijziging wordt als één stap toegepast en kan ongedaan worden gemaakt. Toepassen?`)) {
+        if (!await requestProposalApproval(summary)) {
           return { approved: false, summary };
         }
         this.schemaStore.commands.applyAgentChangeSet(operations);
@@ -102,6 +105,10 @@ export class BrowserMcpBridge {
       this.socket.send(JSON.stringify({ kind: "response", id, ...record }));
     }
   }
+}
+
+function requestProposalApproval(summary: string): Promise<boolean> {
+  return new Promise((resolve) => window.dispatchEvent(new CustomEvent("eds-mcp-proposal", { detail: { summary, resolve } })));
 }
 
 function getRecord(value: unknown): Record<string, unknown> {
@@ -124,7 +131,7 @@ function getOperations(value: unknown): readonly AgentGraphOperation[] {
   if (!Array.isArray(operations) || operations.length === 0) throw new Error("Geef minstens één wijziging op.");
   for (const operation of operations) {
     const record = getRecord(operation);
-    if (!["add-item", "update-item", "move-item", "delete-item"].includes(String(record.kind))) {
+    if (!["add-item", "update-item", "move-item", "delete-item", "create-placement-task"].includes(String(record.kind))) {
       throw new Error("Het voorstel bevat een ongeldige wijziging.");
     }
   }

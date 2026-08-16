@@ -32,6 +32,7 @@ export interface EditorAppMountOptions {
   readonly canCreateSituationOccurrence?: (itemId: number) => boolean;
   readonly onCreateSituationOccurrence?: (itemId: number) => void;
   readonly onRevealSituationOccurrence?: (occurrenceId: string) => void;
+  readonly onRevealBoardItem?: (itemId: number) => void;
   readonly situationPaperElement?: HTMLElement | null;
   readonly commandBarMountElement?: HTMLElement | null;
   readonly boardLayoutMountElement?: HTMLElement | null;
@@ -82,6 +83,7 @@ export function mountEditorApp(
         canCreateSituationOccurrence={options.canCreateSituationOccurrence}
         onCreateSituationOccurrence={options.onCreateSituationOccurrence}
         onRevealSituationOccurrence={options.onRevealSituationOccurrence}
+        onRevealBoardItem={options.onRevealBoardItem}
         situationPaperElement={options.situationPaperElement ?? null}
         commandBarMountElement={options.commandBarMountElement ?? null}
         boardLayoutMountElement={options.boardLayoutMountElement ?? null}

@@ -1,4 +1,5 @@
 import type { BoardLayout } from "../domain/BoardLayout";
+import type { PlacementTask } from "../domain/Dossier";
 import type { SchemaSnapshot } from "./SchemaStore";
 import type { SituationPlanSnapshot } from "./SituationPlanStore";
 
@@ -12,13 +13,14 @@ export interface DossierItemLink {
   readonly presentation: InstallationItemPresentation;
   readonly situationOccurrenceIds: readonly string[];
   readonly hasBoardPlacement: boolean;
+  readonly placementTasks: readonly PlacementTask[];
 }
 
 export interface DossierIssue {
   readonly id: string;
   readonly severity: "warning" | "error";
   readonly itemId?: number;
-  readonly code: "MISSING_SITUATION_PLACEMENT" | "MISSING_BOARD_PLACEMENT" | "ORPHANED_SITUATION_PLACEMENT";
+  readonly code: "MISSING_SITUATION_PLACEMENT" | "MISSING_BOARD_PLACEMENT" | "ORPHANED_SITUATION_PLACEMENT" | "MISSING_DOSSIER_METADATA" | "OPEN_PLACEMENT_TASK";
   readonly message: string;
 }
 
@@ -59,6 +61,12 @@ export function createDossierSnapshot(
     byItemId.set(occurrence.electroItemId, ids);
   }
   const placementIds = getBoardPlacementIds(schema.boardLayouts);
+  const tasksByItemId = new Map<number, PlacementTask[]>();
+  for (const task of schema.placementTasks) {
+    const tasks = tasksByItemId.get(task.itemId) ?? [];
+    tasks.push(task);
+    tasksByItemId.set(task.itemId, tasks);
+  }
   const itemById = new Map(schema.document.getAllItems().map(item => [item.id, item]));
   const items: DossierItemLink[] = [];
   const issues: DossierIssue[] = [];
@@ -74,6 +82,7 @@ export function createDossierSnapshot(
       presentation,
       situationOccurrenceIds: occurrences,
       hasBoardPlacement: placementIds.has(item.id),
+      placementTasks: Object.freeze([...(tasksByItemId.get(item.id) ?? [])]),
     });
     items.push(link);
     if (presentation === "field-device" && occurrences.length === 0) {
@@ -84,6 +93,17 @@ export function createDossierSnapshot(
       issues.push(dossierIssue("warning", "MISSING_BOARD_PLACEMENT", item.id,
         `${item.label} staat nog niet in de bordindeling.`));
     }
+    for (const task of link.placementTasks) {
+      issues.push(dossierIssue("warning", "OPEN_PLACEMENT_TASK", item.id,
+        `${item.label} wacht nog op ${task.destination === "situation" ? "plaatsing op het situatieschema" : "plaatsing in de bordindeling"}${task.locationHint ? ` (${task.locationHint})` : ""}.`));
+    }
+  }
+  const metadata = schema.document.getDocumentDetails().dossier;
+  for (const [key, label] of [
+    ["installationAddress", "adres van de installatie"], ["nominalVoltage", "nominale spanning"],
+    ["revisionLabel", "documentversie"], ["issueDate", "uitgiftedatum"],
+  ] as const) {
+    if (!metadata[key]) issues.push(dossierIssue("warning", "MISSING_DOSSIER_METADATA", -1, `Dossiergegeven ontbreekt: ${label}.`));
   }
 
   for (const [itemId, occurrenceIds] of byItemId) {

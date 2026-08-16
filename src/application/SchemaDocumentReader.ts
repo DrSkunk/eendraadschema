@@ -1,3 +1,5 @@
+import type { DossierMetadata } from "../domain/Dossier";
+
 export type HierarchyNodeRole = "item" | "attribute" | "container";
 
 export interface HierarchyNodeCapabilities {
@@ -36,6 +38,7 @@ export interface SchemaDocumentDetails {
   readonly installer: string;
   readonly control: string;
   readonly info: string;
+  readonly dossier: DossierMetadata;
 }
 
 export interface SchemaDocumentReader {

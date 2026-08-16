@@ -1,6 +1,7 @@
 import { Hierarchical_List } from "../../Hierarchical_List";
 import { Electro_Item } from "../../List_Item/Electro_Item";
 import { SituationPlan } from "../../sitplan/SituationPlan";
+import { parseDossierMetadata, parsePlacementTasks } from "../../domain/Dossier";
 import { parseDistributionBoards, type DistributionBoard } from "../../domain/DistributionBoard";
 import { parseBoardLayouts, type BoardLayout } from "../../domain/BoardLayout";
 
@@ -25,6 +26,7 @@ type LegacyStructure = {
   print_table?: any;
   sitplanjson?: any;
   boards?: DistributionBoard[];
+  placementTasks?: unknown;
   boardLayouts?: BoardLayout[];
 };
 
@@ -163,6 +165,7 @@ export function structureFromJson(
       output.properties.disableEDSCompression = input.properties.disableEDSCompression;
     }
     output.properties.legacySchakelaars = input.properties.legacySchakelaars ?? null;
+    output.properties.dossier = parseDossierMetadata(input.properties.dossier);
   }
 
   if (input.print_table !== undefined) {
@@ -173,6 +176,7 @@ export function structureFromJson(
     output.print_table.setstarty(input.print_table.starty);
     output.print_table.setstopy(input.print_table.stopy);
     output.print_table.enableAutopage = input.print_table.enableAutopage ?? false;
+    output.print_table.includeBoardLayout = input.print_table.includeBoardLayout ?? false;
 
     for (let index = 0; index < input.print_table.pages.length; index += 1) {
       if (index !== 0) output.print_table.addPage();
@@ -243,6 +247,7 @@ export function structureFromJson(
     new Set(output.boards.map(board => board.id)),
     activeItemIds,
   );
+  output.placementTasks = parsePlacementTasks(input.placementTasks, activeItemIds);
   return output;
 }
 

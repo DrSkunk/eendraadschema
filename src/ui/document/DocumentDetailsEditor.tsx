@@ -22,12 +22,14 @@ export function DocumentDetailsEditor({ details, schemaStore, reportError }: Doc
   const [installer, setInstaller] = useState(() => htmlBreaksToNewlines(details.installer));
   const [control, setControl] = useState(() => htmlBreaksToNewlines(details.control));
   const [info, setInfo] = useState(() => htmlBreaksToNewlines(details.info));
+  const [dossier, setDossier] = useState(details.dossier);
 
   useEffect(() => {
     setOwner(htmlBreaksToNewlines(details.owner));
     setInstaller(htmlBreaksToNewlines(details.installer));
     setControl(htmlBreaksToNewlines(details.control));
     setInfo(htmlBreaksToNewlines(details.info));
+    setDossier(details.dossier);
   }, [details.owner, details.installer, details.control, details.info]);
 
   function save(event: FormEvent<HTMLFormElement>): void {
@@ -39,6 +41,7 @@ export function DocumentDetailsEditor({ details, schemaStore, reportError }: Doc
         control: newlinesToHtmlBreaks(control),
         info: newlinesToHtmlBreaks(info),
       });
+      schemaStore.commands.updateDossierMetadata(dossier);
       reportError("");
     } catch (error) {
       reportError(error instanceof Error ? error.message : "De documentgegevens konden niet worden opgeslagen.");
@@ -53,6 +56,14 @@ export function DocumentDetailsEditor({ details, schemaStore, reportError }: Doc
         <label className={ui.label}>Installateur<textarea className={ui.field} rows={3} value={installer} onChange={(event) => setInstaller(event.target.value)} /></label>
         <label className={ui.label}>Erkend organisme (keuring)<textarea className={ui.field} rows={3} value={control} onChange={(event) => setControl(event.target.value)} /></label>
         <label className={ui.label}>Info<textarea className={ui.field} rows={2} value={info} onChange={(event) => setInfo(event.target.value)} /></label>
+        <fieldset className="grid gap-2 rounded border border-neutral-200 p-2">
+          <legend className="px-1 text-sm font-semibold">Dossiergegevens</legend>
+          <label className={ui.label}>Projectcontext<select className={ui.field} value={dossier.installationContext} onChange={event => setDossier(value => ({ ...value, installationContext: event.target.value as typeof value.installationContext }))}><option value="new">Nieuwe installatie</option><option value="change">Wijziging of uitbreiding</option><option value="existing">Bestaande installatie</option></select></label>
+          <label className={ui.label}>Adres van de installatie<textarea className={ui.field} rows={2} value={dossier.installationAddress} onChange={event => setDossier(value => ({ ...value, installationAddress: event.target.value }))} /></label>
+          <div className="grid grid-cols-2 gap-2"><label className={ui.label}>Spanning<input className={ui.field} value={dossier.nominalVoltage} onChange={event => setDossier(value => ({ ...value, nominalVoltage: event.target.value }))} /></label><label className={ui.label}>Stroom<select className={ui.field} value={dossier.currentNature} onChange={event => setDossier(value => ({ ...value, currentNature: event.target.value as typeof value.currentNature }))}><option value="">—</option><option value="AC">Wisselstroom</option><option value="DC">Gelijkstroom</option><option value="other">Anders</option></select></label></div>
+          <div className="grid grid-cols-2 gap-2"><label className={ui.label}>Frequentie (Hz)<input className={ui.field} value={dossier.frequencyHz} onChange={event => setDossier(value => ({ ...value, frequencyHz: event.target.value }))} /></label><label className={ui.label}>Versie<input className={ui.field} value={dossier.revisionLabel} onChange={event => setDossier(value => ({ ...value, revisionLabel: event.target.value }))} /></label></div>
+          <label className={ui.label}>Uitgiftedatum<input className={ui.field} type="date" value={dossier.issueDate} onChange={event => setDossier(value => ({ ...value, issueDate: event.target.value }))} /></label>
+        </fieldset>
         <button className={ui.primaryButton} type="submit">Documentgegevens opslaan</button>
       </form>
     </details>

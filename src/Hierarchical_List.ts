@@ -10,6 +10,7 @@ import { Bord } from "./List_Item/Bord";
 import { Contactdoos } from "./List_Item/Contactdoos";
 import { Container } from "./List_Item/Container";
 import type { BoardLayout } from "./domain/BoardLayout";
+import type { PlacementTask } from "./domain/Dossier";
 import { Diepvriezer } from "./List_Item/Diepvriezer";
 import { Domotica } from "./List_Item/Domotica";
 import { Domotica_gestuurde_verbruiker } from "./List_Item/Domotica_gestuurde_verbruiker";
@@ -206,6 +207,7 @@ export class Hierarchical_List {
     sitplanview: SituationPlanView;
     boards: DistributionBoard[];
     boardLayouts: BoardLayout[];
+    placementTasks: PlacementTask[];
     currentView: string = ""; // Here we store '2col' | 'config' | 'draw'
     
     // -- Hash table for efficient ID to ordinal lookups --
@@ -225,6 +227,7 @@ export class Hierarchical_List {
         this.sitplan = new SituationPlan();
         this.boards = [createDefaultMainBoard([])];
         this.boardLayouts = [];
+        this.placementTasks = [];
       };
 
     /** dispose

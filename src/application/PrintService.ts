@@ -2,13 +2,16 @@ import { flattenSVGfromString } from "../general";
 import type { Hierarchical_List } from "../Hierarchical_List";
 import { printPDF } from "../print/printToJsPDF";
 import { SVGelement } from "../SVGelement";
+import { createBoardLayoutPrintPages } from "./BoardLayoutPrint";
 
 export interface PrintPreviewState {
   readonly edsPageCount: number;
   readonly sitplanPageCount: number;
+  readonly boardPageCount: number;
   readonly totalPageCount: number;
   readonly displayPageIndex: number;
   readonly enableAutopage: boolean;
+  readonly includeBoardLayout: boolean;
   readonly paperSize: string;
   readonly dpi: number;
   readonly verticalMode: string;
@@ -21,12 +24,14 @@ export interface GeneratePdfOptions {
   readonly filename: string;
   readonly pageRange?: string;
   readonly statusElement: { innerHTML: string };
+  readonly incompleteDraft?: boolean;
 }
 
 export interface PrintSettingsChanges {
   readonly paperSize?: "A4" | "A3";
   readonly dpi?: number;
   readonly enableAutopage?: boolean;
+  readonly includeBoardLayout?: boolean;
   readonly verticalMode?: string;
   readonly startY?: number;
   readonly stopY?: number;
@@ -54,12 +59,15 @@ export class LegacyPrintService {
     const document = this.getDocument();
     const edsPageCount = document.print_table.pages.length;
     const sitplanPageCount = document.sitplan ? document.sitplan.getNumPages() : 0;
+    const boardPageCount = document.print_table.includeBoardLayout ? createBoardLayoutPrintPages(document).length : 0;
     return {
       edsPageCount,
       sitplanPageCount,
-      totalPageCount: edsPageCount + sitplanPageCount,
+      boardPageCount,
+      totalPageCount: edsPageCount + sitplanPageCount + boardPageCount,
       displayPageIndex: document.print_table.displaypage,
       enableAutopage: document.print_table.enableAutopage,
+      includeBoardLayout: document.print_table.includeBoardLayout,
       paperSize: document.print_table.getPaperSize(),
       dpi: this.getDpi(),
       verticalMode: document.print_table.getModeVertical(),
@@ -90,6 +98,7 @@ export class LegacyPrintService {
     if (changes.enableAutopage !== undefined) {
       document.print_table.enableAutopage = changes.enableAutopage;
     }
+    if (changes.includeBoardLayout !== undefined) document.print_table.includeBoardLayout = changes.includeBoardLayout;
     if (changes.verticalMode !== undefined) document.print_table.setModeVertical(changes.verticalMode);
     if (changes.startY !== undefined) document.print_table.setstarty(changes.startY);
     if (changes.stopY !== undefined) document.print_table.setstopy(changes.stopY);
@@ -130,8 +139,11 @@ export class LegacyPrintService {
     if (pageIndex < edsPageCount) {
       return this.getEdsPageSvg(precomputedSvg ?? document.toSVG(0, "horizontal"), pageIndex);
     }
-    const sitplanPage = pageIndex - edsPageCount;
-    return document.sitplan?.toSitPlanPrint().pages[sitplanPage]?.svg ?? "";
+    const additionalPages = [
+      ...(document.sitplan?.toSitPlanPrint().pages ?? []),
+      ...(document.print_table.includeBoardLayout ? createBoardLayoutPrintPages(document) : []),
+    ];
+    return additionalPages[pageIndex - edsPageCount]?.svg ?? "";
   }
 
   generatePdf(options: GeneratePdfOptions): void {
@@ -155,11 +167,19 @@ export class LegacyPrintService {
     printPDF(
       svg,
       document.print_table,
-      document.properties,
+      options.incompleteDraft
+        ? { ...document.properties, info: ["CONCEPT — documentatie onvolledig", document.properties.info].filter(Boolean).join("<br>") }
+        : document.properties,
       pageRange,
       options.filename,
       options.statusElement,
-      document.sitplan.toSitPlanPrint(),
+      {
+        numpages: (document.sitplan?.toSitPlanPrint().pages.length ?? 0) + (document.print_table.includeBoardLayout ? createBoardLayoutPrintPages(document).length : 0),
+        pages: [
+          ...(document.sitplan?.toSitPlanPrint().pages ?? []).map(page => ({ ...page, name: "Situatieschema" })),
+          ...(document.print_table.includeBoardLayout ? createBoardLayoutPrintPages(document) : []),
+        ],
+      },
     );
   }
 

@@ -27,6 +27,8 @@ import { SchematicInsertControls } from "./schematic/SchematicInsertControls";
 import { SchematicSelectionBridge } from "./schematic/SchematicSelectionBridge";
 import { FileDialog } from "./workspace/FileDialog";
 import { PrintDialog } from "./workspace/PrintDialog";
+import { createDossierSnapshot } from "../application/DossierReader";
+import { McpProposalReview } from "./workspace/McpProposalReview";
 
 export interface EditorAppProps {
   readonly schemaStore: SchemaStore;
@@ -52,6 +54,7 @@ export interface EditorAppProps {
   readonly canCreateSituationOccurrence?: (itemId: number) => boolean;
   readonly onCreateSituationOccurrence?: (itemId: number) => void;
   readonly onRevealSituationOccurrence?: (occurrenceId: string) => void;
+  readonly onRevealBoardItem?: (itemId: number) => void;
   readonly situationPaperElement?: HTMLElement | null;
   readonly commandBarMountElement?: HTMLElement | null;
   readonly boardLayoutMountElement?: HTMLElement | null;
@@ -92,6 +95,7 @@ export function EditorApp({
   canCreateSituationOccurrence = () => false,
   onCreateSituationOccurrence = () => {},
   onRevealSituationOccurrence = () => {},
+  onRevealBoardItem = () => {},
   situationPaperElement = null,
   commandBarMountElement = null,
   boardLayoutMountElement = null,
@@ -112,6 +116,9 @@ export function EditorApp({
   const itemCount = snapshot.document
     .getAllItems()
     .filter((item) => item.role === "item").length;
+  const dossierIssues = situationPlanStore
+    ? createDossierSnapshot(snapshot, situationPlanStore.getSnapshot()).issues
+    : [];
 
   function deleteSituationSelection() {
     if (!situationPlanStore) return;
@@ -125,6 +132,7 @@ export function EditorApp({
 
   return (
     <>
+      <McpProposalReview />
       <WorkspaceHeader
         itemCount={itemCount}
         store={workspaceStore}
@@ -139,6 +147,7 @@ export function EditorApp({
               canCreateSituationOccurrence={canCreateSituationOccurrence}
               onCreateSituationOccurrence={onCreateSituationOccurrence}
               onRevealSituationOccurrence={onRevealSituationOccurrence}
+              onRevealBoardItem={onRevealBoardItem}
             />,
             hierarchyMountElement,
           )
@@ -246,6 +255,7 @@ export function EditorApp({
       {workspace.activeDialog === "print" && printService ? (
         <PrintDialog
           printService={printService}
+          dossierIssues={dossierIssues}
           onDownloadSvg={onDownloadPrintSvg}
           onClose={() => workspaceStore.commands.closeDialog()}
         />

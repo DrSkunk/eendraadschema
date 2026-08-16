@@ -26,6 +26,7 @@ export interface HierarchyTreeProps {
   readonly canCreateSituationOccurrence?: (itemId: number) => boolean;
   readonly onCreateSituationOccurrence?: (itemId: number) => void;
   readonly onRevealSituationOccurrence?: (occurrenceId: string) => void;
+  readonly onRevealBoardItem?: (itemId: number) => void;
 }
 
 function browserConfirmDelete(label: string): boolean {
@@ -40,6 +41,7 @@ export function HierarchyTree({
   canCreateSituationOccurrence = () => false,
   onCreateSituationOccurrence = () => {},
   onRevealSituationOccurrence = () => {},
+  onRevealBoardItem = () => {},
 }: HierarchyTreeProps) {
   const schemaSnapshot = useSchemaSnapshot(schemaStore);
   const editorSnapshot = useEditorSnapshot(editorStore);
@@ -109,6 +111,7 @@ export function HierarchyTree({
           canCreateOccurrence={canCreateSituationOccurrence}
           onCreateOccurrence={onCreateSituationOccurrence}
           onRevealOccurrence={onRevealSituationOccurrence}
+          onRevealBoardItem={onRevealBoardItem}
         />
       ) : null}
       <BoardBreadcrumbs

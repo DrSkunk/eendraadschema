@@ -72,12 +72,13 @@ async function startStdioAdapter() {
   mcp.registerTool("list_circuits", { description: "Lijst alle kringen uit het levende eendraadschema." }, () => request("list_circuits"));
   mcp.registerTool("get_item", { description: "Geeft een elektrisch item en zijn koppelingen met situatieplan/bordindeling.", inputSchema: { itemId: z.number().int() } }, ({ itemId }) => request("get_item", { itemId }));
   mcp.registerTool("find_items", { description: "Zoekt elektrische items op naam of type.", inputSchema: { query: z.string().min(1) } }, ({ query }) => request("find_items", { query }));
+  mcp.registerTool("list_placement_tasks", { description: "Lijst open fysieke plaatsingstaken voor situatieschema en bordindeling." }, () => request("list_placement_tasks"));
   mcp.registerTool("propose_change_set", {
     description: "Toont de gebruiker een voorstel voor een graphwijziging. Pas alleen toe na duidelijke uitleg; de browser vraagt expliciete goedkeuring.",
     inputSchema: {
       baseRevision: z.number().int(),
       description: z.string().min(1),
-      operations: z.array(z.object({ kind: z.enum(["add-item", "update-item", "move-item", "delete-item"]) }).passthrough()).min(1),
+      operations: z.array(z.object({ kind: z.enum(["add-item", "update-item", "move-item", "delete-item", "create-placement-task"]) }).passthrough()).min(1),
     },
   }, ({ baseRevision, description, operations }) => request("propose_change_set", { baseRevision, description, operations }));
   await mcp.connect(new StdioServerTransport());

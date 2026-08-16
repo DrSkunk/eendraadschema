@@ -21,6 +21,8 @@ import { validateAndMapConfiguredItemChanges } from "./ConfiguredItemPropertyVal
 import { LegacySchemaDocumentReader } from "./LegacySchemaDocumentReader";
 import { LegacySchemaPropertyReader } from "./LegacySchemaPropertyReader";
 import { validateSchemaDocument } from "./SchemaValidation";
+import { parseDossierMetadata, type PlacementTaskDestination } from "../domain/Dossier";
+import { getItemPresentation } from "./DossierReader";
 import type {
   BasicConsumerPropertyChanges,
   CircuitPropertyChanges,
@@ -41,6 +43,7 @@ import {
   type UpdateFileSettingsChanges,
   type UpdateBoardLayoutRailChanges,
   type AgentGraphOperation,
+  type UpdateDossierMetadataChanges,
 } from "./SchemaStore";
 
 const BLOCKED_CHANGE_KEYS = new Set(["__proto__", "constructor", "prototype"]);
@@ -80,6 +83,9 @@ export class LegacySchemaStore implements SchemaStore {
       deleteDistributionBoard: this.deleteDistributionBoard.bind(this),
       updateDocumentDetails: this.updateDocumentDetails.bind(this),
       updateFileSettings: this.updateFileSettings.bind(this),
+      updateDossierMetadata: this.updateDossierMetadata.bind(this),
+      createPlacementTask: this.createPlacementTask.bind(this),
+      resolvePlacementTask: this.resolvePlacementTask.bind(this),
       addBoardLayoutRail: this.addBoardLayoutRail.bind(this),
       updateBoardLayoutRail: this.updateBoardLayoutRail.bind(this),
       deleteBoardLayoutRail: this.deleteBoardLayoutRail.bind(this),
@@ -138,6 +144,7 @@ export class LegacySchemaStore implements SchemaStore {
         item = this.requireItem(placeholder.id);
       }
 
+      this.createRequiredPlacementTask(item.id, item.getType());
       return item.id;
     });
   }
@@ -195,6 +202,7 @@ export class LegacySchemaStore implements SchemaStore {
         ...layout,
         placements: layout.placements.filter(placement => !deletedItemIds.has(placement.itemId)),
       }));
+      this.structure.placementTasks = this.structure.placementTasks.filter(task => !deletedItemIds.has(task.itemId));
       this.structure.deleteById(itemId);
     });
   }
@@ -252,6 +260,7 @@ export class LegacySchemaStore implements SchemaStore {
       if (typeof changedType === "string" && changedType !== item.getType()) {
         this.structure.adjustTypeById(itemId, changedType);
         item = this.requireItem(itemId);
+        this.createRequiredPlacementTask(itemId, item.getType());
       }
       for (const [key, value] of Object.entries(changes)) {
         if (key !== "type") item.props[key] = value;
@@ -337,6 +346,7 @@ export class LegacySchemaStore implements SchemaStore {
       if (this.structure.getElectroItemById(duplicateId) === null) {
         throw new SchemaCommandError("INVALID_CHANGE", "Het item kon niet worden gedupliceerd.");
       }
+      this.createRequiredPlacementTask(duplicateId, this.requireItem(duplicateId).getType());
       return duplicateId;
     });
   }
@@ -486,6 +496,49 @@ export class LegacySchemaStore implements SchemaStore {
     });
   }
 
+  private updateDossierMetadata(changes: UpdateDossierMetadataChanges): void {
+    if (Object.keys(changes).length === 0) return;
+    const next = parseDossierMetadata({ ...this.structure.properties.dossier, ...changes });
+    this.commitTransaction(() => { this.structure.properties.dossier = next; });
+  }
+
+  private createPlacementTask(itemId: number, destination: PlacementTaskDestination, locationHint?: string): string {
+    this.requireItem(itemId);
+    if (destination !== "situation" && destination !== "board") {
+      throw new SchemaCommandError("INVALID_CHANGE", "De bestemming van een plaatsingstaak is ongeldig.");
+    }
+    const hint = locationHint?.trim();
+    return this.commitTransaction(() => {
+      const existing = this.structure.placementTasks.find(task => task.itemId === itemId && task.destination === destination);
+      if (existing) return existing.id;
+      const id = `task-${this.structure.curid}-${this.structure.placementTasks.length + 1}`;
+      this.structure.placementTasks = [...this.structure.placementTasks, { id, itemId, destination, ...(hint ? { locationHint: hint } : {}) }];
+      return id;
+    });
+  }
+
+  private resolvePlacementTask(taskId: string): void {
+    if (!this.structure.placementTasks.some(task => task.id === taskId)) {
+      throw new SchemaCommandError("INVALID_CHANGE", "De plaatsingstaak bestaat niet.");
+    }
+    this.commitTransaction(() => {
+      this.structure.placementTasks = this.structure.placementTasks.filter(task => task.id !== taskId);
+    });
+  }
+
+  private createRequiredPlacementTask(itemId: number, type: string): void {
+    const presentation = getItemPresentation(type);
+    const destination = presentation === "field-device" ? "situation"
+      : presentation === "panel-device" ? "board" : null;
+    this.structure.placementTasks = this.structure.placementTasks.filter(task => task.itemId !== itemId || task.destination === destination);
+    if (destination === null || this.structure.placementTasks.some(task => task.itemId === itemId && task.destination === destination)) return;
+    this.structure.placementTasks = [...this.structure.placementTasks, {
+      id: `task-${this.structure.curid}-${this.structure.placementTasks.length + 1}`,
+      itemId,
+      destination,
+    }];
+  }
+
   private addBoardLayoutRail(
     boardId: string,
     properties: AddBoardLayoutRailProperties = {},
@@ -598,13 +651,16 @@ export class LegacySchemaStore implements SchemaStore {
     if (overlaps) {
       throw new SchemaCommandError("INVALID_BOARD_LAYOUT", "Deze positie overlapt een andere module.");
     }
-    this.commitTransaction(() => this.replaceBoardLayout({
-      ...layout,
-      placements: [
-        ...layout.placements.filter(placement => placement.itemId !== itemId),
-        { itemId, ...properties },
-      ],
-    }));
+    this.commitTransaction(() => {
+      this.replaceBoardLayout({
+        ...layout,
+        placements: [
+          ...layout.placements.filter(placement => placement.itemId !== itemId),
+          { itemId, ...properties },
+        ],
+      });
+      this.structure.placementTasks = this.structure.placementTasks.filter(task => !(task.itemId === itemId && task.destination === "board"));
+    });
   }
 
   private removeBoardLayoutItem(boardId: string, itemId: number): void {
@@ -641,6 +697,9 @@ export class LegacySchemaStore implements SchemaStore {
           break;
         case "delete-item":
           staged.commands.deleteItem(operation.itemId);
+          break;
+        case "create-placement-task":
+          staged.commands.createPlacementTask(operation.itemId, operation.destination, operation.locationHint);
           break;
         default:
           throw new SchemaCommandError("INVALID_CHANGE", "Onbekende agentwijziging.");
@@ -947,6 +1006,7 @@ export class LegacySchemaStore implements SchemaStore {
       canRedo: this.history.canRedo(),
       validationIssues: validateSchemaDocument(document),
       boardLayouts: Object.freeze(this.structure.boardLayouts.map(freezeBoardLayout)),
+      placementTasks: Object.freeze(this.structure.placementTasks.map(task => Object.freeze({ ...task }))),
     });
   }
 

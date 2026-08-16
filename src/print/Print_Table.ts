@@ -28,6 +28,7 @@ export class Print_Table {
 
     pagemarkers: MarkerList;             //List of pagemarkers that can be used for automatic pagination
     enableAutopage: boolean = true;      //Flag to indicate if automatic pagination is used or not
+    includeBoardLayout: boolean = false;
 
     printPageMode: printPageMode = "all"; // Current print page mode
     printPageRange: string = ""; // Custom page range input by user, e.g. "1-2, 4"

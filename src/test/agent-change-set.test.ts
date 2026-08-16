@@ -19,6 +19,7 @@ describe("reviewed agent change sets", () => {
     ]);
 
     expect(store.getSnapshot().document.getAllItems()).toHaveLength(before + 2);
+    expect(store.getSnapshot().placementTasks.some(task => task.destination === "situation")).toBe(true);
     expect(store.getSnapshot().canUndo).toBe(true);
     store.commands.undo();
     expect(store.getSnapshot().document.getAllItems()).toHaveLength(before);
@@ -33,5 +34,17 @@ describe("reviewed agent change sets", () => {
       { kind: "add-item", parentId: null, type: "Contactdoos" },
     ])).toThrow(/niet toegestaan/);
     expect(store.getSnapshot().revision).toBe(before);
+  });
+
+  it("stores dossier metadata and a named placement task", () => {
+    const structure = loadFixture("example001.eds");
+    const store = new LegacySchemaStore(structure);
+    const item = store.getSnapshot().document.getAllItems().find(candidate => candidate.type === "Contactdoos")!;
+
+    store.commands.updateDossierMetadata({ installationContext: "change", installationAddress: "Teststraat 1", revisionLabel: "v2", issueDate: "2026-08-16" });
+    store.commands.createPlacementTask(item.id, "situation", "gelijkvloers keuken");
+
+    expect(store.getSnapshot().document.getDocumentDetails().dossier).toMatchObject({ installationContext: "change", installationAddress: "Teststraat 1" });
+    expect(store.getSnapshot().placementTasks).toContainEqual(expect.objectContaining({ itemId: item.id, locationHint: "gelijkvloers keuken" }));
   });
 });

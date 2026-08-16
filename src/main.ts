@@ -659,7 +659,9 @@ if (reactEditorRoot !== null) {
                     defaults.scale,
                     defaults.rotate,
                 );
+                globalThis.structure.placementTasks = globalThis.structure.placementTasks.filter(task => !(task.itemId === itemId && task.destination === "situation"));
                 globalThis.situationPlanStore.synchronizeLegacyDocument(globalThis.structure);
+                schemaStore?.synchronizeLegacyDocument(globalThis.structure);
                 const created = globalThis.structure.sitplan.getElements()
                     .filter(candidate => candidate.getElectroItemId() === itemId)
                     .at(-1);
@@ -673,6 +675,15 @@ if (reactEditorRoot !== null) {
                 globalThis.structure.sitplanview?.selectPage(element.page);
                 globalThis.structure.sitplanview?.selectOneBox(element.boxref);
                 workspaceStore?.commands.selectSituationElement(element.id);
+            },
+            onRevealBoardItem: (itemId) => {
+                const boardId = schemaStore?.getSnapshot().document.getBoardForItem(itemId)?.id;
+                if (!boardId) return;
+                globalThis.toggleAppView("2col");
+                workspaceStore?.commands.selectTab("board");
+                editorStore?.commands.selectBoard(boardId, itemId);
+                reactEditorCanvas?.style.setProperty("display", "none");
+                reactBoardLayoutRoot?.classList.remove("hidden");
             },
             situationPaperElement,
             commandBarMountElement: reactCommandBarRoot,

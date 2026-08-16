@@ -3,6 +3,7 @@ import type { SchemaPropertyReader } from "./SchemaPropertyReader";
 import type { ConfiguredItemPropertyChanges } from "./ConfiguredItemProperties";
 import type { ValidationIssue } from "./SchemaValidation";
 import type { BoardLayout } from "../domain/BoardLayout";
+import type { DossierMetadata, PlacementTask, PlacementTaskDestination } from "../domain/Dossier";
 import type {
   BasicConsumerPropertyChanges,
   CircuitPropertyChanges,
@@ -18,6 +19,7 @@ export interface SchemaSnapshot {
   readonly canRedo: boolean;
   readonly validationIssues: readonly ValidationIssue[];
   readonly boardLayouts: readonly BoardLayout[];
+  readonly placementTasks: readonly PlacementTask[];
 }
 
 export interface MoveItemOptions {
@@ -53,6 +55,7 @@ export interface UpdateFileSettingsChanges {
   readonly filename?: string;
   readonly compressionDisabled?: boolean;
 }
+export type UpdateDossierMetadataChanges = Partial<DossierMetadata>;
 
 export interface AddBoardLayoutRailProperties {
   readonly name?: string;
@@ -75,7 +78,8 @@ export type AgentGraphOperation =
   | Readonly<{ kind: "add-item"; parentId: number | null; type: string }>
   | Readonly<{ kind: "update-item"; itemId: number; changes: Readonly<Record<string, unknown>> }>
   | Readonly<{ kind: "move-item"; itemId: number; targetParentId: number | null; position?: number }>
-  | Readonly<{ kind: "delete-item"; itemId: number }>;
+  | Readonly<{ kind: "delete-item"; itemId: number }>
+  | Readonly<{ kind: "create-placement-task"; itemId: number; destination: PlacementTaskDestination; locationHint?: string }>;
 
 export interface SchemaCommands {
   addItem(parentId: number | null, type: string): number;
@@ -97,6 +101,9 @@ export interface SchemaCommands {
   deleteDistributionBoard(boardId: string): void;
   updateDocumentDetails(changes: UpdateDocumentDetailsChanges): void;
   updateFileSettings(changes: UpdateFileSettingsChanges): void;
+  updateDossierMetadata(changes: UpdateDossierMetadataChanges): void;
+  createPlacementTask(itemId: number, destination: PlacementTaskDestination, locationHint?: string): string;
+  resolvePlacementTask(taskId: string): void;
   addBoardLayoutRail(boardId: string, properties?: AddBoardLayoutRailProperties): string;
   updateBoardLayoutRail(
     boardId: string,

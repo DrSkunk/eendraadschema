@@ -531,6 +531,15 @@ describe("LegacySchemaStore", () => {
       installer: "Installateur NV",
       control: "Keuringsorganisme",
       info: "3 x 400V + N ~50 Hz",
+      dossier: {
+        installationContext: "existing",
+        installationAddress: "",
+        nominalVoltage: "",
+        currentNature: "",
+        frequencyHz: "",
+        revisionLabel: "",
+        issueDate: "",
+      },
     });
     store.commands.undo();
     expect(store.getSnapshot().document.getDocumentDetails().owner).not.toContain("Jan Janssens");
