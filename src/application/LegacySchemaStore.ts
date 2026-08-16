@@ -40,6 +40,7 @@ import {
   type UpdateDocumentDetailsChanges,
   type UpdateFileSettingsChanges,
   type UpdateBoardLayoutRailChanges,
+  type AgentGraphOperation,
 } from "./SchemaStore";
 
 const BLOCKED_CHANGE_KEYS = new Set(["__proto__", "constructor", "prototype"]);
@@ -84,6 +85,7 @@ export class LegacySchemaStore implements SchemaStore {
       deleteBoardLayoutRail: this.deleteBoardLayoutRail.bind(this),
       placeBoardLayoutItem: this.placeBoardLayoutItem.bind(this),
       removeBoardLayoutItem: this.removeBoardLayoutItem.bind(this),
+      applyAgentChangeSet: this.applyAgentChangeSet.bind(this),
       replaceDocument: this.replaceDocument.bind(this),
       undo: this.undo.bind(this),
       redo: this.redo.bind(this),
@@ -612,6 +614,43 @@ export class LegacySchemaStore implements SchemaStore {
       ...layout,
       placements: layout.placements.filter(placement => placement.itemId !== itemId),
     }));
+  }
+
+  private applyAgentChangeSet(operations: readonly AgentGraphOperation[]): void {
+    if (operations.length === 0) {
+      throw new SchemaCommandError("INVALID_CHANGE", "Een wijzigingsvoorstel mag niet leeg zijn.");
+    }
+    const before = this.serialize();
+    // Stage against a separate authoritative document. Existing public commands
+    // perform all domain validation there; only a complete successful draft is
+    // installed in the live document and recorded once in its history.
+    const staged = new LegacySchemaStore(structureFromJson(before, null, 0));
+    for (const operation of operations) {
+      switch (operation.kind) {
+        case "add-item":
+          staged.commands.addItem(operation.parentId, operation.type);
+          break;
+        case "update-item":
+          staged.commands.updateItem(operation.itemId, operation.changes);
+          break;
+        case "move-item":
+          staged.commands.moveItem(operation.itemId, {
+            targetParentId: operation.targetParentId,
+            position: operation.position,
+          });
+          break;
+        case "delete-item":
+          staged.commands.deleteItem(operation.itemId);
+          break;
+        default:
+          throw new SchemaCommandError("INVALID_CHANGE", "Onbekende agentwijziging.");
+      }
+    }
+    const stagedSerialized = staged.getLegacyDocument().toJsonObject(false);
+    this.structure = structureFromJson(stagedSerialized, this.structure, 0);
+    this.serializedSnapshot = this.serialize();
+    this.history.record(this.serializedSnapshot);
+    this.publish();
   }
 
   private replaceDocument(serializedDocument: string, version: number = 0): void {

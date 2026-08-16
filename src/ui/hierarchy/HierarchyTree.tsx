@@ -10,6 +10,7 @@ import { AddItemControl } from "./AddItemControl";
 import { HierarchyNode } from "./HierarchyNode";
 import { HierarchySearch } from "./HierarchySearch";
 import { SituationLinksPanel } from "../workspace/SituationLinksPanel";
+import { DossierOverview } from "../workspace/DossierOverview";
 import {
   createHierarchyIndex,
   getEditableChildren,
@@ -98,6 +99,7 @@ export function HierarchyTree({
         validationIssues={schemaSnapshot.validationIssues}
         reportError={setErrorMessage}
       />
+      <DossierOverview schemaStore={schemaStore} situationPlanStore={situationPlanStore} />
       <HierarchySearch document={hierarchyDocument} editorStore={editorStore} />
       {situationPlanStore ? (
         <SituationLinksPanel

@@ -70,6 +70,13 @@ export interface PlaceBoardLayoutItemProperties {
   readonly moduleWidth: number;
 }
 
+/** A deliberately small, serializable command language for reviewed agent changes. */
+export type AgentGraphOperation =
+  | Readonly<{ kind: "add-item"; parentId: number | null; type: string }>
+  | Readonly<{ kind: "update-item"; itemId: number; changes: Readonly<Record<string, unknown>> }>
+  | Readonly<{ kind: "move-item"; itemId: number; targetParentId: number | null; position?: number }>
+  | Readonly<{ kind: "delete-item"; itemId: number }>;
+
 export interface SchemaCommands {
   addItem(parentId: number | null, type: string): number;
   insertItemBefore(itemId: number, type: string): number;
@@ -103,6 +110,8 @@ export interface SchemaCommands {
     properties: PlaceBoardLayoutItemProperties,
   ): void;
   removeBoardLayoutItem(boardId: string, itemId: number): void;
+  /** Applies a previously reviewed agent proposal as one undoable revision. */
+  applyAgentChangeSet(operations: readonly AgentGraphOperation[]): void;
   replaceDocument(serializedDocument: string, version?: number): void;
   undo(): void;
   redo(): void;

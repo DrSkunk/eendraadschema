@@ -28,6 +28,7 @@ import { LocalWorkspaceStore } from "./application/WorkspaceStore";
 import { LegacyHistoryStatusStore } from "./application/HistoryStatusStore";
 import { LegacySituationPlanAssetService } from "./application/LegacySituationPlanAssetService";
 import { mountEditorApp } from "./ui/mountEditorApp";
+import { BrowserMcpBridge } from "./mcp/BrowserMcpBridge";
 
 import "../css/all.css";
 
@@ -531,6 +532,9 @@ schemaStore = new LegacySchemaStore(globalThis.structure);
 globalThis.situationPlanStore = new LegacySituationPlanStore(globalThis.structure);
 editorStore = new LocalEditorStore();
 workspaceStore = new LocalWorkspaceStore();
+if (new URLSearchParams(window.location.search).get("mcp") === "on") {
+    new BrowserMcpBridge(schemaStore, globalThis.situationPlanStore).connect();
+}
 const reactEditorRoot = document.getElementById("react-editor-root");
 const reactHierarchyRoot = document.getElementById("react-hierarchy-root");
 const reactPropertiesRoot = document.getElementById("react-properties-root");

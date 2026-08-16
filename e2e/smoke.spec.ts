@@ -41,6 +41,34 @@ test("adds components at branch ends and between drawn components", async ({ pag
   await expect(page.locator(".vite-error-overlay")).toHaveCount(0);
 });
 
+test("links schematic symbols and hierarchy selection in both directions", async ({ page }) => {
+  await loadExample(page, 0);
+
+  const schematicLabel = page.locator("#EDSSVG text").filter({ hasText: "Waterkoker" }).first();
+  const itemId = await schematicLabel.evaluate((element) =>
+    element.closest("[data-schema-item-id]")?.getAttribute("data-schema-item-id"),
+  );
+  const schematicContainer = schematicLabel.locator("xpath=ancestor::*[@data-schema-item-id][1]");
+  const hitArea = schematicContainer.locator(":scope > [data-schema-hit-area]");
+  await hitArea.hover();
+  await expect(schematicContainer).toHaveAttribute("data-schema-hovered", "true");
+  await expect(schematicContainer).toHaveCSS("filter", /drop-shadow/);
+  await hitArea.click();
+
+  const selectedRow = page.locator("#react-hierarchy-root [aria-current='true']");
+  await expect(selectedRow).toHaveAttribute("data-hierarchy-item-id", itemId!);
+  await expect(selectedRow).toBeFocused();
+
+  const circuitRow = page.locator("#react-hierarchy-root [data-hierarchy-item-id]").filter({ hasText: "Kring" }).first();
+  const circuitId = await circuitRow.getAttribute("data-hierarchy-item-id");
+  await circuitRow.click();
+  const highlightedSymbol = page.locator(
+    `#right_col_inner [data-schema-item-id="${circuitId}"][data-schema-selected="true"]`,
+  ).first();
+  await expect(highlightedSymbol).toBeVisible();
+  await expect(highlightedSymbol).toHaveCSS("filter", /drop-shadow/);
+});
+
 test("edits a circuit property through React and updates the SVG", async ({ page }) => {
   await loadExample(page, 1);
 

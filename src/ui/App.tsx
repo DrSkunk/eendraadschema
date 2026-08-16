@@ -24,6 +24,7 @@ import { WorkspaceCommandBar } from "./workspace/WorkspaceCommandBar";
 import { BoardLayoutWorkspace } from "./boards/BoardLayoutWorkspace";
 import { BoardLayoutInspector } from "./boards/BoardLayoutInspector";
 import { SchematicInsertControls } from "./schematic/SchematicInsertControls";
+import { SchematicSelectionBridge } from "./schematic/SchematicSelectionBridge";
 import { FileDialog } from "./workspace/FileDialog";
 import { PrintDialog } from "./workspace/PrintDialog";
 
@@ -186,6 +187,13 @@ export function EditorApp({
             schematicControlsMountElement,
           )
         : null}
+      {zoomTargetElement ? (
+        <SchematicSelectionBridge
+          schemaStore={schemaStore}
+          editorStore={editorStore}
+          previewElement={zoomTargetElement}
+        />
+      ) : null}
       {commandBarMountElement
         && situationPlanStore
         && situationPlanAssetService

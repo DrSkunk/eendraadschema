@@ -1166,6 +1166,8 @@ export class Hierarchical_List {
                     outSVG.data += '<svg data-schema-item-id="' + inSVGItemIds[i]
                         + '" data-schema-anchor-y="' + inSVG[i].yup
                         + '" data-schema-end-x="' + (inSVG[i].xleft + inSVG[i].xright)
+                        + '" data-schema-width="' + (inSVG[i].xleft + inSVG[i].xright)
+                        + '" data-schema-height="' + (inSVG[i].yup + inSVG[i].ydown)
                         + '" x="' + xpos + '" y="' + (max_yup-inSVG[i].yup) + '">';
                     outSVG.data += inSVG[i].data;
                     outSVG.data += '</svg>';
@@ -1220,6 +1222,8 @@ export class Hierarchical_List {
                     outSVG.data += '<svg data-schema-item-id="' + inSVGItemIds[i]
                         + '" data-schema-anchor-y="' + inSVG[i].yup
                         + '" data-schema-end-x="' + (inSVG[i].xleft + inSVG[i].xright)
+                        + '" data-schema-width="' + (inSVG[i].xleft + inSVG[i].xright)
+                        + '" data-schema-height="' + (inSVG[i].yup + inSVG[i].ydown)
                         + '" x="' + (outSVG.xleft-inSVG[i].xleft) + '" y="' + ypos + '">';
                     outSVG.data += inSVG[i].data;
                     outSVG.data += '</svg>';

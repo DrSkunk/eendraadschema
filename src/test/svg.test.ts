@@ -61,6 +61,8 @@ describe("one-line SVG generation", () => {
       expect(element).not.toBeNull();
       expect(Number(element?.getAttribute("data-schema-anchor-y"))).toBeGreaterThanOrEqual(0);
       expect(Number(element?.getAttribute("data-schema-end-x"))).toBeGreaterThan(0);
+      expect(Number(element?.getAttribute("data-schema-width"))).toBeGreaterThan(0);
+      expect(Number(element?.getAttribute("data-schema-height"))).toBeGreaterThan(0);
     }
   });
 
